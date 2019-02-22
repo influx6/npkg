@@ -5,6 +5,8 @@ github.com/dimfeld/httptreemux v5.0.1+incompatible/go.mod h1:rbUlSV+CCpv/SuqUTP/
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/gokit/history v0.0.0-20190209080252-7693dffa46f8 h1:sWm5HASDn5PPvgCjJdP+zLtGrAkBpXSVYoUjIGIgnEo=
 github.com/gokit/history v0.0.0-20190209080252-7693dffa46f8/go.mod h1:6io2C4/X4r6S7twmEL1smAxZaIMjdORXBptgnO1aJCI=
+github.com/gokit/reflection v0.0.0-20190222040238-83c0db75401a h1:0eqWkbn5oyDFBhFSZZgvi1+jhvICv9rJc+DsHDo96Zw=
+github.com/gokit/reflection v0.0.0-20190222040238-83c0db75401a/go.mod h1:fcdV3gpW36gIe4GQTCQf7Aotl9NEfejTiwqASP++hlE=
 github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e h1:JKmoR8x90Iww1ks85zJ1lfDGgIiMDuIptTOhJq+zKyg=
 github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/gorilla/mux v1.7.0 h1:tOSd0UKHQd6urX6ApfOn4XdBMY6Sh1MfxV3kmaazO+U=

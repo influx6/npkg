@@ -370,7 +370,7 @@ var internalTypes = []string{
 // a giving field belongs to.
 type FieldType struct {
 	TypeName string `json:"field_type"`
-	Pkg      string `json:"pkg"`
+	Pkg      string `json:"ngonative"`
 }
 
 // ExternalTypeNames returns the name and field names of the provided
