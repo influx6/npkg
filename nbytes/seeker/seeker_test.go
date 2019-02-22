@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/gokit/npkg/npools/seeker"
+	"github.com/gokit/npkg/nbytes/seeker"
 	tests "github.com/gokit/npkg/ntests"
 )
 

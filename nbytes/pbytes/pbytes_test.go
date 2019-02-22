@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/gokit/bytestream/pbytes"
+	"github.com/gokit/npkg/nbytes/pbytes"
 )
 
 func BenchmarkBitsBoot(b *testing.B) {

@@ -1,6 +1,7 @@
 module github.com/gokit/npkg
 
 require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimfeld/httptreemux v5.0.1+incompatible
 	github.com/gokit/history v0.0.0-20190209080252-7693dffa46f8
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e

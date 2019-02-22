@@ -6,13 +6,13 @@ import (
 	"io"
 	"sync/atomic"
 
-	"github.com/gokit/errors"
+	"github.com/gokit/npkg/nerror"
 )
 
 var (
 	// ErrInvalidEscapeAndDelimiter defines error returned when delimiter and escape values
 	// are the same.
-	ErrInvalidEscapeAndDelimiter = errors.New("delimiter and escape values can not be the same")
+	ErrInvalidEscapeAndDelimiter = nerror.New("delimiter and escape values can not be the same")
 )
 
 //****************************************************************************
@@ -87,13 +87,13 @@ func (dw *DelimitedStreamWriter) End() (int, error) {
 	// flush buffer if we have something left as well into writer.
 	if left := dw.cache.Buffered(); left > 0 {
 		if err := dw.cache.Flush(); err != nil {
-			return written, errors.WrapOnly(err)
+			return written, nerror.WrapOnly(err)
 		}
 	}
 
 	n, err := dw.Dest.Write(dw.Delimiter)
 	if err != nil {
-		return written, errors.WrapOnly(err)
+		return written, nerror.WrapOnly(err)
 	}
 
 	written += n
@@ -126,7 +126,7 @@ func (dw *DelimitedStreamWriter) writeByte(b byte) error {
 	delimLen := len(dw.Delimiter)
 	if dw.buffer == nil && dw.cache == nil {
 		if bytes.Equal(dw.Escape, dw.Delimiter) {
-			return errors.WrapOnly(ErrInvalidEscapeAndDelimiter)
+			return nerror.WrapOnly(ErrInvalidEscapeAndDelimiter)
 		}
 
 		writeBuffer := dw.WriteBuffer
@@ -155,7 +155,7 @@ func (dw *DelimitedStreamWriter) writeByte(b byte) error {
 
 		atomic.AddInt64(&dw.count, 1)
 		if err := dw.escape.WriteByte(b); err != nil {
-			return errors.WrapOnly(err)
+			return nerror.WrapOnly(err)
 		}
 
 		return nil
@@ -165,7 +165,7 @@ func (dw *DelimitedStreamWriter) writeByte(b byte) error {
 	// to delimiter checks.
 	if dw.buffer.Len() == 0 && dw.escape.Len() != 0 && b != dw.Escape[dw.index] {
 		if _, err := dw.escape.WriteTo(dw.cache); err != nil {
-			return errors.WrapOnly(err)
+			return nerror.WrapOnly(err)
 		}
 
 		dw.index = 0
@@ -178,12 +178,12 @@ func (dw *DelimitedStreamWriter) writeByte(b byte) error {
 		dw.index++
 
 		if err := dw.escape.WriteByte(b); err != nil {
-			return errors.WrapOnly(err)
+			return nerror.WrapOnly(err)
 		}
 
 		if dw.escape.Len() == escapeLen {
 			if _, err := dw.escape.WriteTo(dw.cache); err != nil {
-				return errors.WrapOnly(err)
+				return nerror.WrapOnly(err)
 			}
 
 			dw.index = 0
@@ -197,7 +197,7 @@ func (dw *DelimitedStreamWriter) writeByte(b byte) error {
 	if dw.buffer.Len() == 0 && b != dw.Delimiter[0] {
 		atomic.AddInt64(&dw.count, 1)
 		if err := dw.cache.WriteByte(b); err != nil {
-			return errors.WrapOnly(err)
+			return nerror.WrapOnly(err)
 		}
 		return nil
 	}
@@ -207,7 +207,7 @@ func (dw *DelimitedStreamWriter) writeByte(b byte) error {
 	if dw.buffer.Len() == 0 && b == dw.Delimiter[0] {
 		atomic.AddInt64(&dw.count, 1)
 		if err := dw.buffer.WriteByte(b); err != nil {
-			return errors.WrapOnly(err)
+			return nerror.WrapOnly(err)
 		}
 		return nil
 	}
@@ -221,7 +221,7 @@ func (dw *DelimitedStreamWriter) writeByte(b byte) error {
 		atomic.AddInt64(&dw.count, 1)
 
 		if err := dw.buffer.WriteByte(b); err != nil {
-			return errors.WrapOnly(err)
+			return nerror.WrapOnly(err)
 		}
 
 		// if we were left with a single space then this was filled, hence then
@@ -241,13 +241,13 @@ func (dw *DelimitedStreamWriter) flush() error {
 	if bytes.Equal(dw.buffer.Bytes(), dw.Delimiter) {
 		escapeN, err := dw.cache.Write(dw.Escape)
 		if err != nil {
-			return errors.WrapOnly(err)
+			return nerror.WrapOnly(err)
 		}
 
 		atomic.AddInt64(&dw.count, int64(escapeN))
 
 		if _, err := dw.cache.Write(dw.Delimiter); err != nil {
-			return errors.WrapOnly(err)
+			return nerror.WrapOnly(err)
 		}
 
 		dw.buffer.Reset()
@@ -259,13 +259,13 @@ func (dw *DelimitedStreamWriter) flush() error {
 	if dw.buffer.Len() == 1 && dw.buffer.Bytes()[0] == dw.Delimiter[0] {
 		escapeN, err := dw.cache.Write(dw.Escape)
 		if err != nil {
-			return errors.WrapOnly(err)
+			return nerror.WrapOnly(err)
 		}
 
 		atomic.AddInt64(&dw.count, int64(escapeN))
 
 		if err := dw.cache.WriteByte(dw.Swap); err != nil {
-			return errors.WrapOnly(err)
+			return nerror.WrapOnly(err)
 		}
 
 		dw.buffer.Reset()
@@ -274,7 +274,7 @@ func (dw *DelimitedStreamWriter) flush() error {
 
 	next, err := dw.buffer.WriteTo(dw.cache)
 	if err != nil {
-		return errors.WrapOnly(err)
+		return nerror.WrapOnly(err)
 	}
 
 	atomic.AddInt64(&dw.count, int64(next))
@@ -291,7 +291,7 @@ var (
 	// ErrEOS is sent when a giving byte stream section is reached, that is
 	// we've found the ending delimiter representing the end of a message stream
 	// among incoming multi-duplexed stream.
-	ErrEOS = errors.New("end of stream set")
+	ErrEOS = nerror.New("end of stream set")
 )
 
 // DelimitedStreamReader continuously reads incoming byte sequence decoding
@@ -419,7 +419,7 @@ func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
 	delims := escapeLen + delimLen
 	if dr.cached == nil && dr.buffer == nil {
 		if bytes.Equal(dr.Escape, dr.Delimiter) {
-			return false, errors.WrapOnly(ErrInvalidEscapeAndDelimiter)
+			return false, nerror.WrapOnly(ErrInvalidEscapeAndDelimiter)
 		}
 
 		if dr.Swap == 0 {
@@ -459,21 +459,21 @@ func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
 		// We will check if this is a case of an escaped swap.
 		swapped, err := dr.buffer.Peek(1)
 		if err != nil {
-			return false, errors.WrapOnly(err)
+			return false, nerror.WrapOnly(err)
 		}
 
 		// if the giving next byte is exactly the swap byte, then replace
 		// with first character of delimiter.
 		if swapped[0] == dr.Swap {
 			if _, err := dr.buffer.Discard(1); err != nil {
-				return false, errors.WrapOnly(err)
+				return false, nerror.WrapOnly(err)
 			}
 
 			dr.index = 0
 			dr.comparing = false
 
 			if err := dr.cached.WriteByte(dr.Delimiter[0]); err != nil {
-				return false, errors.WrapOnly(err)
+				return false, nerror.WrapOnly(err)
 			}
 
 			return false, nil
@@ -482,7 +482,7 @@ func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
 		// We will check if this is a case of an escaped delimiter.
 		next, err := dr.buffer.Peek(delimLen)
 		if err != nil {
-			return false, errors.WrapOnly(err)
+			return false, nerror.WrapOnly(err)
 		}
 
 		if bytes.Equal(dr.Delimiter, next) {
@@ -490,11 +490,11 @@ func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
 			dr.comparing = false
 
 			if _, err := dr.cached.Write(next); err != nil {
-				return false, errors.WrapOnly(err)
+				return false, nerror.WrapOnly(err)
 			}
 
 			if _, err := dr.buffer.Discard(delimLen); err != nil {
-				return false, errors.WrapOnly(err)
+				return false, nerror.WrapOnly(err)
 			}
 
 			return false, nil
@@ -506,7 +506,7 @@ func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
 		dr.comparing = false
 
 		if _, err := dr.cached.Write(dr.Escape); err != nil {
-			return false, errors.WrapOnly(err)
+			return false, nerror.WrapOnly(err)
 		}
 
 		return false, nil
@@ -514,7 +514,7 @@ func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
 
 	bm, err := dr.buffer.ReadByte()
 	if err != nil {
-		return false, errors.WrapOnly(err)
+		return false, nerror.WrapOnly(err)
 	}
 
 	// if we are not comparing and we don't match giving escape sequence
@@ -526,7 +526,7 @@ func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
 		if bm == dr.Delimiter[0] {
 			next, err := dr.buffer.Peek(delimLen - 1)
 			if err != nil {
-				return false, errors.WrapOnly(err)
+				return false, nerror.WrapOnly(err)
 			}
 
 			if bytes.Equal(dr.Delimiter[1:], next) {
@@ -537,7 +537,7 @@ func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
 		}
 
 		if err := dr.cached.WriteByte(bm); err != nil {
-			return false, errors.WrapOnly(err)
+			return false, nerror.WrapOnly(err)
 		}
 
 		return false, nil
@@ -574,11 +574,11 @@ func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
 
 		// write part of escape sequence that had being checked.
 		if _, err := dr.cached.Write(part); err != nil {
-			return false, errors.WrapOnly(err)
+			return false, nerror.WrapOnly(err)
 		}
 
 		if err := dr.buffer.UnreadByte(); err != nil {
-			return false, errors.WrapOnly(err)
+			return false, nerror.WrapOnly(err)
 		}
 	}
 

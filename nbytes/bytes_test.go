@@ -5,8 +5,8 @@ import (
 	"io"
 	"testing"
 
-	"github.com/gokit/errors"
 	mb "github.com/gokit/npkg/nbytes"
+	"github.com/gokit/npkg/nerror"
 	"github.com/stretchr/testify/require"
 )
 
@@ -47,7 +47,7 @@ func TestMultiStreamReadingAndwriting(t *testing.T) {
 		res := make([]byte, len(sentence)+10)
 		read, err := reader.Read(res)
 		require.Len(t, sentence, read, "Sentence at index %d with read %q", index, res[:read])
-		require.Equal(t, mb.ErrEOS, errors.UnwrapDeep(err), "Sentence at index %d with read %q", index, res[:read])
+		require.Equal(t, mb.ErrEOS, nerror.UnwrapDeep(err), "Sentence at index %d with read %q", index, res[:read])
 		require.Equal(t, sentence, string(res[:read]), "Sentence at index %d", index)
 	}
 
@@ -252,7 +252,7 @@ func TestDelimitedStreamReaderWithSet(t *testing.T) {
 		res := make([]byte, len(spec.In))
 		read, err := reader.Read(res)
 		require.Error(t, err)
-		require.Equal(t, spec.Err, errors.UnwrapDeep(err))
+		require.Equal(t, spec.Err, nerror.UnwrapDeep(err))
 
 		if !spec.Fail {
 			require.Equal(t, spec.Out, string(res[:read]), "Failed at index %d:\n In: %q\n Out: %q\n", ind, spec.In, res[:read])
