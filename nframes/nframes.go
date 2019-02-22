@@ -1,0 +1,230 @@
+package nframes
+
+import (
+	"path"
+	"runtime"
+	"strings"
+
+	"github.com/gokit/npkg"
+)
+
+// series of possible levels
+const (
+	FATAL     Level = 0x10
+	ERROR           = 0x8
+	DEBUG           = 0x4
+	WARNING         = 0x2
+	INFO            = 0x1
+	ALL             = INFO | WARNING | DEBUG | ERROR | FATAL
+	STACKABLE       = DEBUG | ERROR | FATAL
+)
+
+//**************************************************************
+// Level
+//**************************************************************
+
+// Level defines a int type which represent the a giving level of entry for a giving entry.
+type Level uint8
+
+// Text2Level returns Level value for the giving string.
+//
+// It returns ALL as a default value if it does not know the level string.
+func Text2Level(lvl string) Level {
+	switch strings.ToLower(lvl) {
+	case "FATAL", "fatal":
+		return FATAL
+	case "warning", "WARNING":
+		return WARNING
+	case "debug", "DEBUG":
+		return DEBUG
+	case "error", "ERROR":
+		return ERROR
+	case "info", "INFO":
+		return INFO
+	}
+	return ALL
+}
+
+// String returns the string version of the Level.
+func (l Level) String() string {
+	switch l {
+	case FATAL:
+		return "FATAL"
+	case DEBUG:
+		return "DEBUG"
+	case WARNING:
+		return "WARNING"
+	case ERROR:
+		return "ERROR"
+	case INFO:
+		return "INFO"
+	}
+	return "UNKNOWN"
+}
+
+//************************************************************
+// Stack Frames
+//************************************************************
+
+// GetFrames returns a slice of stack frames for a giving size, skipping the provided
+// `skip` count.
+func GetFrames(skip int, size int) []uintptr {
+	var frames = make([]uintptr, size)
+	var written = runtime.Callers(skip, frames)
+	return frames[:written]
+}
+
+// Frames is a slice of pointer uints.
+type Frames []uintptr
+
+// Details returns a slice of FrameDetails describing with a snapshot
+// of giving stack frame pointer details.
+func (f Frames) Details() []FrameDetail {
+	var details = make([]FrameDetail, len(f))
+	for ind, ptr := range f {
+		details[ind] = Frame(ptr).Detail()
+	}
+	return details
+}
+
+// Encode encodes all Frames within slice into provided object encoder with keyname "_stack_frames".
+func (f Frames) Encode(encoder npkg.Encoder) {
+	encoder.ListFor("_stack_frames", f.EncodeList)
+}
+
+// EncodeList encodes all Frames within slice into provided list encoder.
+func (f Frames) EncodeList(encoder npkg.Encoder) {
+	for _, frame := range f {
+		var fr = Frame(frame)
+		encoder.AddObject(fr.Encode)
+	}
+}
+
+// Frame represents a program counter inside a stack frame.
+// For historical reasons if Frame is interpreted as a uintptr
+// its value represents the program counter + 1.
+type Frame uintptr
+
+// FrameDetail represent the snapshot description of a
+// Frame pointer.
+type FrameDetail struct {
+	Line     int
+	Method   string
+	File     string
+	Package  string
+	FileName string
+}
+
+const srcSub = "/src/"
+
+// Encode encodes giving frame into provided encoder.
+func (f Frame) Encode(encode npkg.Encoder) {
+	fn := runtime.FuncForPC(f.Pc())
+	if fn == nil {
+		return
+	}
+
+	encode.String("method", fn.Name())
+
+	var file, line = fn.FileLine(f.Pc())
+	if line >= 0 {
+		encode.Int("line", line)
+	}
+
+	if file != "" && file != "???" {
+		if runtime.GOOS == "windows" {
+			file = toSlash(file)
+		}
+
+		encode.String("file", file)
+
+		pkgIndex := strings.Index(file, srcSub)
+		if pkgIndex != -1 {
+			pkgFileBase := file[pkgIndex+5:]
+			if lastSlash := strings.LastIndex(pkgFileBase, "/"); lastSlash != -1 {
+				encode.String("file_name", pkgFileBase[lastSlash+1:])
+				encode.String("package", pkgFileBase[:lastSlash])
+			}
+		}
+	}
+}
+
+const winSlash = '\\'
+
+func toSlash(s string) string {
+	for index, item := range s {
+		if item == winSlash {
+			s = s[:index] + "/" + s[index+1:]
+		}
+	}
+	return s
+}
+
+// Pc returns the program counter for this frame;
+// multiple frames may have the same PC value.
+func (f Frame) Pc() uintptr { return uintptr(f) - 1 }
+
+// Detail returns the detail for giving Frame pointer.
+func (f Frame) Detail() FrameDetail {
+	var detail = FrameDetail{
+		Method: "Unknown",
+		File:   "...",
+		Line:   -1,
+	}
+
+	fn := runtime.FuncForPC(f.Pc())
+	if fn == nil {
+		return detail
+	}
+
+	detail.Method = fn.Name()
+	var file, line = fn.FileLine(f.Pc())
+	if line >= 0 {
+		detail.Line = line
+	}
+	if file != "" && file != "???" {
+		detail.File = file
+	}
+	if detail.File != "..." {
+		pkgPieces := strings.SplitAfter(detail.File, "/src/")
+		var pkgFileBase string
+		if len(pkgPieces) > 1 {
+			pkgFileBase = pkgPieces[1]
+		}
+
+		detail.Package = path.Dir(pkgFileBase)
+		detail.FileName = path.Base(pkgFileBase)
+	}
+	return detail
+}
+
+// File returns the full path to the file that contains the
+// function for this Frame's pc.
+func (f Frame) File() string {
+	fn := runtime.FuncForPC(f.Pc())
+	if fn == nil {
+		return "unknown"
+	}
+	file, _ := fn.FileLine(f.Pc())
+	return file
+}
+
+// Line returns the line number of source code of the
+// function for this Frame's pc.
+func (f Frame) Line() int {
+	fn := runtime.FuncForPC(f.Pc())
+	if fn == nil {
+		return 0
+	}
+	_, line := fn.FileLine(f.Pc())
+	return line
+}
+
+// Name returns the name of this function, if known.
+func (f Frame) Name() string {
+	fn := runtime.FuncForPC(f.Pc())
+	if fn == nil {
+		return "unknown"
+	}
+	return fn.Name()
+}
