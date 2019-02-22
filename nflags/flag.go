@@ -14,7 +14,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/influx6/faux/bag"
+	bag "github.com/gokit/npkg/nbag"
 )
 
 const (

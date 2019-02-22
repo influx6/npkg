@@ -6,7 +6,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/influx6/faux/netutils"
+	netutils "github.com/gokit/npkg/nnet"
 	"golang.org/x/crypto/acme/autocert"
 )
 

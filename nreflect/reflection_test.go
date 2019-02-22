@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	nreflect "github.com/gokit/reflection"
+	nreflect "github.com/gokit/npkg/nreflect"
 )
 
 type bull string

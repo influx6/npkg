@@ -2,20 +2,14 @@ package nexec
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
-	"strings"
-
-	"context"
-
-	"time"
-
 	"runtime"
-
-	"github.com/gokit/history"
+	"time"
 )
 
 // nerror ...
@@ -222,21 +216,12 @@ func (c *Commander) Exec(ctx context.Context) (int, error) {
 		}
 	}
 
-	logs := history.WithFields(history.Attrs{
-		"command": strings.Join(execCommand, " "),
-		"envs":    c.Envs,
-	})
-
 	if !c.Async {
 		err := cmder.Run()
-		if err != nil {
-			logs.Error(err, "failed to execue command synchronously")
-		}
 		return getExitStatus(err), err
 	}
 
 	if err := cmder.Start(); err != nil {
-		logs.Error(err, "failed to execue command asynchronously")
 		return getExitStatus(err), err
 	}
 
@@ -250,7 +235,6 @@ func (c *Commander) Exec(ctx context.Context) (int, error) {
 	}()
 
 	if err := cmder.Wait(); err != nil {
-		logs.Error(err, "failed during command wait")
 		return getExitStatus(err), err
 	}
 
@@ -259,7 +243,6 @@ func (c *Commander) Exec(ctx context.Context) (int, error) {
 	}
 
 	if !cmder.ProcessState.Success() {
-		logs.Red("command failed with error")
 		return -1, ErrCommandFailed
 	}
 

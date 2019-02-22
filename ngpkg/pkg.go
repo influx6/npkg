@@ -1,7 +1,7 @@
-// Package ngonative provides a package interfacing API using the go build
+// Package ngpkg provides a package interfacing API using the go build
 // libraries to provide high level functions that simplify and running
 // building processes.
-package ngonative
+package ngpkg
 
 import (
 	"bytes"
