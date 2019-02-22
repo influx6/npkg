@@ -6,10 +6,8 @@ import (
 	"testing"
 
 	"github.com/gokit/errors"
-
+	mb "github.com/gokit/npkg/nbytes"
 	"github.com/stretchr/testify/require"
-
-	mb "github.com/gokit/bytestream"
 )
 
 func TestMultiStreamReadingAndwriting(t *testing.T) {

@@ -11,20 +11,9 @@ import (
 	filesystem "github.com/gokit/npkg/nfs"
 )
 
-// GzipServer returns a http.Handler which handles the necessary bits to gzip or ungzip
-// file resonses from a http.FileSystem.
-func GzipServer(fs filesystem.FileSystem, gzipped bool, mw ...Middleware) http.Handler {
-	zipper := GzipServe(fs, gzipped)
-	if len(mw) != 0 {
-		return handlerImpl{Handler: MWi(mw...)(zipper)}
-	}
-
-	return handlerImpl{Handler: zipper}
-}
-
 // GzipServe returns a Handler which handles the necessary bits to gzip or ungzip
 // file resonses from a http.FileSystem.
-func GzipServe(fs filesystem.FileSystem, gzipped bool) Handler {
+func GzipServe(fs filesystem.FileSystem, gzipped bool) ContextHandler {
 	return func(ctx *NContext) error {
 		reqURL := path.Clean(ctx.Path())
 		if reqURL == "./" || reqURL == "." {
@@ -97,18 +86,14 @@ func GzipServe(fs filesystem.FileSystem, gzipped bool) Handler {
 
 // HTTPGzipServer returns a http.Handler which handles the necessary bits to gzip or ungzip
 // file resonses from a http.FileSystem.
-func HTTPGzipServer(fs http.FileSystem, gzipped bool, mw ...Middleware) http.Handler {
+func HTTPGzipServer(fs http.FileSystem, gzipped bool) http.Handler {
 	zipper := HTTPGzipServe(fs, gzipped)
-	if len(mw) != 0 {
-		return handlerImpl{Handler: MWi(mw...)(zipper)}
-	}
-
-	return handlerImpl{Handler: zipper}
+	return handlerImpl{ContextHandler: zipper}
 }
 
 // HTTPGzipServe returns a Handler which handles the necessary bits to gzip or ungzip
 // file resonses from a http.FileSystem.
-func HTTPGzipServe(fs http.FileSystem, gzipped bool) Handler {
+func HTTPGzipServe(fs http.FileSystem, gzipped bool) ContextHandler {
 	return func(ctx *NContext) error {
 		reqURL := path.Clean(ctx.Path())
 		if reqURL == "./" || reqURL == "." {

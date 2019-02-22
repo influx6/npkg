@@ -93,10 +93,10 @@ func (f Frames) Encode(encoder npkg.Encoder) {
 }
 
 // EncodeList encodes all Frames within slice into provided list encoder.
-func (f Frames) EncodeList(encoder npkg.Encoder) {
+func (f Frames) EncodeList(encoder npkg.ListEncoder) {
 	for _, frame := range f {
 		var fr = Frame(frame)
-		encoder.AddObject(fr.Encode)
+		encoder.AddObject(fr)
 	}
 }
 
@@ -117,8 +117,8 @@ type FrameDetail struct {
 
 const srcSub = "/src/"
 
-// Encode encodes giving frame into provided encoder.
-func (f Frame) Encode(encode npkg.Encoder) {
+// EncodeObject encodes giving frame into provided encoder.
+func (f Frame) EncodeObject(encode npkg.Encoder) {
 	fn := runtime.FuncForPC(f.Pc())
 	if fn == nil {
 		return

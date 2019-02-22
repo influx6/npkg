@@ -154,6 +154,22 @@ type JSON struct {
 	onRelease func([]byte) []byte
 }
 
+func (l *JSON) AddList(list npkg.EncodableList) {
+	l.AddListWith(list.EncodeList)
+}
+
+func (l *JSON) AddObject(object npkg.EncodableObject) {
+	l.AddObjectWith(object.EncodeObject)
+}
+
+func (l *JSON) List(k string, list npkg.EncodableList) {
+	l.ListFor(k, list.EncodeList)
+}
+
+func (l *JSON) Object(k string, object npkg.EncodableObject) {
+	l.ObjectFor(k, object.EncodeObject)
+}
+
 // Message returns the generated JSON of giving *JSON.
 func (l *JSON) Message() string {
 	if l.released() {
@@ -256,7 +272,7 @@ func (l *JSON) ListFor(name string, handler func(event npkg.ListEncoder)) {
 
 // AddList adds new list object with provided properties from provided function into
 // a new json list format. It will panic if you use it for a object format call.
-func (l *JSON) AddList(handler func(event npkg.ListEncoder)) {
+func (l *JSON) AddListWith(handler func(event npkg.ListEncoder)) {
 	l.panicIfObject()
 
 	newEvent := logEventPool.Get().(*JSON)
@@ -282,7 +298,7 @@ func (l *JSON) AddList(handler func(event npkg.ListEncoder)) {
 
 // AddObject adds new object with provided properties from provided function into
 // a new json list format. It will panic if you use it for a object format call.
-func (l *JSON) AddObject(handler func(event npkg.Encoder)) {
+func (l *JSON) AddObjectWith(handler func(event npkg.Encoder)) {
 	l.panicIfObject()
 
 	newEvent := logEventPool.Get().(*JSON)
