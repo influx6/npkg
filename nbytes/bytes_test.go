@@ -3,12 +3,44 @@ package nbytes_test
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
+	"math/rand"
 	"testing"
 
 	mb "github.com/gokit/npkg/nbytes"
 	"github.com/gokit/npkg/nerror"
 	"github.com/stretchr/testify/require"
 )
+
+var (
+	sentences = []string{
+		"I went into park stream all alone before the isle lands.",
+		"Isle lands of YOR, before the dream verse began we found the diskin.",
+		"Break fast in bed, love and eternality for ever",
+		"Awaiting the ending seen of waiting for you?",
+		"Done be such a waste!",
+		"{\"log\":\"token\", \"centry\":\"20\"}",
+	}
+)
+
+func BenchmarkBytesWriter(b *testing.B) {
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	writer := &mb.DelimitedStreamWriter{
+		Dest:      ioutil.Discard,
+		Escape:    []byte(":/"),
+		Delimiter: []byte("//"),
+	}
+
+	var available = len(sentences)
+	for i := 0; i < b.N; i++ {
+		var next = rand.Intn(available - 1)
+		if _, err := writer.Write([]byte(sentences[next])); err == nil {
+			writer.End()
+		}
+	}
+}
 
 func TestMultiStreamReadingAndwriting(t *testing.T) {
 	var dest bytes.Buffer
