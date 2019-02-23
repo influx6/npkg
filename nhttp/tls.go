@@ -45,9 +45,7 @@ func LoadTLS(cert, key string) (*tls.Config, error) {
 // a os interrupt singnal and calls any provided functions later.
 func WaitOnInterrupt(cbs ...func()) {
 	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGQUIT)
-	signal.Notify(ch, syscall.SIGTERM)
-	signal.Notify(ch, os.Interrupt)
+	signal.Notify(ch, syscall.SIGTERM, os.Interrupt, syscall.SIGSTOP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	<-ch
 

@@ -153,7 +153,7 @@ func (c *NContext) ID() nxid.ID {
 	return c.id
 }
 
-// NContext returns the underline context.NContext for the request.
+// Context returns the underline context.NContext for the request.
 func (c *NContext) Context() context.Context {
 	return c.ctx
 }
