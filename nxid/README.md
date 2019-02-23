@@ -69,7 +69,7 @@ References:
 
 ## Install
 
-    go get github.com/rs/xid
+    go get github.com/gokit/npkg/nxid
 
 ## Usage
 

@@ -7,7 +7,7 @@ functions with returned error.
 ## Install
 
 ```go
-go get github.com/gokit/npkg/futurechain
+go get github.com/gokit/npkg/nchain
 ```
 
 ## Example
