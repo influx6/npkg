@@ -1,6 +1,7 @@
-package json
+package njson
 
 import (
+	"io"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -194,12 +195,40 @@ func (l *JSON) Message() string {
 	return bytes2String(cn)
 }
 
-// DangerousWriteTo makes no attempt like JSON.Message to preserve the byte slice
+// WriteTo makes no attempt like JSON.Message to preserve the byte slice
 // data, as it will reuse the byte slice for future writes, it owns it for
 // optimization reasons.
+//
 // It is expected that the writer will adequately copy or write out contents
 // of passed in slice before when it's Write method is called.
-func (l *JSON) DangerousWriteTo(fn func([]byte) error) error {
+func (l *JSON) WriteTo(w io.Writer) (int64, error) {
+	if l.released() {
+		panic("Re-using released *JSON")
+	}
+
+	// remove last comma and space
+	total := len(comma) + len(space)
+	l.reduce(total)
+	l.end()
+
+	if l.onRelease != nil {
+		l.content = l.onRelease(l.content)
+		l.onRelease = nil
+	}
+
+	var n, err = w.Write(l.content)
+	l.resetContent()
+	l.release()
+	return int64(n), err
+}
+
+// WriteToFN makes no attempt like JSON.Message to preserve the byte slice
+// data, as it will reuse the byte slice for future writes, it owns it for
+// optimization reasons.
+//
+// It is expected that the writer will adequately copy or write out contents
+// of passed in slice before when it's Write method is called.
+func (l *JSON) WriteToFN(fn func([]byte) error) error {
 	if l.released() {
 		panic("Re-using released *JSON")
 	}

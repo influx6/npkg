@@ -408,10 +408,9 @@ func (c *NContext) HTMLBlob(code int, b []byte) (err error) {
 }
 
 // Error renders giving error response into response.
-func (c *NContext) Error(code int, err error, message string) error {
+func (c *NContext) Error(statusCode int, errorCode string, message string, err error) error {
 	c.response.Header().Set(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
-	WriteErrorMessage(c.Response(), code, message, err)
-	return nil
+	return JSONError(c.Response(), statusCode, errorCode, message, err)
 }
 
 // String renders giving string into response.

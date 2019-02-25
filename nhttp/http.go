@@ -9,7 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"fmt"
+	"github.com/gokit/npkg"
+	"github.com/gokit/npkg/njson"
 )
 
 const (
@@ -91,19 +92,25 @@ func GetFileMimeType(path string) string {
 	return extVal
 }
 
-// ErrorMessage returns a string which contains a json value of a
-// given error message to be delivered.
-func ErrorMessage(status int, header string, err error) string {
-	return fmt.Sprintf(`{
-		"status": %d,
-		"title": %+q,
-		"message": %+q,
-	}`, status, header, err)
-}
+// JSONError writes the giving error message to the provided writer.
+func JSONError(w http.ResponseWriter, statusCode int, errorCode string, message string, err error) error {
+	w.WriteHeader(statusCode)
 
-// WriteErrorMessage writes the giving error message to the provided writer.
-func WriteErrorMessage(w http.ResponseWriter, status int, header string, err error) {
-	http.Error(w, ErrorMessage(status, header, err), status)
+	var encoder = njson.Object()
+	encoder.ObjectFor("error", func(enc npkg.Encoder) {
+		enc.String("message", message)
+		enc.Int("status_code", statusCode)
+		enc.String("error_code", errorCode)
+
+		if encodableErr, ok := err.(npkg.EncodableObject); ok {
+			enc.Object("incident", encodableErr)
+		} else {
+			enc.String("incident", err.Error())
+		}
+	})
+
+	var _, werr = encoder.WriteTo(w)
+	return werr
 }
 
 // ParseAuthorization returns the scheme and token of the Authorization string
