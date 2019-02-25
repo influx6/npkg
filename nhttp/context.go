@@ -658,6 +658,17 @@ func (c *NContext) InitForms() error {
 
 // Reset resets context internal fields
 func (c *NContext) Reset(r *http.Request, w http.ResponseWriter) error {
+	if r == nil && w == nil {
+		c.request = nil
+		c.response = nil
+		c.query = nil
+		c.notfoundHandler = nil
+		c.params = nil
+		c.flash = nil
+		c.ctx = nil
+		return nil
+	}
+
 	c.request = r
 	c.query = nil
 	c.id = nxid.New()

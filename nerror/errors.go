@@ -3,8 +3,9 @@ package nerror
 import (
 	"bytes"
 	"fmt"
-	"runtime"
-	"time"
+	"sync"
+
+	"github.com/gokit/npkg/nframes"
 )
 
 // vars
@@ -38,14 +39,12 @@ func Apply(err error, ops ...ErrorOption) error {
 	return err
 }
 
-// StackWith will attempt to add call stack into provided error if
+// Frames will attempt to add call stack into provided error if
 // error is a PointingError type without a stack.
-func StackWith(st *StackTrace) ErrorOption {
+func Frames(frames nframes.Frames) ErrorOption {
 	return func(e error) error {
 		pe := unwrapAs(e)
-		if pe.Stack == nil {
-			pe.Stack = st
-		}
+		pe.Frames = frames.Details()
 		return pe
 	}
 }
@@ -65,8 +64,7 @@ func Meta(err error, header map[string]interface{}) ErrorOption {
 func Stacked() ErrorOption {
 	return func(e error) error {
 		next := unwrapAs(e)
-		next.Stack = Stack(1)
-		next.Call = GetMethodGraph(3, 9)
+		next.Frames = nframes.Frames(nframes.GetFrames(3, 32)).Details()
 		return next
 	}
 }
@@ -77,8 +75,7 @@ func Stacked() ErrorOption {
 func StackedBy(n int) ErrorOption {
 	return func(e error) error {
 		next := unwrapAs(e)
-		next.Stack = Stack(n)
-		next.Call = GetMethodGraph(3, 9)
+		next.Frames = nframes.Frames(nframes.GetFrames(3, 32)).Details()
 		return next
 	}
 }
@@ -94,9 +91,8 @@ func StackWrap(err error, message string, v ...interface{}) error {
 
 	var next PointingError
 	next.Parent = err
-	next.Stack = Stack(0)
 	next.Message = message
-	next.Call = GetMethodGraph(3, 9)
+	next.Frames = nframes.Frames(nframes.GetFrames(3, 32)).Details()
 	return &next
 }
 
@@ -110,9 +106,8 @@ func NewStack(message string, v ...interface{}) error {
 	}
 
 	var next PointingError
-	next.Stack = Stack(0)
 	next.Message = message
-	next.Call = GetMethodGraph(3, 9)
+	next.Frames = nframes.Frames(nframes.GetFrames(3, 32)).Details()
 	return &next
 }
 
@@ -126,7 +121,7 @@ func New(message string, v ...interface{}) error {
 
 	var next PointingError
 	next.Message = message
-	next.Call = GetMethodGraph(3, 9)
+	next.Frames = nframes.Frames(nframes.GetFrames(3, 32)).Details()
 	return &next
 }
 
@@ -140,7 +135,7 @@ func NewBy(n int, message string, v ...interface{}) error {
 
 	var next PointingError
 	next.Message = message
-	next.Call = GetMethodGraph(3, n)
+	next.Frames = nframes.Frames(nframes.GetFrames(3, n)).Details()
 	return &next
 }
 
@@ -155,6 +150,7 @@ func Wrap(err error, message string, v ...interface{}) error {
 	next := wrapOnly(err)
 	next.Parent = err
 	next.Message = message
+	next.Frames = nframes.Frames(nframes.GetFrames(3, 32)).Details()
 	return next
 }
 
@@ -169,7 +165,7 @@ func WrapBy(n int, err error, message string, v ...interface{}) error {
 	var next PointingError
 	next.Parent = err
 	next.Message = message
-	next.Call = GetMethodGraph(3, n)
+	next.Frames = nframes.Frames(nframes.GetFrames(3, n)).Details()
 	return next
 }
 
@@ -216,7 +212,6 @@ func wrapOnlyBy(err error, depth int, stack int) *PointingError {
 	var next PointingError
 	next.Parent = err
 	next.Message = err.Error()
-	next.Call = GetMethodGraph(depth, stack)
 	return &next
 }
 
@@ -234,8 +229,7 @@ func unwrapAs(e error) *PointingError {
 // wrapped.
 type PointingError struct {
 	Message string
-	Call    CallGraph
-	Stack   *StackTrace
+	Frames  []nframes.FrameDetail
 	Meta    map[string]interface{}
 	Parent  error
 }
@@ -247,9 +241,17 @@ func (pe PointingError) Error() string {
 
 // String returns formatted string.
 func (pe PointingError) String() string {
-	var buf bytes.Buffer
-	pe.Format(&buf)
+	var buf = bufPool.Get().(*bytes.Buffer)
+	defer bufPool.Put(buf)
+
+	pe.Format(buf)
 	return buf.String()
+}
+
+var bufPool = sync.Pool{
+	New: func() interface{} {
+		return bytes.NewBuffer(make([]byte, 0, 128))
+	},
 }
 
 // Format writes details of error into provided buffer.
@@ -262,7 +264,10 @@ func (pe *PointingError) Format(buf *bytes.Buffer) {
 		buf.WriteString(pe.Message)
 	}
 	buf.WriteString("\n")
-	pe.Call.Format(buf)
+	for _, frame := range pe.Frames {
+		fmt.Fprintf(buf, "- [%s] %s:%d", frame.Package, frame.File, frame.Line)
+		buf.WriteString("\n")
+	}
 	buf.WriteString("\n")
 
 	if pe.Parent != nil {
@@ -276,142 +281,3 @@ func (pe *PointingError) Format(buf *bytes.Buffer) {
 		}
 	}
 }
-
-//**************************************************************
-// StackTrace
-//**************************************************************
-
-// StackTrace embodies data related to retrieved
-// stack collected from runtime.
-type StackTrace struct {
-	Stack []byte    `json:"stack"`
-	Time  time.Time `json:"end_time"`
-}
-
-// Stack returns a StackTrace containing time and stack slice
-// for function calls within called area based on size desired.
-func Stack(size int) *StackTrace {
-	if size == 0 {
-		size = stackSize
-	}
-
-	trace := make([]byte, size)
-	trace = trace[:runtime.Stack(trace, false)]
-	return &StackTrace{
-		Stack: trace,
-		Time:  time.Now(),
-	}
-}
-
-// String returns the giving trace timestamp for the execution time.
-func (t StackTrace) String() string {
-	return fmt.Sprintf("[Time=%q] %+s", t.Time, t.Stack)
-}
-
-//**************************************************************
-// GetMethod
-//**************************************************************
-
-// Location defines the location which an history occured in.
-type Location struct {
-	Function string `json:"function"`
-	Line     int    `json:"line"`
-	File     string `json:"file"`
-}
-
-// FormatBy formats giving location and writes to provided buffer.
-func (c *Location) FormatBy(by *bytes.Buffer) {
-	by.WriteString(fmt.Sprintf("--- [%q]:\n  %s:%d\n", c.Function, c.File, c.Line))
-}
-
-// CallGraph embodies a graph representing the areas where a method
-// call occured.
-type CallGraph struct {
-	In    Location
-	By    Location
-	Stack []Location
-}
-
-// Format writes giving Callgraph into byte Buffer.
-func (c *CallGraph) Format(by *bytes.Buffer) {
-	c.By.FormatBy(by)
-	c.In.FormatBy(by)
-	for _, ll := range c.Stack {
-		ll.FormatBy(by)
-	}
-}
-
-// GetMethod returns the caller of the function that called it :)
-func GetMethod(depth int) (string, string, int) {
-	// we get the callers as uintptrs - but we just need 1
-	fpcs := make([]uintptr, 1)
-
-	// skip 3 levels to get to the caller of whoever called Caller()
-	n := runtime.Callers(depth, fpcs)
-	if n == 0 {
-		return unknownName, unknownFile, 0
-	}
-
-	funcPtr := fpcs[0]
-	funcPtrArea := funcPtr - 1
-
-	// get the info of the actual function that's in the pointer
-	fun := runtime.FuncForPC(funcPtrArea)
-	if fun == nil {
-		return unknownName, unknownFile, 0
-	}
-
-	fileName, line := fun.FileLine(funcPtrArea)
-
-	// return its name
-	return fun.Name(), fileName, line
-}
-
-// GetMethodGraph returns the caller of the function that called it :)
-func GetMethodGraph(depth int, stack int) CallGraph {
-	var graph CallGraph
-	graph.In.File = unknownFile
-	graph.By.File = unknownFile
-	graph.In.Function = unknownName
-	graph.By.Function = unknownName
-	graph.Stack = make([]Location, 0, stack)
-
-	// we get the callers as uintptrs - but we just need 1
-	lower := make([]uintptr, stack+2)
-
-	// skip 3 levels to get to the caller of whoever called Caller()
-	if n := runtime.Callers(depth, lower); n == 0 {
-		return graph
-	}
-
-	lowerPtr := lower[0] - 1
-	higherPtr := lower[1] - 1
-
-	// get the info of the actual function that's in the pointer
-	if lowerFun := runtime.FuncForPC(lowerPtr); lowerFun != nil {
-		graph.By.File, graph.By.Line = lowerFun.FileLine(lowerPtr)
-		graph.By.Function = lowerFun.Name()
-
-	}
-
-	if higherFun := runtime.FuncForPC(higherPtr); higherFun != nil {
-		graph.In.File, graph.In.Line = higherFun.FileLine(higherPtr)
-		graph.In.Function = higherFun.Name()
-	}
-
-	for i := 2; i < len(lower); i++ {
-		ptr := lower[i] - 1
-		if mfun := runtime.FuncForPC(ptr); mfun != nil {
-			var fm Location
-			fm.File, fm.Line = mfun.FileLine(ptr)
-			fm.Function = mfun.Name()
-			graph.Stack = append(graph.Stack, fm)
-		}
-	}
-
-	return graph
-}
-
-//***************************************
-// internal types and functions
-//***************************************
