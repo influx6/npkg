@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
-
-	"fmt"
 )
 
 const (
@@ -91,19 +89,11 @@ func GetFileMimeType(path string) string {
 	return extVal
 }
 
-// ErrorMessage returns a string which contains a json value of a
-// given error message to be delivered.
-func ErrorMessage(status int, header string, err error) string {
-	return fmt.Sprintf(`{
-		"status": %d,
-		"title": %+q,
-		"message": %+q,
-	}`, status, header, err)
-}
-
 // WriteErrorMessage writes the giving error message to the provided writer.
-func WriteErrorMessage(w http.ResponseWriter, status int, header string, err error) {
-	http.Error(w, ErrorMessage(status, header, err), status)
+func WriteErrorMessage(w http.ResponseWriter, status int, header string, err error) error {
+	var encoder = njson.ObjectJSON()
+
+	_, err := encoder.WriteTo(w)
 }
 
 // ParseAuthorization returns the scheme and token of the Authorization string

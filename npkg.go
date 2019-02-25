@@ -1,5 +1,38 @@
 package npkg
 
+import "time"
+
+const (
+	// DEBUGKey defines the key/flag name used to identify whether
+	// debugging mode is on.
+	DEBUGKey = "DEBUG"
+
+	// TRACEKey defines the key/flag name used to identify whether
+	// tracing is enabled.
+	TRACEKey = "TRACE_ENABLED"
+)
+
+//************************************************************
+// Getters
+//************************************************************
+
+// Getter embodies what we expect from setting/configuration provider getters.
+type Getter interface {
+	Has(name string) bool
+
+	Int(string) int
+	Bool(string) bool
+	Int8(string) int8
+	Int16(string) int16
+	Int32(string) int32
+	Int64(string) int64
+	Float32(string) float32
+	Float64(string) float64
+	String(name string) string
+	Duration(string) time.Duration
+	Interface(string) interface{}
+}
+
 //************************************************************
 // Decoder
 //************************************************************
