@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+
+	"github.com/gokit/npkg"
+	"github.com/gokit/npkg/njson"
 )
 
 const (
@@ -89,11 +92,25 @@ func GetFileMimeType(path string) string {
 	return extVal
 }
 
-// WriteErrorMessage writes the giving error message to the provided writer.
-func WriteErrorMessage(w http.ResponseWriter, status int, header string, err error) error {
-	var encoder = njson.ObjectJSON()
+// JSONError writes the giving error message to the provided writer.
+func JSONError(w http.ResponseWriter, statusCode int, errorCode string, message string, err error) error {
+	w.WriteHeader(statusCode)
 
-	_, err := encoder.WriteTo(w)
+	var encoder = njson.Object()
+	encoder.ObjectFor("error", func(enc npkg.Encoder) {
+		enc.String("message", message)
+		enc.Int("status_code", statusCode)
+		enc.String("error_code", errorCode)
+
+		if encodableErr, ok := err.(npkg.EncodableObject); ok {
+			enc.Object("incident", encodableErr)
+		} else {
+			enc.String("incident", err.Error())
+		}
+	})
+
+	var _, werr = encoder.WriteTo(w)
+	return werr
 }
 
 // ParseAuthorization returns the scheme and token of the Authorization string
