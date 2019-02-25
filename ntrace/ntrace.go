@@ -38,6 +38,16 @@ func Trace(ctx context.Context, traceName string, do func(context.Context, opent
 	do(ctx, span)
 }
 
+// GetSpanFromContext returns a OpenTracing span if available from provided context.
+//
+// WARNING: Second returned value can be nil if no parent span is in context.
+func GetSpanFromContext(ctx context.Context, traceName string) (opentracing.Span, bool) {
+	if span, ok := ctx.Value(SpanKey).(opentracing.Span); ok {
+		return span, true
+	}
+	return nil, false
+}
+
 // NewSpanFromContext returns a new OpenTracing child span which was created as a child of a
 // existing span from the underline context if it exists, else returning no Span.
 //
