@@ -88,16 +88,19 @@ func (f Frames) Details() []FrameDetail {
 }
 
 // Encode encodes all Frames within slice into provided object encoder with keyname "_stack_frames".
-func (f Frames) Encode(encoder npkg.Encoder) {
-	encoder.ListFor("_stack_frames", f.EncodeList)
+func (f Frames) Encode(encoder npkg.Encoder) error {
+	return encoder.ListFor("_stack_frames", f.EncodeList)
 }
 
 // EncodeList encodes all Frames within slice into provided list encoder.
-func (f Frames) EncodeList(encoder npkg.ListEncoder) {
+func (f Frames) EncodeList(encoder npkg.ListEncoder) error {
 	for _, frame := range f {
 		var fr = Frame(frame)
-		encoder.AddObject(fr)
+		if err := encoder.AddObject(fr); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // Frame represents a program counter inside a stack frame.
@@ -118,17 +121,21 @@ type FrameDetail struct {
 const srcSub = "/src/"
 
 // EncodeObject encodes giving frame into provided encoder.
-func (f Frame) EncodeObject(encode npkg.Encoder) {
+func (f Frame) EncodeObject(encode npkg.Encoder) error {
 	fn := runtime.FuncForPC(f.Pc())
 	if fn == nil {
-		return
+		return nil
 	}
 
-	encode.String("method", fn.Name())
+	if err := encode.String("method", fn.Name()); err != nil {
+		return err
+	}
 
 	var file, line = fn.FileLine(f.Pc())
 	if line >= 0 {
-		encode.Int("line", line)
+		if err := encode.Int("line", line); err != nil {
+			return err
+		}
 	}
 
 	if file != "" && file != "???" {
@@ -136,17 +143,24 @@ func (f Frame) EncodeObject(encode npkg.Encoder) {
 			file = toSlash(file)
 		}
 
-		encode.String("file", file)
+		if err := encode.String("file", file); err != nil {
+			return err
+		}
 
 		pkgIndex := strings.Index(file, srcSub)
 		if pkgIndex != -1 {
 			pkgFileBase := file[pkgIndex+5:]
 			if lastSlash := strings.LastIndex(pkgFileBase, "/"); lastSlash != -1 {
-				encode.String("file_name", pkgFileBase[lastSlash+1:])
-				encode.String("package", pkgFileBase[:lastSlash])
+				if err := encode.String("file_name", pkgFileBase[lastSlash+1:]); err != nil {
+					return err
+				}
+				if err := encode.String("package", pkgFileBase[:lastSlash]); err != nil {
+					return err
+				}
 			}
 		}
 	}
+	return nil
 }
 
 const winSlash = '\\'

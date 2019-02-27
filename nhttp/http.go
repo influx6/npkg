@@ -97,16 +97,21 @@ func JSONError(w http.ResponseWriter, statusCode int, errorCode string, message 
 	w.WriteHeader(statusCode)
 
 	var encoder = njson.Object()
-	encoder.ObjectFor("error", func(enc npkg.Encoder) {
-		enc.String("message", message)
-		enc.Int("status_code", statusCode)
-		enc.String("error_code", errorCode)
+	encoder.ObjectFor("error", func(enc npkg.Encoder) error {
+		if err := enc.String("message", message); err != nil {
+			return err
+		}
+		if err := enc.Int("status_code", statusCode); err != nil {
+			return err
+		}
+		if err := enc.String("error_code", errorCode); err != nil {
+			return err
+		}
 
 		if encodableErr, ok := err.(npkg.EncodableObject); ok {
-			enc.Object("incident", encodableErr)
-		} else {
-			enc.String("incident", err.Error())
+			return enc.Object("incident", encodableErr)
 		}
+		return enc.String("incident", err.Error())
 	})
 
 	var _, werr = encoder.WriteTo(w)

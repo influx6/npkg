@@ -17,6 +17,9 @@ var (
 	ErrCommandFailed = errors.New("Command failed to execute succcesfully")
 )
 
+type Log interface {
+}
+
 // CommanderOption defines a function type that aguments a commander's field.
 type CommanderOption func(*Commander)
 
