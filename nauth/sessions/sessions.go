@@ -3,8 +3,11 @@ package sessions
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/gob"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/securecookie"
 
 	"github.com/gokit/npkg/njson"
 
@@ -12,6 +15,11 @@ import (
 
 	"github.com/gokit/npkg/nauth"
 	"github.com/gokit/npkg/nxid"
+)
+
+const (
+	// SessionCookieName defines the name used for the Session cookie.
+	SessionCookieName = "_auth_session"
 )
 
 // Session embodies a current accessible session for a user
@@ -27,8 +35,23 @@ type Session struct {
 }
 
 // EncodeToCookie returns a http.Cookie with session encoded into
-// it.
-func (s *Session) EncodeToCookie() (*http.Cookie, error) {
+// it. If the signer is provided, then an attempt is made to sign the
+// the value cookie using provided signer which uses gob underneath.
+//
+// If no signer is provided then, the provided cookie is json encoded,
+// transformed into base64, then set as cookie value.
+func (s *Session) EncodeToCookie(signer *securecookie.SecureCookie) (*http.Cookie, error) {
+	var cookie http.Cookie
+	cookie.Name = SessionCookieName
+	if signer != nil {
+		encrypted, err := signer.Encode(cookie.Name, cookie.Value)
+		if err != nil {
+			return nil, err
+		}
+		cookie.Value = encrypted
+		return &cookie, nil
+	}
+
 	var sessionJSON = njson.Object()
 	if err := s.EncodeObject(sessionJSON); err != nil {
 		return nil, err
@@ -39,8 +62,6 @@ func (s *Session) EncodeToCookie() (*http.Cookie, error) {
 		return nil, err
 	}
 
-	var cookie http.Cookie
-	cookie.Name = "_auth_session"
 	cookie.Value = base64.StdEncoding.EncodeToString(encodedSession.Bytes())
 	return &cookie, nil
 }
@@ -74,6 +95,14 @@ func (s *Session) EncodeObject(encoder npkg.ObjectEncoder) error {
 	return nil
 }
 
+// SessionStorage defines a underline store for a giving session by key.
+type SessionStorage interface {
+	Save(s Session) error
+	Get(key string) (Session, error)
+	Update(key string, s Session) error
+	Remove(key string) (Session, error)
+}
+
 // Sessions embodies what we expect from a session store or provider
 // which handles the underline storing and management of sessions.
 type Sessions interface {
@@ -92,4 +121,8 @@ type Sessions interface {
 	// Create creates new session information for verified claim
 	// attaching claim data.
 	Create(verifiedClaim nauth.VerifiedClaim) (Session, error)
+}
+
+func init() {
+	gob.Register((*Session)(nil))
 }
