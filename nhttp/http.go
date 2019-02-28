@@ -97,7 +97,7 @@ func JSONError(w http.ResponseWriter, statusCode int, errorCode string, message 
 	w.WriteHeader(statusCode)
 
 	var encoder = njson.Object()
-	encoder.ObjectFor("error", func(enc npkg.Encoder) error {
+	encoder.ObjectFor("error", func(enc npkg.ObjectEncoder) error {
 		if err := enc.String("message", message); err != nil {
 			return err
 		}

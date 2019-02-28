@@ -82,10 +82,10 @@ type Decoder interface {
 	Object(DecodableObject) error
 }
 
-// DecodeList attempts to as best as possible decode giving value in
+// Decode attempts to as best as possible decode giving value in
 // decoder to provided interface object of matching type.
 // If it fails to, it returns an error.
-func DecodeList(dec Decoder, v interface{}) error {
+func Decode(dec Decoder, v interface{}) error {
 	var err error
 	switch vt := v.(type) {
 	case *string:
@@ -193,14 +193,52 @@ func DecodeList(dec Decoder, v interface{}) error {
 // Encoder
 //************************************************************
 
+// Encoder defines what we expect from a encoder of object and list elements .
+type Encoder interface {
+	ObjectEncoder
+	ListEncoder
+}
+
+// Encodable defines a type which exposes a method to encode it's internals
+// with provided encoder.
+type Encodable interface {
+	Encode(encoder Encoder) error
+}
+
 // EncodableObject defines what we expect the a Encodable type should provide.
 type EncodableObject interface {
-	EncodeObject(encoder Encoder) error
+	EncodeObject(encoder ObjectEncoder) error
 }
 
 // EncodableList defines what we expect the a Encodable list type should provide.
 type EncodableList interface {
 	EncodeList(encoder ListEncoder) error
+}
+
+// ObjectEncoder embodies what is expected from a encoding type
+// implementing key-value pair encoding.
+type ObjectEncoder interface {
+	Int(k string, v int) error
+	UInt(k string, v uint) error
+	Bool(k string, v bool) error
+	Int8(k string, v int8) error
+	Hex(k string, v string) error
+	UInt8(k string, v uint8) error
+	Int16(k string, v int16) error
+	UInt16(k string, v uint16) error
+	Int32(k string, v int32) error
+	UInt32(k string, v uint32) error
+	Int64(k string, v int64) error
+	UInt64(k string, v uint64) error
+	String(k string, v string) error
+	Float64(k string, v float64) error
+	Float32(k string, v float32) error
+	Base64(k string, v int64, b int) error
+
+	List(k string, list EncodableList) error
+	Object(k string, object EncodableObject) error
+	ObjectFor(k string, fx func(ObjectEncoder) error) error
+	ListFor(k string, fx func(ListEncoder) error) error
 }
 
 // ListEncoder defines an interface which defines methods for items into
@@ -224,49 +262,19 @@ type ListEncoder interface {
 
 	AddList(list EncodableList) error
 	AddObject(object EncodableObject) error
-	AddObjectWith(fn func(encoder Encoder) error) error
+	AddObjectWith(fn func(encoder ObjectEncoder) error) error
 	AddListWith(fn func(encoder ListEncoder) error) error
 }
 
-// Encoder encodes giving key - value pairs as it's implementer
-// decides providing a encapsulated formatting of data as it sees fit.
-type Encoder interface {
-	Int(k string, v int) error
-	UInt(k string, v uint) error
-	Bool(k string, v bool) error
-	Int8(k string, v int8) error
-	Hex(k string, v string) error
-	UInt8(k string, v uint8) error
-	Int16(k string, v int16) error
-	UInt16(k string, v uint16) error
-	Int32(k string, v int32) error
-	UInt32(k string, v uint32) error
-	Int64(k string, v int64) error
-	UInt64(k string, v uint64) error
-	String(k string, v string) error
-	Float64(k string, v float64) error
-	Float32(k string, v float32) error
-	Base64(k string, v int64, b int) error
-
-	List(k string, list EncodableList) error
-	Object(k string, object EncodableObject) error
-	ObjectFor(k string, fx func(Encoder) error) error
-	ListFor(k string, fx func(ListEncoder) error) error
-}
-
-// Encodable defines a type which exposes a method to encode it's internals
-// with provided encoder.
-type Encodable interface {
-	Encode(encoder Encoder) error
-}
-
 // EncodeKV encodes a giving key-value pair into provided encoder based
-func EncodeKV(enc Encoder, k string, v interface{}) error {
+func EncodeKV(enc ObjectEncoder, k string, v interface{}) error {
 	switch vt := v.(type) {
 	case EncodableObject:
 		return enc.Object(k, vt)
 	case EncodableList:
 		return enc.List(k, vt)
+	case map[string]interface{}:
+		return enc.Object(k, EncodableMap(vt))
 	case string:
 		return enc.String(k, vt)
 	case bool:
@@ -307,6 +315,8 @@ func EncodeList(enc ListEncoder, v interface{}) error {
 		return enc.AddObject(vt)
 	case EncodableList:
 		return enc.AddList(vt)
+	case map[string]interface{}:
+		return enc.AddObject(EncodableMap(vt))
 	case string:
 		return enc.AddString(vt)
 	case bool:
@@ -338,4 +348,34 @@ func EncodeList(enc ListEncoder, v interface{}) error {
 	default:
 		return ErrUnencodable
 	}
+}
+
+// EncodableMapList defines a map type which implements the EncodableList interface.
+// It attempts to encode all properties accordingly else returns an error in regard's
+// giving failure.
+type EncodableMapList []map[string]interface{}
+
+// EncodableMap implements the EncodableList interface.
+func (enc EncodableMapList) EncodeList(encoder ListEncoder) error {
+	for _, value := range enc {
+		if err := encoder.AddObject(EncodableMap(value)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// EncodableMap defines a map type which implements the EncodableObject interface.
+// It attempts to encode all properties accordingly else returns an error in regard's
+// giving failure.
+type EncodableMap map[string]interface{}
+
+// EncodableMap implements the EncodableObject interface.
+func (enc EncodableMap) EncodeObject(encoder ObjectEncoder) error {
+	for key, value := range enc {
+		if err := EncodeKV(encoder, key, value); err != nil {
+			return err
+		}
+	}
+	return nil
 }

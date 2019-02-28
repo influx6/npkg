@@ -1,8 +1,12 @@
 package sessions
 
 import (
+	"bytes"
+	"encoding/base64"
 	"net/http"
 	"time"
+
+	"github.com/gokit/npkg/njson"
 
 	"github.com/gokit/npkg"
 
@@ -22,7 +26,27 @@ type Session struct {
 	Attached  map[string]interface{}
 }
 
-func (s *Session) EncodeObject(encoder npkg.Encoder) error {
+// EncodeToCookie returns a http.Cookie with session encoded into
+// it.
+func (s *Session) EncodeToCookie() (*http.Cookie, error) {
+	var sessionJSON = njson.Object()
+	if err := s.EncodeObject(sessionJSON); err != nil {
+		return nil, err
+	}
+
+	var encodedSession = bytes.NewBuffer(make([]byte, 0, len(sessionJSON.Buf())))
+	if _, err := sessionJSON.WriteTo(encodedSession); err != nil {
+		return nil, err
+	}
+
+	var cookie http.Cookie
+	cookie.Name = "_auth_session"
+	cookie.Value = base64.StdEncoding.EncodeToString(encodedSession.Bytes())
+	return &cookie, nil
+}
+
+// EncodeObject implements the npkg.EncodableObject interface.
+func (s *Session) EncodeObject(encoder npkg.ObjectEncoder) error {
 	if err := encoder.String("method", s.Method); err != nil {
 		return err
 	}
@@ -39,6 +63,12 @@ func (s *Session) EncodeObject(encoder npkg.Encoder) error {
 		return err
 	}
 	if err := encoder.Int64("expiring_nano", s.Expiring.UnixNano()); err != nil {
+		return err
+	}
+	if err := encoder.Object("claim_data", npkg.EncodableMap(s.ClaimData)); err != nil {
+		return err
+	}
+	if err := encoder.Object("attached", npkg.EncodableMap(s.ClaimData)); err != nil {
 		return err
 	}
 	return nil

@@ -88,7 +88,7 @@ func (f Frames) Details() []FrameDetail {
 }
 
 // Encode encodes all Frames within slice into provided object encoder with keyname "_stack_frames".
-func (f Frames) Encode(encoder npkg.Encoder) error {
+func (f Frames) Encode(encoder npkg.ObjectEncoder) error {
 	return encoder.ListFor("_stack_frames", f.EncodeList)
 }
 
@@ -121,7 +121,7 @@ type FrameDetail struct {
 const srcSub = "/src/"
 
 // EncodeObject encodes giving frame into provided encoder.
-func (f Frame) EncodeObject(encode npkg.Encoder) error {
+func (f Frame) EncodeObject(encode npkg.ObjectEncoder) error {
 	fn := runtime.FuncForPC(f.Pc())
 	if fn == nil {
 		return nil

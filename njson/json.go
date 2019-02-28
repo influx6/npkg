@@ -250,7 +250,7 @@ func (l *JSON) WriteToFN(fn func([]byte) error) error {
 }
 
 // ObjectFor adds a field name with object value.
-func (l *JSON) ObjectFor(name string, handler func(event npkg.Encoder) error) error {
+func (l *JSON) ObjectFor(name string, handler func(event npkg.ObjectEncoder) error) error {
 	l.panicIfList()
 
 	newEvent := logEventPool.Get().(*JSON)
@@ -330,7 +330,7 @@ func (l *JSON) AddListWith(handler func(event npkg.ListEncoder) error) error {
 
 // AddObject adds new object with provided properties from provided function into
 // a new json list format. It will panic if you use it for a object format call.
-func (l *JSON) AddObjectWith(handler func(event npkg.Encoder) error) error {
+func (l *JSON) AddObjectWith(handler func(event npkg.ObjectEncoder) error) error {
 	l.panicIfObject()
 
 	newEvent := logEventPool.Get().(*JSON)
