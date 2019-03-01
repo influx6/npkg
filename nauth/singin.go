@@ -1,4 +1,4 @@
-package signin
+package nauth
 
 import "time"
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/gokit/npkg/nauth/sessions"
 	"github.com/gokit/npkg/nxid"
 )
 
@@ -51,12 +52,6 @@ func (c Claim) Valid() error {
 	return ErrNoCredentials
 }
 
-// Authenticator defines what we expect from a Authenticator of
-// claims.
-type Authenticator interface {
-	Authenticate(Claim) (VerifiedClaim, error)
-}
-
 // VerifiedClaim represents the response received back from the
 // Authenticator as to a giving authenticated claim with associated
 // session data.
@@ -93,6 +88,12 @@ func (c VerifiedClaim) HasAnyRoles(roles ...string) bool {
 	return false
 }
 
+// ToSession returns a new sessions.Session instance from the verified claim.
+func (c VerifiedClaim) ToSession() (sessions.Session, error) {
+	var session sessions.Session
+	return session, nil
+}
+
 // checkRole checks if any roles of Claim match provided.
 func (c VerifiedClaim) checkRole(role string) bool {
 	for _, myrole := range c.Roles {
@@ -101,4 +102,49 @@ func (c VerifiedClaim) checkRole(role string) bool {
 		}
 	}
 	return false
+}
+
+// Authenticator defines what we expect from a Authenticator of
+// claims. It exposes the underline method used for verifying
+// an authentication claim.
+type Authenticator interface {
+	// VerifyClaim exposes the underline function within Authenticator.Authenticate
+	// used to authenticate the request claim and the returned verified claim. It
+	// allow's testing and also
+	VerifyClaim(Claim) (VerifiedClaim, error)
+}
+
+// AuthenticationProvider defines what the Authentication should be as,
+// it both exposes the the method from Authenticator and the provides
+// the Initiate and Authenticate methods which are the underline
+// handlers of the initiation and finalization of requests to authenticate.
+//
+// Exposes such a final form allows us to swap in, any form of authentication
+// be it email, facebook, google or oauth based without much work.
+type AuthenticationProvider interface {
+	Authenticator
+
+	// Initiate handles the initial response to a request to initiate
+	// a authentication procedure e.g to redirect to
+	// a page for user-name and password login or google oauth page with
+	// a secure token.
+	Initiate(res http.ResponseWriter, req *http.Request)
+
+	// Authenticate finalizes the response to finalize the authentication
+	// process, which finalizes and verifies the authentication request
+	// with a response as dictated by provider.
+	//
+	// The authenticate process can be the authentication of a new login
+	// or the authentication of an existing login. The provider implementation
+	// should decide for it'self as it sees fit to match on how this two should
+	// be managed.
+	Authenticate(res http.ResponseWriter, req *http.Request)
+
+	// Verify exposes to others by the provider a means of getting a verified
+	// claim from a incoming request after it's process of authentication.
+	//
+	// This lets others step into the middle of the Authentication procedure
+	// to retrieve the verified request claim as dictated by provider, which
+	// can be used for other uses.
+	Verify(req *http.Request) (VerifiedClaim, error)
 }
