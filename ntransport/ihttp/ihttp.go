@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gokit/npkg/nconns"
+	"github.com/gokit/npkg/ntransport"
 )
 
 // Response is an implementation of http.ResponseWriter that
@@ -27,7 +27,7 @@ type Response struct {
 	// Deprecated: HeaderMap exists for historical compatibility
 	// and should not be used. To access the headers returned by a handler,
 	// use the Response.Header map as returned by the Result method.
-	HeaderMap nconns.Headers
+	HeaderMap ntransport.Headers
 
 	// Body is the buffer to which the Handler's Write calls are sent.
 	// If nil, the Writes are silently discarded.
