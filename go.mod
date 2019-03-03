@@ -3,6 +3,7 @@ module github.com/gokit/npkg
 require (
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/dimfeld/httptreemux v5.0.1+incompatible
+	github.com/gokit/errors v0.0.0-20181119060740-30f660150fc9 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e
 	github.com/gorilla/csrf v1.5.1 // indirect
 	github.com/gorilla/mux v1.7.0

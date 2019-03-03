@@ -1,11 +1,19 @@
 package nauth
 
 import (
+	"encoding/base64"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gokit/npkg/nauth/sessions"
 	"github.com/gokit/npkg/nxid"
+)
+
+const (
+	// AuthorizationHeaderName defines the giving header name for retrieving
+	// a authorization token for a authentication user.
+	AuthorizationHeaderName = "Authorization"
 )
 
 // ErrNoCredentials is returned when giving claim fails to provide
@@ -15,11 +23,8 @@ var ErrNoCredentials = errors.New("Claim has no attached credentail")
 // Credential defines what we expect from a custom implemented
 // credential.
 type Credential interface {
-	Validate() error
-
-	Type() string
 	User() string
-	Provider() string // google, email, phone, facebook, wechat, github, ...
+	Validate() error
 }
 
 // ClaimProvider defines what we expect from a Claim provider.
@@ -39,15 +44,23 @@ type Claims interface {
 // Claim defines authentication claims parsed from underline
 // data provide to authenticator.
 type Claim struct {
-	Method string // jwt, user-password, oauth, ...
-	Cred   Credential
+	// Method sets the defined credential authentication type being used.
+	Method string // email-password, phone-number, token,..etc
+
+	// Provider defines the provider of authentication, providing adequate information
+	// as towards the source.
+	Provider string // google, in-house, phone, facebook, we-chat, github, ...etc
+
+	// Credentials contains the deserialized data delivered by the user for authentication
+	// which must match the method and provider expected data type.
+	Credentials Credential
 }
 
 // Valid returns an error if giving credentials could not be validated
 // or if giving Claim has no attached credential.
 func (c Claim) Valid() error {
-	if c.Cred != nil {
-		return c.Cred.Validate()
+	if c.Credentials != nil {
+		return c.Credentials.Validate()
 	}
 	return ErrNoCredentials
 }
@@ -56,9 +69,11 @@ func (c Claim) Valid() error {
 // Authenticator as to a giving authenticated claim with associated
 // session data.
 type VerifiedClaim struct {
-	User  nxid.ID
-	Roles []string               // Roles of verified claim.
-	Data  map[string]interface{} // Extra Data to be attached to session for user.
+	User     nxid.ID
+	Method   string      // email-password, phone-number, token,..etc
+	Provider string      // google, in-house, phone, facebook, we-chat, github, ...etc
+	Roles    []string    // Roles of verified claim.
+	Data     interface{} // Extra Data to be attached to session for user.
 }
 
 // Valid returns an error if giving credentials could not be validated
@@ -124,15 +139,17 @@ type Authenticator interface {
 type AuthenticationProvider interface {
 	Authenticator
 
-	// Initiate handles the initial response to a request to initiate
+	// Initiate handles the initial response to a request to initiate/begin
 	// a authentication procedure e.g to redirect to
 	// a page for user-name and password login or google oauth page with
 	// a secure token.
 	Initiate(res http.ResponseWriter, req *http.Request)
 
-	// Authenticate finalizes the response to finalize the authentication
-	// process, which finalizes and verifies the authentication request
-	// with a response as dictated by provider.
+	// Authenticate finalizes the response to initiation of authentication
+	// with the call to AuthenticationProvider.Initiate.
+	//
+	// It handles the process which finalizes and verifies the authentication data sent
+	// back after the initiation, with a response as dictated by provider.
 	//
 	// The authenticate process can be the authentication of a new login
 	// or the authentication of an existing login. The provider implementation
@@ -141,10 +158,45 @@ type AuthenticationProvider interface {
 	Authenticate(res http.ResponseWriter, req *http.Request)
 
 	// Verify exposes to others by the provider a means of getting a verified
-	// claim from a incoming request after it's process of authentication.
+	// claim from a incoming request after had being authenticated in some previous step.
+	//
+	// It exists to let you handle cases of already authenticated users whoes session is yet
+	// to expire and are making new request for resources.
 	//
 	// This lets others step into the middle of the Authentication procedure
 	// to retrieve the verified request claim as dictated by provider, which
 	// can be used for other uses.
 	Verify(req *http.Request) (VerifiedClaim, error)
+
+	// Refresh handles the refreshing of an authentication session, useful
+	// for protocols that require and provide refresh token as a means of
+	// updating their access token expiry timeline.
+	// This is based on protocols and a may protocol may not implement it
+	// and hence return a 501 (NOT Implemented) status
+	Refresh(res http.ResponseWriter, req *http.Request)
+}
+
+// ParseAuthorization returns the scheme and token of the Authorization string
+// if it's valid.
+func ParseAuthorization(val string) (authType string, token string, err error) {
+	authSplit := strings.SplitN(val, " ", 2)
+	if len(authSplit) != 2 {
+		err = errors.New("invalid authorization: Expected content: `AuthType Token`")
+		return
+	}
+
+	authType = strings.TrimSpace(authSplit[0])
+	token = strings.TrimSpace(authSplit[1])
+	return
+}
+
+// ParseTokens parses the base64 encoded token sent as part of the Authorization string,
+// It expects all parts of string to be seperated with ':', returning splitted slice.
+func ParseTokens(val string) ([]string, error) {
+	decoded, err := base64.StdEncoding.DecodeString(val)
+	if err != nil {
+		return nil, err
+	}
+
+	return strings.Split(string(decoded), ":"), nil
 }
