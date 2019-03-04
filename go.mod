@@ -1,9 +1,14 @@
 module github.com/gokit/npkg
 
 require (
+	github.com/AndreasBriese/bbloom v0.0.0-20180913140656-343706a395b7 // indirect
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
+	github.com/dgraph-io/badger v1.5.4 // indirect
+	github.com/dgryski/go-farm v0.0.0-20190104051053-3adb47b1fb0f // indirect
 	github.com/dimfeld/httptreemux v5.0.1+incompatible
+	github.com/go-redis/redis v6.15.2+incompatible // indirect
 	github.com/gokit/errors v0.0.0-20181119060740-30f660150fc9 // indirect
+	github.com/golang/protobuf v1.3.0 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e
 	github.com/gorilla/csrf v1.5.1 // indirect
 	github.com/gorilla/mux v1.7.0
