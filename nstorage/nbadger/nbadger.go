@@ -51,6 +51,9 @@ func (rd *BadgerStore) Keys() ([]string, error) {
 		if rd.prefix == "" {
 			for iterator.Rewind(); iterator.Valid(); iterator.Next() {
 				var item = iterator.Item()
+				if item.IsDeletedOrExpired() {
+					continue
+				}
 				var mycopy = make([]byte, len(item.Key()))
 				copy(mycopy, item.Key())
 				keys = append(keys, bytes2String(mycopy))
@@ -61,6 +64,9 @@ func (rd *BadgerStore) Keys() ([]string, error) {
 		var prefix = []byte(rd.prefix)
 		for iterator.Rewind(); iterator.ValidForPrefix(prefix); iterator.Next() {
 			var item = iterator.Item()
+			if item.IsDeletedOrExpired() {
+				continue
+			}
 			var mycopy = make([]byte, len(item.Key()))
 			copy(mycopy, item.Key())
 			keys = append(keys, bytes2String(mycopy))
@@ -86,6 +92,9 @@ func (rd *BadgerStore) Each(fn func([]byte, string) bool) error {
 		if rd.prefix == "" {
 			for iterator.Rewind(); iterator.Valid(); iterator.Next() {
 				var item = iterator.Item()
+				if item.IsDeletedOrExpired() {
+					continue
+				}
 				var value, err = item.Value()
 				if err != nil {
 					return err
@@ -101,6 +110,9 @@ func (rd *BadgerStore) Each(fn func([]byte, string) bool) error {
 		var prefix = []byte(rd.prefix)
 		for iterator.Rewind(); iterator.ValidForPrefix(prefix); iterator.Next() {
 			var item = iterator.Item()
+			if item.IsDeletedOrExpired() {
+				continue
+			}
 			var value, err = item.Value()
 			if err != nil {
 				return err
