@@ -25,7 +25,7 @@ func NewRedisStore(hash string, config redis.Options) (*RedisStore, error) {
 	red.hashElem = hash + "_item"
 	red.config = &config
 	if err := red.createConnection(); err != nil {
-		return nil, err
+		return nil, nerror.WrapOnly(err)
 	}
 	return &red, nil
 }
@@ -35,7 +35,7 @@ func (rd *RedisStore) createConnection() error {
 	client := redis.NewClient(rd.config)
 	status := client.Ping()
 	if err := status.Err(); err != nil {
-		return err
+		return nerror.WrapOnly(err)
 	}
 	rd.client = client
 	return nil
@@ -51,7 +51,7 @@ func (rd *RedisStore) getHashKey(key string) string {
 func (rd *RedisStore) Keys() ([]string, error) {
 	var nstatus = rd.client.SMembers(rd.hashList)
 	if err := nstatus.Err(); err != nil {
-		return nil, err
+		return nil, nerror.WrapOnly(err)
 	}
 	return nstatus.Val(), nil
 }
@@ -61,7 +61,7 @@ func (rd *RedisStore) Keys() ([]string, error) {
 func (rd *RedisStore) Each(fn func([]byte, string) bool) error {
 	var nstatus = rd.client.SMembers(rd.hashList)
 	if err := nstatus.Err(); err != nil {
-		return err
+		return nerror.WrapOnly(err)
 	}
 	for _, item := range nstatus.Val() {
 		if data, err := rd.Get(item); err == nil && len(data) > 0 {
@@ -78,7 +78,7 @@ func (rd *RedisStore) Exists(key string) (bool, error) {
 	var hashKey = rd.getHashKey(key)
 	var nstatus = rd.client.SIsMember(rd.hashList, hashKey)
 	if err := nstatus.Err(); err != nil {
-		return false, err
+		return false, nerror.WrapOnly(err)
 	}
 	return nstatus.Val(), nil
 }
@@ -88,7 +88,7 @@ func (rd *RedisStore) exists(key string) (bool, error) {
 	var hashKey = rd.getHashKey(key)
 	var nstatus = rd.client.Exists(hashKey)
 	if err := nstatus.Err(); err != nil {
-		return false, err
+		return false, nerror.WrapOnly(err)
 	}
 	return nstatus.Val() == 1, nil
 }
@@ -101,7 +101,7 @@ func (rd *RedisStore) expire(keys []string) error {
 	}
 	var nstatus = rd.client.SRem(rd.hashList, items...)
 	if err := nstatus.Err(); err != nil {
-		return err
+		return nerror.WrapOnly(err)
 	}
 	return nil
 }
@@ -111,12 +111,12 @@ func (rd *RedisStore) Save(key string, data []byte, expiration time.Duration) er
 	var hashKey = rd.getHashKey(key)
 	var nstatus = rd.client.SAdd(rd.hashList, hashKey)
 	if err := nstatus.Err(); err != nil {
-		return err
+		return nerror.WrapOnly(err)
 	}
 
 	var nset = rd.client.Set(hashKey, data, expiration)
 	if err := nset.Err(); err != nil {
-		return err
+		return nerror.WrapOnly(err)
 	}
 	return nil
 }
@@ -127,7 +127,7 @@ func (rd *RedisStore) ExtendTTL(key string, expiration time.Duration) error {
 	var hashKey = rd.getHashKey(key)
 	var nstatus = rd.client.TTL(hashKey)
 	if err := nstatus.Err(); err != nil {
-		return err
+		return nerror.WrapOnly(err)
 	}
 	if nstatus.Val() < 0 {
 		return nil
@@ -144,7 +144,7 @@ func (rd *RedisStore) Get(key string) ([]byte, error) {
 	var hashKey = rd.getHashKey(key)
 	var nstatus = rd.client.Get(hashKey)
 	if err := nstatus.Err(); err != nil {
-		return nil, err
+		return nil, nerror.WrapOnly(err)
 	}
 	return string2Bytes(nstatus.Val()), nil
 }
@@ -155,7 +155,7 @@ func (rd *RedisStore) Update(key string, data []byte, expiration time.Duration) 
 	var hashKey = rd.getHashKey(key)
 	var found, err = rd.Exists(hashKey)
 	if err != nil {
-		return err
+		return nerror.WrapOnly(err)
 	}
 	if !found {
 		return nerror.New("key does not exist")
@@ -167,7 +167,7 @@ func (rd *RedisStore) Update(key string, data []byte, expiration time.Duration) 
 
 	var nset = rd.client.Set(hashKey, data, expiration)
 	if err := nset.Err(); err != nil {
-		return err
+		return nerror.WrapOnly(err)
 	}
 	return nil
 }
@@ -178,15 +178,15 @@ func (rd *RedisStore) Remove(key string) ([]byte, error) {
 	var hashKey = rd.getHashKey(key)
 	var nstatus = rd.client.Get(hashKey)
 	if err := nstatus.Err(); err != nil {
-		return nil, err
+		return nil, nerror.WrapOnly(err)
 	}
 	var mstatus = rd.client.SRem(rd.hashList, hashKey)
 	if err := mstatus.Err(); err != nil {
-		return nil, err
+		return nil, nerror.WrapOnly(err)
 	}
 	var dstatus = rd.client.Del(hashKey)
 	if err := dstatus.Err(); err != nil {
-		return nil, err
+		return nil, nerror.WrapOnly(err)
 	}
 	return string2Bytes(nstatus.Val()), nil
 }
