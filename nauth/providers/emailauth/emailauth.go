@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gokit/npkg/nauth"
+	"github.com/gokit/npkg/nauth/sessions"
 	"github.com/gokit/npkg/nerror"
 	"github.com/gokit/npkg/nxid"
 )
@@ -92,6 +93,7 @@ type InhouseEmailAuth struct {
 	UserStore     UserStore
 	UserValidator UserValidator
 	AuthInitiator http.Handler
+	Sessions      sessions.Sessions
 }
 
 // Initiate implements the nauth.AuthenticationProvider interface.

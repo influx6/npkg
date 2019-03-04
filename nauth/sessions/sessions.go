@@ -7,14 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gorilla/securecookie"
-
-	"github.com/gokit/npkg/njson"
-
 	"github.com/gokit/npkg"
-
 	"github.com/gokit/npkg/nauth"
+	"github.com/gokit/npkg/njson"
 	"github.com/gokit/npkg/nxid"
+	"github.com/gorilla/securecookie"
 )
 
 const (
@@ -110,6 +107,10 @@ type Sessions interface {
 	// underline session from the store from the information retrieved
 	// from the request.
 	Get(req *http.Request) (Session, error)
+
+	// GetByID attempts to retreive an existing session by it's unique
+	// nxid ID.
+	GetByID(nxid.ID) (Session, error)
 
 	// Delete removes giving session from underline store.
 	Delete(session Session) error
