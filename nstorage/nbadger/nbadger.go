@@ -54,9 +54,7 @@ func (rd *BadgerStore) Keys() ([]string, error) {
 				if item.IsDeletedOrExpired() {
 					continue
 				}
-				var mycopy = make([]byte, len(item.Key()))
-				copy(mycopy, item.Key())
-				keys = append(keys, bytes2String(mycopy))
+				keys = append(keys, bytes2String(copyBytes(item.Key())))
 			}
 			return nil
 		}
@@ -67,9 +65,7 @@ func (rd *BadgerStore) Keys() ([]string, error) {
 			if item.IsDeletedOrExpired() {
 				continue
 			}
-			var mycopy = make([]byte, len(item.Key()))
-			copy(mycopy, item.Key())
-			keys = append(keys, bytes2String(mycopy))
+			keys = append(keys, bytes2String(copyBytes(item.Key())))
 		}
 		return nil
 	})
@@ -162,8 +158,7 @@ func (rd *BadgerStore) Get(key string) ([]byte, error) {
 			return nerror.WrapOnly(err)
 		}
 
-		value = make([]byte, len(dbValue))
-		copy(value, dbValue)
+		value = copyBytes(dbValue)
 		return nil
 	}); err != nil {
 		return nil, err
@@ -173,6 +168,13 @@ func (rd *BadgerStore) Get(key string) ([]byte, error) {
 
 // Save adds giving session into storage using Badger as underline store.
 func (rd *BadgerStore) Save(key string, data []byte, expiration time.Duration) error {
+	return rd.SaveTTL(key, data, 0)
+}
+
+// SaveTTL adds giving session into storage using Badger as underline store, with provided
+// expiration.
+// Duration of 0 means no expiration.
+func (rd *BadgerStore) SaveTTL(key string, data []byte, expiration time.Duration) error {
 	return rd.db.Update(func(txn *badger.Txn) error {
 		if expiration > 0 {
 			if err := txn.SetWithTTL(string2Bytes(key), data, expiration); err != nil {
@@ -187,8 +189,26 @@ func (rd *BadgerStore) Save(key string, data []byte, expiration time.Duration) e
 	})
 }
 
-// ExtendExpiry resets new TTL for giving key if it has not expired and is still accessible.
-func (rd *BadgerStore) ExtendExpiry(key string, expiration time.Duration) error {
+// TTL returns giving expiration time for giving key.
+func (rd *BadgerStore) TTL(key string) (time.Duration, error) {
+	var ttl time.Duration
+	var err = rd.db.Update(func(txn *badger.Txn) error {
+		var item, err = txn.Get(string2Bytes(key))
+		if err != nil {
+			return nerror.Wrap(err, "Failed to retrieve key")
+		}
+		if item.IsDeletedOrExpired() {
+			return nerror.New("not found, possibly expired")
+		}
+
+		ttl = ttlDur(item.ExpiresAt(), 0)
+		return nil
+	})
+	return ttl, err
+}
+
+// ExtendTTL resets new TTL for giving key if it has not expired and is still accessible.
+func (rd *BadgerStore) ExtendTTL(key string, expiration time.Duration) error {
 	return rd.db.Update(func(txn *badger.Txn) error {
 		var item, err = txn.Get(string2Bytes(key))
 		if err != nil {
@@ -198,7 +218,7 @@ func (rd *BadgerStore) ExtendExpiry(key string, expiration time.Duration) error 
 			return nerror.New("not found, possibly expired")
 		}
 
-		var expr = time.Duration(item.ExpiresAt())
+		var expr = ttlDur(item.ExpiresAt(), 0)
 		var newExpr = expr + expiration
 
 		value, err := item.Value()
@@ -206,9 +226,7 @@ func (rd *BadgerStore) ExtendExpiry(key string, expiration time.Duration) error 
 			return err
 		}
 
-		var newValue = make([]byte, len(value))
-		copy(newValue, value)
-		if err := txn.SetWithTTL(string2Bytes(key), newValue, newExpr); err != nil {
+		if err := txn.SetWithTTL(string2Bytes(key), copyBytes(value), newExpr); err != nil {
 			return err
 		}
 		return nil
@@ -216,11 +234,27 @@ func (rd *BadgerStore) ExtendExpiry(key string, expiration time.Duration) error 
 }
 
 // Update updates giving session stored with giving key. It updates
+// the underline data for key, setting a 0 ttl duration.
+func (rd *BadgerStore) Update(key string, data []byte) error {
+	return rd.UpdateTTL(key, data, 0)
+}
+
+// UpdateTTL updates giving session stored with giving key. It updates
 // the underline data.
-func (rd *BadgerStore) Update(key string, data []byte, expiration time.Duration) error {
+// If a key has expired, and was deleted, then a error is returned.
+func (rd *BadgerStore) UpdateTTL(key string, data []byte, expiration time.Duration) error {
 	return rd.db.Update(func(txn *badger.Txn) error {
 		if expiration > 0 {
-			if err := txn.SetWithTTL(string2Bytes(key), data, expiration); err != nil {
+			var item, err = txn.Get(string2Bytes(key))
+			if err != nil {
+				return nerror.Wrap(err, "Failed to retrieve key")
+			}
+			if item.IsDeletedOrExpired() {
+				return nerror.New("not found, possibly expired")
+			}
+
+			var ttl = ttlDur(item.ExpiresAt(), 0) + expiration
+			if err := txn.SetWithTTL(string2Bytes(key), data, ttl); err != nil {
 				return err
 			}
 			return nil
@@ -247,11 +281,28 @@ func (rd *BadgerStore) Remove(key string) ([]byte, error) {
 			return err
 		}
 
-		old = make([]byte, len(value))
-		copy(old, value)
+		old = copyBytes(value)
 		return txn.Delete(string2Bytes(key))
 	})
 	return old, err
+}
+
+//*****************************************************
+// internal methods
+//*****************************************************
+
+func copyBytes(bu []byte) []byte {
+	var cu = make([]byte, len(bu))
+	copy(cu, bu)
+	return cu
+}
+
+func ttlDur(tx uint64, ns int64) time.Duration {
+	if tx == 0 {
+		return 0
+	}
+	var ttl = time.Unix(int64(tx), ns)
+	return time.Now().Sub(ttl)
 }
 
 //*****************************************************

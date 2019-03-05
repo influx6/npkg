@@ -30,6 +30,19 @@ func NewRedisStore(hash string, config redis.Options) (*RedisStore, error) {
 	return &red, nil
 }
 
+// FromRedisStore returns a new instance of a RedisStore using giving client.
+func FromRedisStore(hash string, conn *redis.Client) (*RedisStore, error) {
+	if status := conn.Ping(); status.Err() != nil {
+		return nil, status.Err()
+	}
+
+	var red RedisStore
+	red.hashList = hash + "_keys"
+	red.hashElem = hash + "_item"
+	red.client = conn
+	return &red, nil
+}
+
 // createConnection attempts to create a new redis connection.
 func (rd *RedisStore) createConnection() error {
 	client := redis.NewClient(rd.config)
@@ -107,7 +120,14 @@ func (rd *RedisStore) expire(keys []string) error {
 }
 
 // Save adds giving session into storage using redis as underline store.
-func (rd *RedisStore) Save(key string, data []byte, expiration time.Duration) error {
+func (rd *RedisStore) Save(key string, data []byte) error {
+	return rd.SaveTTL(key, data, 0)
+}
+
+// SaveTTL adds giving session into storage using redis as underline store, with provided
+// expiration.
+// Duration of 0 means no expiration.
+func (rd *RedisStore) SaveTTL(key string, data []byte, expiration time.Duration) error {
 	var hashKey = rd.getHashKey(key)
 	var nstatus = rd.client.SAdd(rd.hashList, hashKey)
 	if err := nstatus.Err(); err != nil {
@@ -121,11 +141,24 @@ func (rd *RedisStore) Save(key string, data []byte, expiration time.Duration) er
 	return nil
 }
 
+// TTL returns current expiration time for giving key.
+func (rd *RedisStore) TTL(key string) (time.Duration, error) {
+	var hashKey = rd.getHashKey(key)
+	var nstatus = rd.client.PTTL(hashKey)
+	if err := nstatus.Err(); err != nil {
+		return 0, nerror.WrapOnly(err)
+	}
+	if nstatus.Val() < 0 {
+		return 0, nil
+	}
+	return nstatus.Val(), nil
+}
+
 // ExtendTTL extends the expiration of a giving key if it exists, the duration is expected to be
-// in seconds.
+// in milliseconds.
 func (rd *RedisStore) ExtendTTL(key string, expiration time.Duration) error {
 	var hashKey = rd.getHashKey(key)
-	var nstatus = rd.client.TTL(hashKey)
+	var nstatus = rd.client.PTTL(hashKey)
 	if err := nstatus.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
@@ -149,9 +182,14 @@ func (rd *RedisStore) Get(key string) ([]byte, error) {
 	return string2Bytes(nstatus.Val()), nil
 }
 
-// Update updates giving session stored with giving key. It updates
+// Update updates giving key with new data slice with 0 duration.
+func (rd *RedisStore) Update(key string, data []byte) error {
+	return rd.UpdateTTL(key, data, 0)
+}
+
+// UpdateTTL updates giving session stored with giving key. It updates
 // the underline data.
-func (rd *RedisStore) Update(key string, data []byte, expiration time.Duration) error {
+func (rd *RedisStore) UpdateTTL(key string, data []byte, expiration time.Duration) error {
 	var hashKey = rd.getHashKey(key)
 	var found, err = rd.Exists(hashKey)
 	if err != nil {
@@ -165,7 +203,17 @@ func (rd *RedisStore) Update(key string, data []byte, expiration time.Duration) 
 		return rd.remove(key)
 	}
 
-	var nset = rd.client.Set(hashKey, data, expiration)
+	var ttlstatus = rd.client.PTTL(hashKey)
+	if err := ttlstatus.Err(); err != nil {
+		return nerror.WrapOnly(err)
+	}
+
+	var newTTL = ttlstatus.Val() + expiration
+	if ttlstatus.Val() < 0 {
+		newTTL = expiration
+	}
+
+	var nset = rd.client.Set(hashKey, data, newTTL)
 	if err := nset.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
@@ -196,6 +244,10 @@ func (rd *RedisStore) remove(key string) error {
 	var dstatus = rd.client.Del(hashKey)
 	return dstatus.Err()
 }
+
+//*****************************************************
+// internal methods
+//*****************************************************
 
 //*****************************************************
 // unsafe methods
