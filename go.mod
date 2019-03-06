@@ -15,6 +15,7 @@ require (
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e
 	github.com/gorilla/mux v1.7.0
 	github.com/gorilla/securecookie v1.1.1
+	github.com/jinzhu/copier v0.0.0-20180308034124-7e38e58719c3
 	github.com/onsi/ginkgo v1.7.0 // indirect
 	github.com/onsi/gomega v1.4.3 // indirect
 	github.com/opentracing/opentracing-go v1.0.2
