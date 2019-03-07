@@ -677,18 +677,21 @@ var ErrNotStruct = errors.New("Not a struct type")
 
 // Field defines a specific tag field with its details from a giving struct.
 type Field struct {
-	Index    int
-	Name     string
-	Tag      string
-	NameLC   string
-	TypeName string
-	Type     reflect.Type
-	Value    reflect.Value
-	IsSlice  bool
-	IsArray  bool
-	IsMap    bool
-	IsChan   bool
-	IsStruct bool
+	Index       int
+	Name        string
+	Tag         string
+	NameLC      string
+	TypeName    string
+	Type        reflect.Type
+	Value       reflect.Value
+	IsSlice     bool
+	IsArray     bool
+	IsFunc      bool
+	IsPointer   bool
+	IsInterface bool
+	IsMap       bool
+	IsChan      bool
+	IsStruct    bool
 }
 
 // Fields defines a lists of Field instances.
@@ -738,18 +741,21 @@ func GetTagFields(elem interface{}, tag string, allowNaturalNames bool) (Fields,
 		}
 
 		fields = append(fields, Field{
-			Index:    i,
-			Tag:      tagVal,
-			Name:     field.Name,
-			Type:     field.Type,
-			Value:    tlVal.Field(i),
-			TypeName: field.Type.Name(),
-			NameLC:   strings.ToLower(field.Name),
-			IsMap:    field.Type.Kind() == reflect.Map,
-			IsChan:   field.Type.Kind() == reflect.Chan,
-			IsSlice:  field.Type.Kind() == reflect.Slice,
-			IsArray:  field.Type.Kind() == reflect.Array,
-			IsStruct: field.Type.Kind() == reflect.Struct,
+			Index:       i,
+			Tag:         tagVal,
+			Name:        field.Name,
+			Type:        field.Type,
+			Value:       tlVal.Field(i),
+			TypeName:    field.Type.Name(),
+			NameLC:      strings.ToLower(field.Name),
+			IsMap:       field.Type.Kind() == reflect.Map,
+			IsFunc:      field.Type.Kind() == reflect.Func,
+			IsChan:      field.Type.Kind() == reflect.Chan,
+			IsSlice:     field.Type.Kind() == reflect.Slice,
+			IsArray:     field.Type.Kind() == reflect.Array,
+			IsStruct:    field.Type.Kind() == reflect.Struct,
+			IsInterface: field.Type.Kind() == reflect.Interface,
+			IsPointer:   field.Type.Kind() == reflect.UnsafePointer,
 		})
 	}
 
@@ -804,17 +810,20 @@ func GetFields(elem interface{}) (Fields, error) {
 	for i := 0; i < tl.NumField(); i++ {
 		field := tl.Field(i)
 		fieldVal := Field{
-			Index:    i,
-			Name:     field.Name,
-			Type:     field.Type,
-			Value:    tlVal.Field(i),
-			TypeName: field.Type.Name(),
-			NameLC:   strings.ToLower(field.Name),
-			IsMap:    field.Type.Kind() == reflect.Map,
-			IsChan:   field.Type.Kind() == reflect.Chan,
-			IsSlice:  field.Type.Kind() == reflect.Slice,
-			IsArray:  field.Type.Kind() == reflect.Array,
-			IsStruct: field.Type.Kind() == reflect.Struct,
+			Index:       i,
+			Name:        field.Name,
+			Type:        field.Type,
+			Value:       tlVal.Field(i),
+			TypeName:    field.Type.Name(),
+			NameLC:      strings.ToLower(field.Name),
+			IsMap:       field.Type.Kind() == reflect.Map,
+			IsFunc:      field.Type.Kind() == reflect.Func,
+			IsChan:      field.Type.Kind() == reflect.Chan,
+			IsSlice:     field.Type.Kind() == reflect.Slice,
+			IsArray:     field.Type.Kind() == reflect.Array,
+			IsStruct:    field.Type.Kind() == reflect.Struct,
+			IsInterface: field.Type.Kind() == reflect.Interface,
+			IsPointer:   field.Type.Kind() == reflect.UnsafePointer,
 		}
 
 		fields = append(fields, fieldVal)
