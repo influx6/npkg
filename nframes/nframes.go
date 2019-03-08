@@ -210,6 +210,7 @@ func fileToPackageAndFilename(file string) (filename, pkg string) {
 			pkg = pkgFileBase[:lastSlash]
 		}
 	}
+	return
 }
 
 // Pc returns the program counter for this frame;

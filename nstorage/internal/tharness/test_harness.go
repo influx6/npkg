@@ -34,11 +34,14 @@ func TestByteStore(t *testing.T, store nstorage.ByteStore) {
 
 	val, err = store.Remove("day")
 	require.NoError(t, err)
-	require.Equal(t, "wrecker", bytes2String(val))
+	require.Equal(t, "tweeter", bytes2String(val))
 }
 
 func TestExpirableStore(t *testing.T, store nstorage.ExpirableStore) {
 	require.NoError(t, store.SaveTTL("day", string2Bytes("wrecker"), time.Second*2))
+
+	var val, err = store.Get("day")
+	require.NoError(t, err)
 	require.Equal(t, "wrecker", bytes2String(val))
 
 	ttl, err := store.TTL("day")
@@ -49,6 +52,9 @@ func TestExpirableStore(t *testing.T, store nstorage.ExpirableStore) {
 	require.True(t, (time.Second*2) < ttl)
 
 	require.NoError(t, store.UpdateTTL("day", string2Bytes("tweeter"), time.Second))
+
+	val, err = store.Get("day")
+	require.NoError(t, err)
 	require.Equal(t, "tweeter", bytes2String(val))
 	require.True(t, (time.Second*3) < ttl)
 }

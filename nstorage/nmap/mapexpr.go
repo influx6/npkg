@@ -30,7 +30,7 @@ func (expr *ExprByteStore) Keys() ([]string, error) {
 
 // Get returns the giving value of key if it exists and has not expired.
 func (expr *ExprByteStore) Get(k string) ([]byte, error) {
-	if expr.cache.Has(k) {
+	if !expr.cache.Has(k) {
 		return nil, nerror.New("not found")
 	}
 	return expr.cache.Get(k), nil
@@ -63,19 +63,19 @@ func (expr *ExprByteStore) ExtendTTL(k string, t time.Duration) error {
 
 // Updates updates giving key and value into store.
 func (expr *ExprByteStore) Update(k string, v []byte) error {
-	expir.cache.Set(k, v, 0)
+	expr.cache.Set(k, v, 0)
 	return nil
 }
 
 // SaveTTL updates giving key and value into store with expiration value.
 func (expr *ExprByteStore) SaveTTL(k string, v []byte, t time.Duration) error {
-	expir.cache.Set(k, v, t)
+	expr.cache.Set(k, v, t)
 	return nil
 }
 
 // UpdateTTL updates giving key and value into store with expiration value.
 func (expr *ExprByteStore) UpdateTTL(k string, v []byte, t time.Duration) error {
-	if !expr.cache.Has(k){
+	if !expr.cache.Has(k) {
 		return nerror.New("key does not exists")
 	}
 
@@ -88,10 +88,12 @@ func (expr *ExprByteStore) UpdateTTL(k string, v []byte, t time.Duration) error 
 // To ensure no-undesired behaviour, ensure to copy the value to avoid
 // possible change to it, as the underline store owns the giving value
 // slice and maybe re-used as it sees fit.
-func (expr *ExprByteStore) Each(func([]byte, string)) error {
-	expr.cache.GetMany(func (values map[string]ExpiringValue)  {
+func (expr *ExprByteStore) Each(fn func([]byte, string) bool) error {
+	expr.cache.GetMany(func(values map[string]ExpiringValue) {
 		for key, value := range values {
-			fn(key, value.Value)
+			if !fn(value.Value, key) {
+				return
+			}
 		}
 	})
 	return nil
@@ -101,7 +103,7 @@ func (expr *ExprByteStore) Each(func([]byte, string)) error {
 func (expr *ExprByteStore) Remove(k string) ([]byte, error) {
 	var v []byte
 	var found bool
-	expr.cache.GetMany(func (values map[string]ExpiringValue)  {
+	expr.cache.GetMany(func(values map[string]ExpiringValue) {
 		for key, value := range values {
 			if key == key {
 				found = true

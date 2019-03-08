@@ -1,13 +1,11 @@
 package nmap_test
 
 import (
-	"math/rand"
 	"testing"
-	"time"
-	"unsafe"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/gokit/npkg/nstorage/internal/tharness"
 	"github.com/gokit/npkg/nstorage/nmap"
 )
 
@@ -22,5 +20,5 @@ func TestsBadgerExpiryStore(t *testing.T) {
 	var store = nmap.NewExprByteStore(100)
 	require.NotNil(t, store)
 
-	tharnest.TestExpirableStore(t, store)
+	tharness.TestExpirableStore(t, store)
 }
