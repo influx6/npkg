@@ -57,6 +57,10 @@ func TestExpirableStore(t *testing.T, store nstorage.ExpirableStore) {
 	require.NoError(t, err)
 	require.Equal(t, "tweeter", bytes2String(val))
 	require.True(t, (time.Second*3) < ttl)
+
+	<-time.After(time.Second * 6)
+	_, err = store.Get("day")
+	require.Error(t, err)
 }
 
 func bytes2String(bc []byte) string {
