@@ -271,7 +271,113 @@ func (m *StringMap) init() {
 }
 
 //**********************************************************************
-// StringMap
+// ByteMap
+//**********************************************************************
+
+// ByteMap defines an implementation which during initial
+// loading stores all key and value pairs.
+//
+// It provides a safe, concurrently usable implementation with
+// blazing read and write speed.
+type ByteMap struct {
+	Capacity uint
+	lock     sync.Mutex
+	cache    *atomic.Value
+}
+
+// NewByteMap returns a new instance of a ByteMap.
+func NewByteMap(cap ...uint) *ByteMap {
+	var sm ByteMap
+	if len(cap) != 0 {
+		sm.Capacity = cap[0]
+	}
+	return &sm
+}
+
+// Has returns true/false giving value exits for key.
+func (m *ByteMap) Has(k string) bool {
+	var exists bool
+	m.GetMany(func(values map[string][]byte) {
+		_, exists = values[k]
+	})
+	return exists
+}
+
+// Get returns giving value for key.
+//
+// Get makes a copy of the content of the key
+// returning that, which causes a single allocation,
+// use GetMany to access the content of the key directly
+// without any copy, but ensure to copy the content as
+// necessary to avoid corruption of value.
+func (m *ByteMap) Get(k string) (value []byte) {
+	m.GetMany(func(values map[string][]byte) {
+		if nvalue, ok := values[k]; ok {
+			var content = make([]byte, len(nvalue))
+			copy(content, nvalue)
+			value = content
+		}
+	})
+	return
+}
+
+// GetMany allows retrieval of many keys from underline map.
+//
+// Get makes a copy of the content of the key
+// returning that, which causes a single allocation,
+// use GetMany to access the content of the key directly
+// without any copy, but ensure to copy the content as
+// necessary to avoid corruption of value.
+//
+// WARNING: Never modify the map, ever.
+func (m *ByteMap) GetMany(fn func(map[string][]byte)) {
+	m.init()
+	var cached = m.cache.Load().(map[string][]byte)
+	fn(cached)
+}
+
+// Set adds giving key into underline map.
+func (m *ByteMap) Set(k string, value []byte) {
+	m.SetMany(func(values map[string][]byte) {
+		var content = make([]byte, len(value))
+		copy(content, value)
+		values[k] = content
+	})
+}
+
+// SetMany adds giving key into underline map.
+func (m *ByteMap) SetMany(fn func(map[string][]byte)) {
+	m.init()
+
+	var cached = m.cache.Load().(map[string][]byte)
+	var copied = copyStringBytesMap(cached)
+	fn(copied)
+
+	m.lock.Lock()
+	m.cache.Store(copied)
+	m.lock.Unlock()
+}
+
+func (m *ByteMap) init() {
+	m.lock.Lock()
+	if m.cache != nil {
+		m.lock.Unlock()
+		return
+	}
+
+	defer m.lock.Unlock()
+	if m.Capacity == 0 {
+		m.Capacity = 10
+	}
+	var store = make(map[string][]byte, m.Capacity)
+
+	var newValue atomic.Value
+	newValue.Store(store)
+	m.cache = &newValue
+}
+
+//**********************************************************************
+// internals
 //**********************************************************************
 
 // copyStringBytesMap returns a new copy of a giving string map.
