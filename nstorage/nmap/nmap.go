@@ -3,6 +3,7 @@ package nmap
 import (
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 //**********************************************************************
@@ -377,8 +378,199 @@ func (m *ByteMap) init() {
 }
 
 //**********************************************************************
+// ExpiringByteMap
+//**********************************************************************
+
+// ExpiringValue defines a type which holds a giving byte value
+// string, it has if attached a possible expiring value, which would
+// make it unaccessible once expired.
+type ExpiringValue struct {
+	Value []byte
+	when  time.Time
+}
+
+// Elapsed returns the current duration left for expiring.
+//
+// A positive number means there is still time and a negative
+// number means it has expired. But zero means no expiration.
+func (ne *ExpiringValue) Elapsed() time.Duration {
+	if ne.when.IsZero() {
+		return 0
+	}
+	var current = time.Now()
+	if current.Before(ne.when) {
+		return ne.when.Sub(current)
+	}
+	return current.Sub(ne.when)
+}
+
+// Expired returns true/false if giving value is expired.
+func (ne *ExpiringValue) Expired() bool {
+	if !ne.when.IsZero() {
+		var current = time.Now()
+		if current.After(ne.when) {
+			return true
+		}
+	}
+	return false
+}
+
+// NewExpiringValue returns a new instance of a ExpiringValue.
+func NewExpiringValue(value []byte, ttl time.Duration) ExpiringValue {
+	var exr ExpiringValue
+	exr.Value = value
+	if ttl > 0 {
+		exr.when = time.Now().Add(ttl)
+	}
+	return exr
+}
+
+// ExpiringByteMap defines an implementation which during initial
+// loading stores all key and value pairs.
+//
+// It provides a safe, concurrently usable implementation with
+// blazing read and write speed.
+type ExpiringByteMap struct {
+	Capacity uint
+	lock     sync.Mutex
+	cache    *atomic.Value
+}
+
+// NewExpiringByteMap returns a new instance of a ExpiringByteMap.
+func NewExpiringByteMap(cap ...uint) *ExpiringByteMap {
+	var sm ExpiringByteMap
+	if len(cap) != 0 {
+		sm.Capacity = cap[0]
+	}
+	return &sm
+}
+
+// Has returns true/false giving value exits for key.
+func (m *ExpiringByteMap) Has(k string) bool {
+	var exists bool
+	m.GetMany(func(values map[string]ExpiringValue) {
+		_, exists = values[k]
+	})
+	return exists
+}
+
+// Get returns giving value for key.
+//
+// Get makes a copy of the content of the key
+// returning that, which causes a single allocation,
+// use GetMany to access the content of the key directly
+// without any copy, but ensure to copy the content as
+// necessary to avoid corruption of value.
+func (m *ExpiringByteMap) Get(k string) (value []byte) {
+	m.GetMany(func(values map[string]ExpiringValue) {
+		if nvalue, ok := values[k]; ok {
+			if nvalue.Expired() {
+				return
+			}
+
+			var content = make([]byte, len(nvalue.Value))
+			copy(content, nvalue.Value)
+			value = content
+		}
+	})
+	return
+}
+
+// TTL returns the current remaining time before giving key expires.
+func (m *ExpiringByteMap) TTL(k string) (value time.Duration) {
+	m.GetMany(func(values map[string]ExpiringValue) {
+		if nvalue, ok := values[k]; ok {
+			value = nvalue.Elapsed()
+		}
+	})
+	return
+}
+
+// GetMany allows retrieval of many keys from underline map.
+//
+// Get makes a copy of the content of the key
+// returning that, which causes a single allocation,
+// use GetMany to access the content of the key directly
+// without any copy, but ensure to copy the content as
+// necessary to avoid corruption of value.
+//
+// You are expected to respect the expiry values of a ExpiringValue
+// and ignore any that as expired as a cleanup will be done later.
+//
+// WARNING: Never modify the map, ever.
+func (m *ExpiringByteMap) GetMany(fn func(map[string]ExpiringValue)) {
+	m.init()
+	var cached = m.cache.Load().(map[string]ExpiringValue)
+	fn(cached)
+}
+
+// Set adds giving key into underline map.
+//
+// Set automatically cleans up the map of expired keys.
+func (m *ExpiringByteMap) Set(k string, value []byte, expire time.Duration) {
+	m.SetMany(func(values map[string]ExpiringValue) {
+		if nval, ok := values[k]; ok {
+			nval.Value = value
+			if expire != 0 {
+				if nval.when.IsZero() {
+					nval.when = time.Now().Add(expire)
+				} else {
+					nval.when = nval.when.Add(expire)
+				}
+			}
+			values[k] = nval
+			return
+		}
+		values[k] = NewExpiringValue(value, expire)
+	})
+}
+
+// SetMany adds giving key into underline map.
+func (m *ExpiringByteMap) SetMany(fn func(map[string]ExpiringValue)) {
+	m.init()
+
+	var cached = m.cache.Load().(map[string]ExpiringValue)
+	var copied = copyExpiringBytesMap(cached)
+	fn(copied)
+
+	m.lock.Lock()
+	m.cache.Store(copied)
+	m.lock.Unlock()
+}
+
+func (m *ExpiringByteMap) init() {
+	m.lock.Lock()
+	if m.cache != nil {
+		m.lock.Unlock()
+		return
+	}
+
+	defer m.lock.Unlock()
+	if m.Capacity == 0 {
+		m.Capacity = 10
+	}
+	var store = make(map[string]ExpiringValue, m.Capacity)
+
+	var newValue atomic.Value
+	newValue.Store(store)
+	m.cache = &newValue
+}
+
+//**********************************************************************
 // internals
 //**********************************************************************
+
+// copyExpiringBytesMap returns a new copy of a giving string map.
+func copyExpiringBytesMap(src map[string]ExpiringValue) map[string]ExpiringValue {
+	var dest = make(map[string]ExpiringValue, len(src))
+	for key, value := range src {
+		if value.Expired() {
+			continue
+		}
+		dest[key] = value
+	}
+	return dest
+}
 
 // copyStringBytesMap returns a new copy of a giving string map.
 func copyStringBytesMap(src map[string][]byte) map[string][]byte {

@@ -3,6 +3,7 @@ package nmap_test
 import (
 	"math/rand"
 	"testing"
+	"time"
 	"unsafe"
 
 	"github.com/stretchr/testify/require"
@@ -50,6 +51,28 @@ func TestByteMap(t *testing.T) {
 	any.Set("amount", string2Bytes("40"))
 	require.True(t, any.Has("amount"))
 	require.Equal(t, "40", bytes2String(any.Get("amount")))
+}
+
+func TestExpiringByteMap(t *testing.T) {
+	var any = nmap.NewExpiringByteMap()
+	require.NotNil(t, any)
+
+	any.Set("amount", string2Bytes("20"), 0)
+	any.Set("rewards", string2Bytes("20"), time.Second)
+	any.Set("rewards", string2Bytes("200"), time.Second)
+
+	require.True(t, any.Has("amount"))
+	require.Equal(t, time.Duration(0), any.TTL("amount"))
+	require.Equal(t, "20", bytes2String(any.Get("amount")))
+
+	any.Set("amount", string2Bytes("40"), time.Second)
+	require.True(t, any.Has("amount"))
+	require.Equal(t, "40", bytes2String(any.Get("amount")))
+
+	var before = any.TTL("amount")
+	<-time.After(time.Second)
+	require.Empty(t, any.Get("amount"))
+	require.NotEqual(t, before, any.TTL("amount"))
 }
 
 func TestStringMap(t *testing.T) {
