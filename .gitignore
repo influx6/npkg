@@ -1,2 +1,4 @@
 *.test
 *.prof
+./tmpdir
+tmpdir

@@ -5,6 +5,7 @@ import (
 	"unsafe"
 
 	"github.com/dgraph-io/badger"
+
 	"github.com/gokit/npkg/nerror"
 )
 
@@ -167,7 +168,7 @@ func (rd *BadgerStore) Get(key string) ([]byte, error) {
 }
 
 // Save adds giving session into storage using Badger as underline store.
-func (rd *BadgerStore) Save(key string, data []byte, expiration time.Duration) error {
+func (rd *BadgerStore) Save(key string, data []byte) error {
 	return rd.SaveTTL(key, data, 0)
 }
 
