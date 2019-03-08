@@ -139,6 +139,32 @@ func BenchmarkStringAnyMap(b *testing.B) {
 	})
 }
 
+func BenchmarkExpiringByteMap(b *testing.B) {
+	b.ReportAllocs()
+
+	b.Run("set", func(b *testing.B) {
+		b.ResetTimer()
+		b.ReportAllocs()
+		var any = nmap.NewExpiringByteMap(100)
+		any.SetMany(func(cache map[string]nmap.ExpiringValue) {
+			for i := 0; i < b.N; i++ {
+				cache[randomString()] = nmap.NewExpiringValue(string2Bytes(randomString()), 0)
+			}
+		})
+	})
+
+	b.Run("set_get", func(b *testing.B) {
+		b.ResetTimer()
+		b.ReportAllocs()
+		var any = nmap.NewExpiringByteMap(100)
+		any.Set("i", string2Bytes("1"), 0)
+
+		for i := 0; i < b.N; i++ {
+			any.Get("i")
+		}
+	})
+}
+
 func BenchmarkByteMap(b *testing.B) {
 	b.ReportAllocs()
 
