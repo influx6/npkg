@@ -66,6 +66,38 @@ func (l Level) String() string {
 // Stack Frames
 //************************************************************
 
+// GetFrameDetails uses runtime.CallersFrames instead of runtime.FuncForPC
+// which in go1.12 misses certain frames, to ensure backward compatibility
+// with the previous version, this method is written to provide alternative
+// setup that uses the recommended way of go1.12.
+func GetFrameDetails(skip int, size int) []FrameDetail {
+	var frames = make([]uintptr, size)
+	var written = runtime.Callers(skip, frames)
+	if written == 0 {
+		return nil
+	}
+
+	var details = make([]FrameDetail, 0, len(frames))
+
+	frames = frames[:written]
+	var rframes = runtime.CallersFrames(frames)
+	for {
+		frame, more := rframes.Next()
+		if !more {
+			break
+		}
+
+		var detail FrameDetail
+		detail.File = frame.File
+		detail.Line = frame.Line
+		detail.Method = frame.Function
+		detail.FileName, detail.Package = fileToPackageAndFilename(frame.File)
+
+		details = append(details, detail)
+	}
+	return details
+}
+
 // GetFrames returns a slice of stack frames for a giving size, skipping the provided
 // `skip` count.
 func GetFrames(skip int, size int) []uintptr {
@@ -139,25 +171,16 @@ func (f Frame) EncodeObject(encode npkg.ObjectEncoder) error {
 	}
 
 	if file != "" && file != "???" {
-		if runtime.GOOS == "windows" {
-			file = toSlash(file)
-		}
-
 		if err := encode.String("file", file); err != nil {
 			return err
 		}
 
-		pkgIndex := strings.Index(file, srcSub)
-		if pkgIndex != -1 {
-			pkgFileBase := file[pkgIndex+5:]
-			if lastSlash := strings.LastIndex(pkgFileBase, "/"); lastSlash != -1 {
-				if err := encode.String("file_name", pkgFileBase[lastSlash+1:]); err != nil {
-					return err
-				}
-				if err := encode.String("package", pkgFileBase[:lastSlash]); err != nil {
-					return err
-				}
-			}
+		var fileName, pkgName = fileToPackageAndFilename(file)
+		if err := encode.String("file_name", fileName); err != nil {
+			return err
+		}
+		if err := encode.String("package", pkgName); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -172,6 +195,21 @@ func toSlash(s string) string {
 		}
 	}
 	return s
+}
+
+func fileToPackageAndFilename(file string) (filename, pkg string) {
+	if runtime.GOOS == "windows" {
+		file = toSlash(file)
+	}
+
+	var pkgIndex = strings.Index(file, srcSub)
+	if pkgIndex != -1 {
+		var pkgFileBase = file[pkgIndex+5:]
+		if lastSlash := strings.LastIndex(pkgFileBase, "/"); lastSlash != -1 {
+			filename = pkgFileBase[lastSlash+1:]
+			pkg = pkgFileBase[:lastSlash]
+		}
+	}
 }
 
 // Pc returns the program counter for this frame;

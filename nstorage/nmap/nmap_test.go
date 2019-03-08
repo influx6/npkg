@@ -1,11 +1,13 @@
 package nmap_test
 
 import (
-	"strconv"
+	"math/rand"
 	"testing"
+	"unsafe"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/gokit/npkg/nstorage/nmap"
-	"github.com/stretchr/testify/require"
 )
 
 func TestAnyMap(t *testing.T) {
@@ -59,7 +61,7 @@ func BenchmarkAnyMap(b *testing.B) {
 		var any = nmap.NewAnyMap()
 		any.SetMany(func(cache map[interface{}]interface{}) {
 			for i := 0; i < b.N; i++ {
-				cache[i] = i
+				cache[randomString()] = randomString()
 			}
 		})
 	})
@@ -82,10 +84,8 @@ func BenchmarkStringAnyMap(b *testing.B) {
 		b.ReportAllocs()
 		var any = nmap.NewStringAnyMap()
 		any.SetMany(func(cache map[string]interface{}) {
-			var v string
 			for i := 0; i < b.N; i++ {
-				v = strconv.Itoa(i)
-				cache[v] = i
+				cache["a"] = i
 			}
 		})
 	})
@@ -110,10 +110,8 @@ func BenchmarkStringMap(b *testing.B) {
 		b.ReportAllocs()
 		var any = nmap.NewStringMap(100)
 		any.SetMany(func(cache map[string]string) {
-			var v string
 			for i := 0; i < b.N; i++ {
-				v = strconv.Itoa(i)
-				cache[v] = v
+				cache[randomString()] = randomString()
 			}
 		})
 	})
@@ -128,4 +126,15 @@ func BenchmarkStringMap(b *testing.B) {
 			any.Get("i")
 		}
 	})
+}
+
+func bytes2String(bc []byte) string {
+	return *(*string)(unsafe.Pointer(&bc))
+}
+
+var alphabets = "abcdefghijklmnoprz"
+
+func randomString() string {
+	var in = rand.Intn(len(alphabets))
+	return string(alphabets[in])
 }
