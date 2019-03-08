@@ -97,12 +97,10 @@ func TestEndlessPattern(t *testing.T) {
 func TestAsterick(t *testing.T) {
 	r := pattern.New(`*`)
 
-	param, rem, state := r.Validate(`/github.com/influx6/examples/views#blob`)
+	_, _, state := r.Validate(`/github.com/influx6/examples/views#blob`)
 	if !state {
-		t.Fatalf("Incorrect npattrn: %+s %t", param, state)
+		t.Fatalf("Incorrect npattrn: %t", state)
 	}
-
-	t.Logf("Correct npattrn: %+s %+s", param, rem)
 }
 
 func TestHashedWithRemainder(t *testing.T) {

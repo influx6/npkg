@@ -73,11 +73,8 @@ func (m *matchProvider) Pattern() string {
 // a map of parameters match against segments of the npattrn.
 func (m *matchProvider) Validate(path string) (Params, string, bool) {
 	path = addSlash(path)
-	stripped := stripAndClean(path)
-	hashedSrc := stripAndCleanButHash(path)
-
-	cleaned := cleanPath(stripped)
-	src := splitPattern(cleaned)
+	var hashedSrc = stripAndCleanButHash(strings.Replace(path, "#", "/#", 1))
+	src := splitPattern(hashedSrc)
 
 	srclen := len(src)
 	total := len(m.matchers)
@@ -126,21 +123,7 @@ func (m *matchProvider) Validate(path string) (Params, string, bool) {
 	if doneHash || !strings.Contains(hashedSrc, "#") {
 		return param, addSlash(remPath), state
 	}
-
-	var rems []string
-
-	fragment := SegmentList(hashedSrc)[lastIndex+1:]
-	for _, item := range fragment {
-		if item.HasHash() {
-			hashed := "#" + item.Segment()
-			rems = append(rems, hashed)
-			continue
-		}
-
-		rems = append(rems, item.Segment())
-	}
-
-	return param, addSlash(strings.Join(rems, "/")), state
+	return param, addSlash(remPath), state
 }
 
 //==============================================================================
