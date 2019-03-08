@@ -525,6 +525,23 @@ func (m *ExpiringByteMap) Set(k string, value []byte, expire time.Duration) {
 	})
 }
 
+// ExtendTTL extends giving key value expiration by provided value.
+func (m *ExpiringByteMap) ExtendTTL(k string, expire time.Duration) {
+	m.SetMany(func(values map[string]ExpiringValue) {
+		if nval, ok := values[k]; ok {
+			if expire != 0 {
+				if nval.when.IsZero() {
+					nval.when = time.Now().Add(expire)
+				} else {
+					nval.when = nval.when.Add(expire)
+				}
+			}
+			values[k] = nval
+			return
+		}
+	})
+}
+
 // SetMany adds giving key into underline map.
 func (m *ExpiringByteMap) SetMany(fn func(map[string]ExpiringValue)) {
 	m.init()
