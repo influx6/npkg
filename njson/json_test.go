@@ -4,10 +4,10 @@ import (
 	gnjson "encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/gokit/npkg"
 	"github.com/gokit/npkg/njson"
-
-	"github.com/stretchr/testify/require"
 )
 
 type WritableBuffer struct {
@@ -51,8 +51,8 @@ func TestGetJSON(t *testing.T) {
 		event := njson.MessageObject("My log")
 		event.String("name", "thunder")
 		event.Int("id", 234)
-		event.ObjectFor("data", func(event npkg.Encoder) {
-			event.Int("id", 23)
+		event.ObjectFor("data", func(event npkg.ObjectEncoder) error {
+			return event.Int("id", 23)
 		})
 		require.Equal(t, "{\"message\": \"My log\", \"name\": \"thunder\", \"id\": 234, \"data\": {\"id\": 23}}", event.Message())
 	})
@@ -73,8 +73,8 @@ func TestGetJSON(t *testing.T) {
 	})
 
 	t.Run("using context fields with hook", func(t *testing.T) {
-		event := njson.MessageObjectWithEmbed("My log", "data", func(event npkg.Encoder) {
-			event.Bool("w", true)
+		event := njson.MessageObjectWithEmbed("My log", "data", func(event npkg.ObjectEncoder) error {
+			return event.Bool("w", true)
 		})
 
 		event.String("name", "thunder")
@@ -107,8 +107,8 @@ func BenchmarkGetJSON(b *testing.B) {
 			event := njson.MessageObject("My log")
 			event.String("name", "thunder")
 			event.Int("id", 234)
-			event.ObjectFor("data", func(event npkg.Encoder) {
-				event.Int("id", 23)
+			event.ObjectFor("data", func(event npkg.ObjectEncoder) error {
+				return event.Int("id", 23)
 			})
 			event.Message()
 		}

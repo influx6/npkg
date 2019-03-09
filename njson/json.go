@@ -28,26 +28,30 @@ var (
 
 // List requests allocation for a *JSON from the internal pool returning a *JSON
 // object for encoding a json list.
-func List(inherits ...func(event npkg.Encoder)) *JSON {
+func List(inherits ...func(event npkg.Encoder) error) *JSON {
 	event := logEventPool.Get().(*JSON)
 	event.l = 1
 	event.reset()
 
 	for _, op := range inherits {
-		op(event)
+		if err := op(event); err != nil {
+			panic(err)
+		}
 	}
 	return event
 }
 
 // Object requests allocation for a *JSON from the internal pool returning a *JSON
 // object for encoding a json object.
-func Object(inherits ...func(event npkg.Encoder)) *JSON {
+func Object(inherits ...func(event npkg.Encoder) error) *JSON {
 	event := logEventPool.Get().(*JSON)
 	event.l = 0
 	event.reset()
 
 	for _, op := range inherits {
-		op(event)
+		if err := op(event); err != nil {
+			panic(err)
+		}
 	}
 
 	return event
@@ -55,7 +59,7 @@ func Object(inherits ...func(event npkg.Encoder)) *JSON {
 
 // ObjectWithEmbed returns a new Object which will embed all encoded key-value pairs into a object with the `ctx` value
 // as key name.
-func ObjectWithEmbed(ctx string, hook func(*JSON), inherits ...func(event npkg.Encoder)) *JSON {
+func ObjectWithEmbed(ctx string, hook func(npkg.ObjectEncoder) error, inherits ...func(event npkg.Encoder) error) *JSON {
 	event := logEventPool.Get().(*JSON)
 	event.l = 0
 
@@ -66,7 +70,9 @@ func ObjectWithEmbed(ctx string, hook func(*JSON), inherits ...func(event npkg.E
 		newEvent.reset()
 
 		if hook != nil {
-			hook(newEvent)
+			if err := hook(newEvent); err != nil {
+				panic(err)
+			}
 		}
 
 		newEvent.addBytes(ctx, s)
@@ -79,14 +85,16 @@ func ObjectWithEmbed(ctx string, hook func(*JSON), inherits ...func(event npkg.E
 	}
 
 	for _, op := range inherits {
-		op(event)
+		if err := op(event); err != nil {
+			panic(err)
+		}
 	}
 	return event
 }
 
 // MessageObject requests allocation for a *JSON from the internal pool returning a *JSON
 // object for encoding a json object.
-func MessageObject(message string, inherits ...func(event npkg.Encoder)) *JSON {
+func MessageObject(message string, inherits ...func(event npkg.Encoder) error) *JSON {
 	event := logEventPool.Get().(*JSON)
 	event.l = 0
 
@@ -95,7 +103,9 @@ func MessageObject(message string, inherits ...func(event npkg.Encoder)) *JSON {
 	event.endEntry()
 
 	for _, op := range inherits {
-		op(event)
+		if err := op(event); err != nil {
+			panic(err)
+		}
 	}
 
 	return event
@@ -103,7 +113,7 @@ func MessageObject(message string, inherits ...func(event npkg.Encoder)) *JSON {
 
 // MessageObjectWithEmbed returns a new Object which will embed all encoded key-value pairs into a object with the `ctx` value
 // as key name.
-func MessageObjectWithEmbed(message string, ctx string, hook func(npkg.Encoder), inherits ...func(npkg.Encoder)) *JSON {
+func MessageObjectWithEmbed(message string, ctx string, hook func(npkg.ObjectEncoder) error, inherits ...func(npkg.ObjectEncoder) error) *JSON {
 	event := logEventPool.Get().(*JSON)
 	event.l = 0
 
@@ -117,7 +127,9 @@ func MessageObjectWithEmbed(message string, ctx string, hook func(npkg.Encoder),
 		newEvent.endEntry()
 
 		if hook != nil {
-			hook(newEvent)
+			if err := hook(newEvent); err != nil {
+				panic(err)
+			}
 		}
 
 		newEvent.addBytes(ctx, s)
@@ -130,7 +142,9 @@ func MessageObjectWithEmbed(message string, ctx string, hook func(npkg.Encoder),
 	}
 
 	for _, op := range inherits {
-		op(event)
+		if err := op(event); err != nil {
+			panic(err)
+		}
 	}
 	return event
 }

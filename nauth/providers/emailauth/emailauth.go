@@ -169,6 +169,9 @@ func (eu InhouseEmailAuth) Verify(req *http.Request) (nauth.VerifiedClaim, error
 		return verified, err
 	}
 
+	_ = authorizationHeader
+	_ = authType
+	_ = authToken
 	panic("implement me")
 }
 

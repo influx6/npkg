@@ -5,11 +5,11 @@ package nredis
 import (
 	"testing"
 
-	"github.com/gokit/npkg/nstorage/internal/tharness"
-
 	"github.com/alicebob/miniredis"
 	"github.com/go-redis/redis"
 	"github.com/stretchr/testify/require"
+
+	"github.com/gokit/npkg/nstorage/internal/tharness"
 )
 
 func TestStoreWithRedisStore(t *testing.T) {
@@ -57,5 +57,5 @@ func TestsRedisExpiryStore(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
-	tharnest.TestExpirableStore(t, store)
+	tharness.TestExpirableStore(t, store)
 }

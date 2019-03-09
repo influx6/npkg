@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gokit/npkg/nauth/sessions"
 	"github.com/gokit/npkg/nxid"
 )
 
@@ -101,12 +100,6 @@ func (c VerifiedClaim) HasAnyRoles(roles ...string) bool {
 		}
 	}
 	return false
-}
-
-// ToSession returns a new sessions.Session instance from the verified claim.
-func (c VerifiedClaim) ToSession() (sessions.Session, error) {
-	var session sessions.Session
-	return session, nil
 }
 
 // checkRole checks if any roles of Claim match provided.
