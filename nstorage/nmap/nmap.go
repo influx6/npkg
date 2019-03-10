@@ -380,6 +380,7 @@ func (m *ByteMap) init() {
 //**********************************************************************
 // ExpiringByteMap
 //**********************************************************************
+var zeroTime = time.Time{}
 
 // ExpiringValue defines a type which holds a giving byte value
 // string, it has if attached a possible expiring value, which would
@@ -506,6 +507,9 @@ func (m *ExpiringByteMap) GetMany(fn func(map[string]ExpiringValue)) {
 
 // Set adds giving key into underline map.
 //
+// if expiration is zero then giving value expiration will not be reset but left
+// as is.
+//
 // Set automatically cleans up the map of expired keys.
 func (m *ExpiringByteMap) Set(k string, value []byte, expire time.Duration) {
 	m.SetMany(func(values map[string]ExpiringValue) {
@@ -526,6 +530,8 @@ func (m *ExpiringByteMap) Set(k string, value []byte, expire time.Duration) {
 }
 
 // ExtendTTL extends giving key value expiration by provided value.
+//
+// A expiration value of zero means to persist the giving key.
 func (m *ExpiringByteMap) ExtendTTL(k string, expire time.Duration) {
 	m.SetMany(func(values map[string]ExpiringValue) {
 		if nval, ok := values[k]; ok {
@@ -535,6 +541,8 @@ func (m *ExpiringByteMap) ExtendTTL(k string, expire time.Duration) {
 				} else {
 					nval.when = nval.when.Add(expire)
 				}
+			} else {
+				nval.when = zeroTime
 			}
 			values[k] = nval
 			return

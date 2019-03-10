@@ -1,6 +1,7 @@
 package tharness
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -17,9 +18,13 @@ func TestByteStore(t *testing.T, store nstorage.ByteStore) {
 	require.NoError(t, err)
 	require.Equal(t, "wrecker", bytes2String(val))
 
+	var exist bool
+	exist, err = store.Exists("day")
+	require.NoError(t, err)
+	require.True(t, exist)
+
 	require.NoError(t, store.Update("day", string2Bytes("tweeter")))
 
-	var exist bool
 	exist, err = store.Exists("day")
 	require.NoError(t, err)
 	require.True(t, exist)
@@ -38,7 +43,7 @@ func TestByteStore(t *testing.T, store nstorage.ByteStore) {
 }
 
 func TestExpirableStore(t *testing.T, store nstorage.ExpirableStore) {
-	require.NoError(t, store.SaveTTL("day", string2Bytes("wrecker"), time.Second*2))
+	require.NoError(t, store.SaveTTL("day", string2Bytes("wrecker"), time.Second))
 
 	var val, err = store.Get("day")
 	require.NoError(t, err)
@@ -46,20 +51,29 @@ func TestExpirableStore(t *testing.T, store nstorage.ExpirableStore) {
 
 	ttl, err := store.TTL("day")
 	require.NoError(t, err)
-	require.True(t, time.Second < ttl)
+	require.True(t, time.Second <= ttl)
 
-	require.NoError(t, store.ExtendTTL("day", time.Second*3))
-	require.True(t, (time.Second*2) < ttl)
+	require.NoError(t, store.ExtendTTL("day", time.Second))
+
+	ttl, err = store.TTL("day")
+	require.NoError(t, err)
+	require.True(t, (time.Second) < ttl)
 
 	require.NoError(t, store.UpdateTTL("day", string2Bytes("tweeter"), time.Second))
 
 	val, err = store.Get("day")
 	require.NoError(t, err)
 	require.Equal(t, "tweeter", bytes2String(val))
-	require.True(t, (time.Second*3) < ttl)
 
-	<-time.After(time.Second * 6)
-	_, err = store.Get("day")
+	ttl, err = store.TTL("day")
+	require.NoError(t, err)
+	require.True(t, (time.Second*2) < ttl)
+
+	fmt.Printf("BeforeTTL: %+q\n", ttl)
+
+	<-time.After(time.Second * 10)
+	val, err = store.Get("day")
+	fmt.Printf("Returned data: %+q\n", val)
 	require.Error(t, err)
 }
 

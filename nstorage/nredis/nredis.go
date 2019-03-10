@@ -6,6 +6,7 @@ import (
 	"unsafe"
 
 	"github.com/go-redis/redis"
+
 	"github.com/gokit/npkg/nerror"
 )
 
@@ -77,9 +78,10 @@ func (rd *RedisStore) Each(fn func([]byte, string) bool) error {
 		return nerror.WrapOnly(err)
 	}
 	for _, item := range nstatus.Val() {
-		if data, err := rd.Get(item); err == nil && len(data) > 0 {
-			if fn(data, item) {
-				continue
+		var gstatus = rd.client.Get(item)
+		if err := gstatus.Err(); err == nil {
+			if !fn(string2Bytes(gstatus.Val()), item) {
+				return nil
 			}
 		}
 	}
@@ -141,6 +143,50 @@ func (rd *RedisStore) SaveTTL(key string, data []byte, expiration time.Duration)
 	return nil
 }
 
+// Update updates giving key with new data slice with 0 duration.
+func (rd *RedisStore) Update(key string, data []byte) error {
+	return rd.UpdateTTL(key, data, 0)
+}
+
+// UpdateTTL updates giving session stored with giving key. It updates
+// the underline data.
+//
+// if expiration is zero then giving value expiration will not be reset but left
+// as is.
+func (rd *RedisStore) UpdateTTL(key string, data []byte, expiration time.Duration) error {
+	var hashKey = rd.getHashKey(key)
+	var fstatus = rd.client.SIsMember(rd.hashList, hashKey)
+	if err := fstatus.Err(); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	if !fstatus.Val() {
+		return nerror.New("key does not exist")
+	}
+
+	if len(data) == 0 {
+		return rd.remove(key)
+	}
+
+	var newTTL time.Duration
+	if expiration > 0 {
+		var ttlstatus = rd.client.PTTL(hashKey)
+		if err := ttlstatus.Err(); err != nil {
+			return nerror.WrapOnly(err)
+		}
+
+		newTTL = ttlstatus.Val() + expiration
+		if ttlstatus.Val() <= 0 {
+			newTTL = expiration
+		}
+	}
+
+	var nset = rd.client.Set(hashKey, data, newTTL)
+	if err := nset.Err(); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	return nil
+}
+
 // TTL returns current expiration time for giving key.
 func (rd *RedisStore) TTL(key string) (time.Duration, error) {
 	var hashKey = rd.getHashKey(key)
@@ -155,19 +201,25 @@ func (rd *RedisStore) TTL(key string) (time.Duration, error) {
 }
 
 // ExtendTTL extends the expiration of a giving key if it exists, the duration is expected to be
-// in milliseconds.
+// in milliseconds. If expiration value is zero then we consider that you wish to remove the expiration.
 func (rd *RedisStore) ExtendTTL(key string, expiration time.Duration) error {
 	var hashKey = rd.getHashKey(key)
 	var nstatus = rd.client.PTTL(hashKey)
 	if err := nstatus.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
+
 	if nstatus.Val() < 0 {
 		return nil
 	}
 
-	var newExpriration = expiration + nstatus.Val()
-	var exstatus = rd.client.Expire(hashKey, newExpriration)
+	if expiration == 0 {
+		var exstatus = rd.client.Persist(hashKey)
+		return exstatus.Err()
+	}
+
+	var newExpiration = expiration + nstatus.Val()
+	var exstatus = rd.client.Expire(hashKey, newExpiration)
 	return exstatus.Err()
 }
 
@@ -180,44 +232,6 @@ func (rd *RedisStore) Get(key string) ([]byte, error) {
 		return nil, nerror.WrapOnly(err)
 	}
 	return string2Bytes(nstatus.Val()), nil
-}
-
-// Update updates giving key with new data slice with 0 duration.
-func (rd *RedisStore) Update(key string, data []byte) error {
-	return rd.UpdateTTL(key, data, 0)
-}
-
-// UpdateTTL updates giving session stored with giving key. It updates
-// the underline data.
-func (rd *RedisStore) UpdateTTL(key string, data []byte, expiration time.Duration) error {
-	var hashKey = rd.getHashKey(key)
-	var found, err = rd.Exists(hashKey)
-	if err != nil {
-		return nerror.WrapOnly(err)
-	}
-	if !found {
-		return nerror.New("key does not exist")
-	}
-
-	if len(data) == 0 {
-		return rd.remove(key)
-	}
-
-	var ttlstatus = rd.client.PTTL(hashKey)
-	if err := ttlstatus.Err(); err != nil {
-		return nerror.WrapOnly(err)
-	}
-
-	var newTTL = ttlstatus.Val() + expiration
-	if ttlstatus.Val() < 0 {
-		newTTL = expiration
-	}
-
-	var nset = rd.client.Set(hashKey, data, newTTL)
-	if err := nset.Err(); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	return nil
 }
 
 // Remove removes underline key from the redis store after retrieving it and

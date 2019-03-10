@@ -6,8 +6,6 @@ RUN mkdir -p /go/src/github.com/gokit/npkg
 WORKDIR /go/src/github.com/gokit/npkg
 COPY . .
 
-RUN export GO111MODULE=auto && \
+RUN export GO111MODULE=off && \
       chmod -R +x ./scripts/ && \
       go get -v ./... 
-
-ENTRYPOINT ["make ci"]

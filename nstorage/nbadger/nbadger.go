@@ -209,6 +209,8 @@ func (rd *BadgerStore) TTL(key string) (time.Duration, error) {
 }
 
 // ExtendTTL resets new TTL for giving key if it has not expired and is still accessible.
+//
+// A expiration value of zero means to persist the giving key.
 func (rd *BadgerStore) ExtendTTL(key string, expiration time.Duration) error {
 	return rd.db.Update(func(txn *badger.Txn) error {
 		var item, err = txn.Get(string2Bytes(key))
@@ -219,13 +221,17 @@ func (rd *BadgerStore) ExtendTTL(key string, expiration time.Duration) error {
 			return nerror.New("not found, possibly expired")
 		}
 
-		var expr = ttlDur(item.ExpiresAt(), 0)
-		var newExpr = expr + expiration
-
 		value, err := item.Value()
 		if err != nil {
 			return err
 		}
+
+		if expiration == 0 {
+			return txn.SetWithTTL(string2Bytes(key), copyBytes(value), 0)
+		}
+
+		var expr = ttlDur(item.ExpiresAt(), 0)
+		var newExpr = expr + expiration
 
 		if err := txn.SetWithTTL(string2Bytes(key), copyBytes(value), newExpr); err != nil {
 			return err
@@ -243,6 +249,9 @@ func (rd *BadgerStore) Update(key string, data []byte) error {
 // UpdateTTL updates giving session stored with giving key. It updates
 // the underline data.
 // If a key has expired, and was deleted, then a error is returned.
+//
+// if expiration is zero then giving value expiration will not be reset but left
+// as is.
 func (rd *BadgerStore) UpdateTTL(key string, data []byte, expiration time.Duration) error {
 	return rd.db.Update(func(txn *badger.Txn) error {
 		if expiration > 0 {
