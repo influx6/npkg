@@ -27,6 +27,9 @@ const (
 	// SessionUserDataKeyName defines the name used for the user data
 	// attached to a session.
 	SessionUserDataKeyName = "_auth_session_user_data"
+
+	// CookieHeaderName defines the name of the cookie header.
+	CookieHeaderName = "Set-Cookie"
 )
 
 // Session embodies a current accessible session for a user
@@ -95,6 +98,21 @@ func (s *Session) Validate() error {
 	if len(s.Method) == 0 {
 		return nerror.New("session.Method must have a valid value")
 	}
+	return nil
+}
+
+// Writes giving session as a cookie into the provided http.ResponseWriter.
+func (s *Session) Write(signer *securecookie.SecureCookie, w http.ResponseWriter, mods ...func(*http.Cookie)) error {
+	var cookie, err = s.EncodeToCookie(signer)
+	if err != nil {
+		return err
+	}
+
+	for _, mod := range mods {
+		mod(cookie)
+	}
+
+	w.Header.Add(CookieHeaderName, cookie.String())
 	return nil
 }
 
@@ -561,8 +579,13 @@ func (s *SessionImpl) Create(ctx context.Context, claim VerifiedClaim) (Session,
 	session.User = claim.User
 	session.Method = claim.Method
 	session.Provider = claim.Provider
-	session.Attached = map[string]interface{}{
-		SessionUserDataKeyName: claim.Data,
+	session.Created = time.Now()
+	session.Updated = session.Created
+	session.Expiring = session.Created.Add(s.Config.Lifetime)
+	if claim.Data != nil {
+		session.Attached = map[string]interface{}{
+			SessionUserDataKeyName: claim.Data,
+		}
 	}
 
 	if err := s.Config.Storage.Save(ctx, session); err != nil {
@@ -577,7 +600,6 @@ func (s *SessionImpl) Delete(ctx context.Context, id nxid.ID) (Session, error) {
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "SessionImpl.Delete"); span != nil {
 		defer span.Finish()
 	}
-
 	return s.Config.Storage.Remove(ctx, id.String())
 }
 

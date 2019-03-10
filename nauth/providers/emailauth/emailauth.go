@@ -53,6 +53,8 @@ const (
 	MethodName = "email-password"
 )
 
+var _ nauth.AuthenticationProvider = (*InhouseEmailAuth)(nil)
+
 // VerifiedEmail contains the verified token delivered to by a verified client login.
 type VerifiedEmail struct {
 	Token    string `json:"token"`
@@ -85,11 +87,11 @@ type UserValidator interface {
 	Verify(credential EmailCredential, data UserData) (interface{}, error)
 }
 
-var _ nauth.AuthenticationProvider = (*InhouseEmailAuth)(nil)
 
 // InhouseEmailAuth provides an implementation of a AuthenticationProvider,
 // which provides email and password authentication and authorization.
 type InhouseEmailAuth struct {
+	Behaviour providers.Operation
 	UserStore     UserStore
 	UserValidator UserValidator
 	AuthInitiator http.Handler
