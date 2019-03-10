@@ -63,6 +63,15 @@ func (expr *ExprByteStore) ExtendTTL(k string, t time.Duration) error {
 	return nil
 }
 
+// ResetTTL resets expiration or sets expiration of giving key if it has not
+// expired yet.
+//
+// A expiration value of zero means to persist the giving key.
+func (expr *ExprByteStore) ResetTTL(k string, t time.Duration) error {
+	expr.cache.ResetTTL(k, t)
+	return nil
+}
+
 // Updates updates giving key and value into store.
 func (expr *ExprByteStore) Update(k string, v []byte) error {
 	expr.cache.Set(k, v, 0)

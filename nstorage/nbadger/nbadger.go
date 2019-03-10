@@ -227,13 +227,43 @@ func (rd *BadgerStore) ExtendTTL(key string, expiration time.Duration) error {
 		}
 
 		if expiration == 0 {
-			return txn.SetWithTTL(string2Bytes(key), copyBytes(value), 0)
+			return txn.Set(string2Bytes(key), copyBytes(value))
 		}
 
 		var expr = ttlDur(item.ExpiresAt(), 0)
 		var newExpr = expr + expiration
 
 		if err := txn.SetWithTTL(string2Bytes(key), copyBytes(value), newExpr); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+// ResetTTL resets expiration or sets expiration of giving key if it has not
+// expired yet.
+//
+// A expiration value of zero means to persist the giving key.
+func (rd *BadgerStore) ResetTTL(key string, expiration time.Duration) error {
+	return rd.db.Update(func(txn *badger.Txn) error {
+		var item, err = txn.Get(string2Bytes(key))
+		if err != nil {
+			return nerror.Wrap(err, "Failed to retrieve key")
+		}
+		if item.IsDeletedOrExpired() {
+			return nerror.New("not found, possibly expired")
+		}
+
+		value, err := item.Value()
+		if err != nil {
+			return err
+		}
+
+		if expiration == 0 {
+			return txn.Set(string2Bytes(key), copyBytes(value))
+		}
+
+		if err := txn.SetWithTTL(string2Bytes(key), copyBytes(value), expiration); err != nil {
 			return err
 		}
 		return nil

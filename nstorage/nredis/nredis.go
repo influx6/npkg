@@ -223,6 +223,29 @@ func (rd *RedisStore) ExtendTTL(key string, expiration time.Duration) error {
 	return exstatus.Err()
 }
 
+// ResetTTL resets giving expiration value to provided duration.
+//
+// A duration of zero persists the giving key.
+func (rd *RedisStore) ResetTTL(key string, expiration time.Duration) error {
+	var hashKey = rd.getHashKey(key)
+	var nstatus = rd.client.PTTL(hashKey)
+	if err := nstatus.Err(); err != nil {
+		return nerror.WrapOnly(err)
+	}
+
+	if nstatus.Val() < 0 {
+		return nil
+	}
+
+	if expiration == 0 {
+		var exstatus = rd.client.Persist(hashKey)
+		return exstatus.Err()
+	}
+
+	var exstatus = rd.client.Expire(hashKey, expiration)
+	return exstatus.Err()
+}
+
 // Get returns giving session stored with giving key, returning an
 // error if not found.
 func (rd *RedisStore) Get(key string) ([]byte, error) {

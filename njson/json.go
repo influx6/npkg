@@ -209,6 +209,12 @@ func (l *JSON) Message() string {
 	return bytes2String(cn)
 }
 
+// Release releases the JSON object back into the pool.
+func (l *JSON) Release() {
+	l.resetContent()
+	l.release()
+}
+
 // WriteTo makes no attempt like JSON.Message to preserve the byte slice
 // data, as it will reuse the byte slice for future writes, it owns it for
 // optimization reasons.

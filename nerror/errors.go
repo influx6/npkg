@@ -64,7 +64,7 @@ func Meta(err error, header map[string]interface{}) ErrorOption {
 func Stacked() ErrorOption {
 	return func(e error) error {
 		next := unwrapAs(e)
-		next.Frames = nframes.Frames(nframes.GetFrames(3, 32)).Details()
+		next.Frames = nframes.GetFrameDetails(3, 32)
 		return next
 	}
 }
@@ -75,7 +75,7 @@ func Stacked() ErrorOption {
 func StackedBy(n int) ErrorOption {
 	return func(e error) error {
 		next := unwrapAs(e)
-		next.Frames = nframes.Frames(nframes.GetFrames(3, 32)).Details()
+		next.Frames = nframes.GetFrameDetails(3, 32)
 		return next
 	}
 }
@@ -92,7 +92,7 @@ func StackWrap(err error, message string, v ...interface{}) error {
 	var next PointingError
 	next.Parent = err
 	next.Message = message
-	next.Frames = nframes.Frames(nframes.GetFrames(3, 32)).Details()
+	next.Frames = nframes.GetFrameDetails(3, 32)
 	return &next
 }
 
@@ -107,7 +107,7 @@ func NewStack(message string, v ...interface{}) error {
 
 	var next PointingError
 	next.Message = message
-	next.Frames = nframes.Frames(nframes.GetFrames(3, 32)).Details()
+	next.Frames = nframes.GetFrameDetails(3, 32)
 	return &next
 }
 
@@ -121,7 +121,7 @@ func New(message string, v ...interface{}) error {
 
 	var next PointingError
 	next.Message = message
-	next.Frames = nframes.Frames(nframes.GetFrames(3, 32)).Details()
+	next.Frames = nframes.GetFrameDetails(3, 32)
 	return &next
 }
 
@@ -135,23 +135,8 @@ func NewBy(n int, message string, v ...interface{}) error {
 
 	var next PointingError
 	next.Message = message
-	next.Frames = nframes.Frames(nframes.GetFrames(3, n)).Details()
+	next.Frames = nframes.GetFrameDetails(3, n)
 	return &next
-}
-
-// Wrap returns a new error which wraps existing error value if
-// present. It formats message accordingly with arguments from
-// variadic list v.
-func Wrap(err error, message string, v ...interface{}) error {
-	if len(v) != 0 {
-		message = fmt.Sprintf(message, v...)
-	}
-
-	next := wrapOnly(err)
-	next.Parent = err
-	next.Message = message
-	next.Frames = nframes.Frames(nframes.GetFrames(3, 32)).Details()
-	return next
 }
 
 // WrapBy returns a new error which wraps existing error value if
@@ -165,7 +150,7 @@ func WrapBy(n int, err error, message string, v ...interface{}) error {
 	var next PointingError
 	next.Parent = err
 	next.Message = message
-	next.Frames = nframes.Frames(nframes.GetFrames(3, n)).Details()
+	next.Frames = nframes.GetFrameDetails(3, n)
 	return next
 }
 
@@ -200,6 +185,21 @@ func UnwrapDeep(e error) error {
 	return e
 }
 
+// Wrap returns a new error which wraps existing error value if
+// present. It formats message accordingly with arguments from
+// variadic list v.
+func Wrap(err error, message string, v ...interface{}) error {
+	if len(v) != 0 {
+		message = fmt.Sprintf(message, v...)
+	}
+
+	next := wrapOnly(err)
+	next.Parent = err
+	next.Message = message
+	next.Frames = nframes.GetFrameDetails(3, 32)
+	return next
+}
+
 // wrapOnly returns a new error which wraps existing error value if
 // present.
 func wrapOnly(err error) *PointingError {
@@ -211,7 +211,6 @@ func wrapOnly(err error) *PointingError {
 func wrapOnlyBy(err error, depth int, stack int) *PointingError {
 	var next PointingError
 	next.Parent = err
-	next.Message = err.Error()
 	return &next
 }
 
@@ -254,30 +253,38 @@ var bufPool = sync.Pool{
 	},
 }
 
-// Format writes details of error into provided buffer.
-func (pe *PointingError) Format(buf *bytes.Buffer) {
-	buf.WriteString("[!] Error ")
-	buf.WriteString("Message: ")
-	if pe.Message == "" && pe.Parent != nil {
-		buf.WriteString("---------------------")
-	} else {
+// FormatMessage formats giving message of an error.
+func (pe *PointingError) FormatMessage(buf *bytes.Buffer) {
+	if pe.Message != "" {
 		buf.WriteString(pe.Message)
 	}
+
+	if pe.Parent != nil {
+		buf.WriteString(": ")
+		if pem, ok := pe.Parent.(*PointingError); ok {
+			pem.FormatMessage(buf)
+		} else {
+			buf.WriteString(pe.Parent.Error())
+		}
+	}
+}
+
+// FormatStack formats giving stack information for giving error.
+func (pe *PointingError) FormatStack(buf *bytes.Buffer) {
+	buf.WriteString("-------------------------------------------")
 	buf.WriteString("\n")
 	for _, frame := range pe.Frames {
 		fmt.Fprintf(buf, "- [%s] %s:%d", frame.Package, frame.File, frame.Line)
 		buf.WriteString("\n")
 	}
-	buf.WriteString("\n")
-
-	if pe.Parent != nil {
-		buf.WriteString("~")
-
-		switch po := pe.Parent.(type) {
-		case *PointingError:
-			po.Format(buf)
-		default:
-			buf.WriteString(po.Error())
-		}
+	if po, ok := pe.Parent.(*PointingError); ok {
+		po.FormatStack(buf)
 	}
+}
+
+// Format writes details of error into provided buffer.
+func (pe *PointingError) Format(buf *bytes.Buffer) {
+	pe.FormatMessage(buf)
+	buf.WriteString("\n")
+	pe.FormatStack(buf)
 }

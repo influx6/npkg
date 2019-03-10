@@ -3,8 +3,9 @@ package nerror_test
 import (
 	"testing"
 
-	"github.com/gokit/npkg/nerror"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/gokit/npkg/nerror"
 )
 
 func TestErrorCallGraph(t *testing.T) {

@@ -23,9 +23,16 @@ type ExpirableStore interface {
 	// giving key in millisecond.
 	TTL(string) (time.Duration, error)
 
-	// ExtendTTL should extend expiry by giving duration.
-	// Add new duration to the remaining ttl of key.
+	// ExtendTTL should extend expiry by giving duration,
+	// by add new duration to the remaining ttl of key.
+	//
+	// A zero value should persist key.
 	ExtendTTL(string, time.Duration) error
+
+	// ResetTTL should extend reset to giving duration.
+	//
+	// A zero value should persist key.
+	ResetTTL(string, time.Duration) error
 
 	// SaveTTL save giving key with giving expiry.
 	SaveTTL(string, []byte, time.Duration) error
@@ -33,5 +40,7 @@ type ExpirableStore interface {
 	// UpdateTTL updates giving key with giving expiry.
 	// It should update key's value and add giving duration
 	// to remaining time of key.
+	//
+	// A zero value should persist key.
 	UpdateTTL(string, []byte, time.Duration) error
 }
