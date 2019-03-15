@@ -42,6 +42,7 @@ type Session struct {
 	Created  time.Time              `json:"created"`
 	Updated  time.Time              `json:"updated"`
 	Expiring time.Time              `json:"expiring"`
+	Userdata interface{} `json:"userdata"`
 	Attached map[string]interface{} `json:"attached"`
 }
 
@@ -489,13 +490,14 @@ func NewSessionImpl(config SessionConfig) (*SessionImpl, error) {
 // decoding the value and returning the Session object.
 func (s *SessionImpl) Get(req *http.Request) (Session, error) {
 	var span opentracing.Span
+	var ctx = req.Context()
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "SessionImpl.Get"); span != nil {
 		defer span.Finish()
 	}
 
 	var found bool
 	var session Session
-	if session, found = GetSessionFromContext(req.Context()); found {
+	if session, found = GetSessionFromContext(ctx); found {
 		return session, nil
 	}
 
@@ -525,7 +527,7 @@ func (s *SessionImpl) Get(req *http.Request) (Session, error) {
 			return session, nerror.WrapOnly(err)
 		}
 
-		session, err = s.Config.Storage.Get(req.Context(), tmp.ID.String())
+		session, err = s.Config.Storage.Get(ctx, tmp.ID.String())
 		if err != nil {
 			return session, nerror.WrapOnly(err)
 		}
@@ -543,7 +545,7 @@ func (s *SessionImpl) Get(req *http.Request) (Session, error) {
 		return session, nerror.WrapOnly(err)
 	}
 
-	session, err = s.Config.Storage.Get(req.Context(), tmp.ID.String())
+	session, err = s.Config.Storage.Get(ctx, tmp.ID.String())
 	if err != nil {
 		return session, nerror.WrapOnly(err)
 	}

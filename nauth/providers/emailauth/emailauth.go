@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gokit/npkg/nauth"
-	"github.com/gokit/npkg/nauth/sessions"
 	"github.com/gokit/npkg/nerror"
 	"github.com/gokit/npkg/nxid"
 )
@@ -87,15 +86,13 @@ type UserValidator interface {
 	Verify(credential EmailCredential, data UserData) (interface{}, error)
 }
 
-
 // InhouseEmailAuth provides an implementation of a AuthenticationProvider,
 // which provides email and password authentication and authorization.
 type InhouseEmailAuth struct {
-	Behaviour providers.Operation
 	UserStore     UserStore
 	UserValidator UserValidator
 	AuthInitiator http.Handler
-	Sessions      sessions.Sessions
+	Sessions      nauth.Sessions
 }
 
 // Initiate implements the nauth.AuthenticationProvider interface.
@@ -164,16 +161,16 @@ func (eu InhouseEmailAuth) VerifyClaim(cm nauth.Claim) (nauth.VerifiedClaim, err
 func (eu InhouseEmailAuth) Verify(req *http.Request) (nauth.VerifiedClaim, error) {
 	var verified nauth.VerifiedClaim
 
-	// Retrieve Authorization Header from request.
-	var authorizationHeader = req.Header.Get(nauth.AuthorizationHeaderName)
-	var authType, authToken, err = nauth.ParseAuthorization(authorizationHeader)
+	// Retrieve user session from request.
+	var session, err = eu.Sessions.Get(req)
 	if err != nil {
-		return verified, err
+		return verified, nerror.Wrap(err, "http.Request has no existing auth session")
 	}
 
-	_ = authorizationHeader
-	_ = authType
-	_ = authToken
+	verified.Method = session.Method
+	verified.Provider = session.Provider
+	verified.Data = session.Userdata
+
 	panic("implement me")
 }
 

@@ -19,6 +19,12 @@ const (
 // a credential.
 var ErrNoCredentials = errors.New("Claim has no attached credentail")
 
+// Roles exposes an interface to retrieve roles information for
+// a giving identity id.
+type Roles interface {
+	Get(id nxid.ID) ([]string, error)
+}
+
 // Credential defines what we expect from a custom implemented
 // credential.
 type Credential interface {
