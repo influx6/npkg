@@ -355,7 +355,7 @@ func %s(id string, renders ...Render) (*Node, error) {
 `
 
 const mustNodeFormat = `
-// %s provides Node representation for the element %q in %s DOM 
+// Must%s provides Node representation for the element %q in %s DOM 
 // %s
 // https://developer.mozilla.org%s
 func Must%s(id string, renders ...Render) *Node {
