@@ -7,6 +7,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestRespondGroupAtom(t *testing.T) {
+	var group ResponderGroup
+
+	var started = make(chan struct{}, 1)
+	group.Start(started)
+	<-started
+
+	require.True(t, group.running())
+
+	var signals signalDelivery
+	require.NoError(t, group.AddGuaranteed(&signals, started))
+	<-started
+
+	var atom = NewAtom(&group)
+	atom.Set(1)
+	require.Equal(t, 1, atom.Read())
+
+	group.Close()
+
+	require.Equal(t, int(signals.event), 1)
+}
+
 func TestRespondGroup(t *testing.T) {
 	var group ResponderGroup
 	require.False(t, group.running())
