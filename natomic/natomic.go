@@ -46,15 +46,14 @@ type IntSwitch struct {
 // giving boolean.
 func (f *IntSwitch) Flip(b int64) {
 	f.m.Lock()
-	atomic.StoreInt64(&b.fl, b)
+	atomic.StoreInt64(&f.fl, b)
 	f.m.Unlock()
 }
 
 // State returns the current state of the switch.
 func (f *IntSwitch) State() int64 {
-	return atomic.LoadInt64(&b.fl)
+	return atomic.LoadInt64(&f.fl)
 }
-
 
 // UintSwitch defines a concurrent safe bool switch.
 //
@@ -68,11 +67,11 @@ type UintSwitch struct {
 // giving boolean.
 func (f *UintSwitch) Flip(b uint64) {
 	f.m.Lock()
-	atomic.StoreUint64(&b.fl, b)
+	atomic.StoreUint64(&f.fl, b)
 	f.m.Unlock()
 }
 
 // State returns the current state of the switch.
 func (f *UintSwitch) State() uint64 {
-	return atomic.LoadUint64(&b.fl)
+	return atomic.LoadUint64(&f.fl)
 }
