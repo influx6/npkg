@@ -13,7 +13,7 @@ func TestAtomicCounter(t *testing.T) {
 		waiter.Add(1)
 		go func() {
 			defer waiter.Done()
-			for i := int64(0); i < 1000; i++ {
+			for i := 0; i < 1000; i++ {
 				ws.Add(i)
 			}
 		}()
@@ -40,7 +40,7 @@ func BenchmarkIntSwitchWrite(b *testing.B) {
 
 	var ws IntSwitch
 	for i := 0; i < b.N; i++ {
-		ws.Flip(int64(i))
+		ws.Flip(i)
 	}
 }
 
@@ -54,7 +54,7 @@ func BenchmarkAtomicCounter(b *testing.B) {
 		waiter.Add(1)
 		go func() {
 			defer waiter.Done()
-			for i := int64(0); i < 1000; i++ {
+			for i := 0; i < 1000; i++ {
 				ws.Add(i)
 			}
 		}()
@@ -114,7 +114,7 @@ func BenchmarkUintSwitchWrite(b *testing.B) {
 
 	var ws UintSwitch
 	for i := 0; i < b.N; i++ {
-		ws.Flip(uint64(i))
+		ws.Flip(uint(i))
 	}
 }
 
@@ -133,7 +133,7 @@ func BenchmarkIntSwitchRead(b *testing.B) {
 	b.ReportAllocs()
 
 	var ws IntSwitch
-	ws.Flip(int64(1))
+	ws.Flip(1)
 	for i := 0; i < b.N; i++ {
 		ws.Read()
 	}
@@ -144,7 +144,7 @@ func BenchmarkUintSwitchRead(b *testing.B) {
 	b.ReportAllocs()
 
 	var ws UintSwitch
-	ws.Flip(uint64(1))
+	ws.Flip(1)
 	for i := 0; i < b.N; i++ {
 		ws.Read()
 	}
