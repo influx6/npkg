@@ -17,9 +17,7 @@ func TestAtomicCounter(t *testing.T) {
 				ws.Add(i)
 			}
 		}()
-	}
 
-	for i := 0; i < 100; i++ {
 		waiter.Add(1)
 		go func() {
 			defer waiter.Done()
@@ -60,9 +58,7 @@ func BenchmarkAtomicCounter(b *testing.B) {
 				ws.Add(i)
 			}
 		}()
-	}
 
-	for i := 0; i < 100; i++ {
 		waiter.Add(1)
 		go func() {
 			defer waiter.Done()
