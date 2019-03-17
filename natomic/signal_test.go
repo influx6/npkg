@@ -66,6 +66,10 @@ func (event) Target() string {
 	return "target"
 }
 
+func (event) Source() string {
+	return "cli"
+}
+
 func (event) Type() string {
 	return "event"
 }
