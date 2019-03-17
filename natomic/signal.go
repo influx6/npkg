@@ -18,6 +18,7 @@ import (
 // for this signal.
 type Signal interface {
 	Type() string
+	Target() string
 }
 
 // SignalResponder defines an interface for sending signals
@@ -89,6 +90,11 @@ func (am *Atom) Set(val interface{}) error {
 		am.signals.Respond(am)
 	}
 	return nil
+}
+
+// Target returns an empty string, has we have no target.
+func (am *Atom) Target() string {
+	return ""
 }
 
 // Type returns a giving string to represent the behaviour of

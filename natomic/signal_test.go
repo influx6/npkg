@@ -62,6 +62,10 @@ func TestRespondGroup(t *testing.T) {
 
 type event struct{}
 
+func (event) Target() string {
+	return "target"
+}
+
 func (event) Type() string {
 	return "event"
 }
