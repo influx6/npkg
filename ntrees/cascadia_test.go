@@ -1,4 +1,4 @@
-package ntrees_test
+package ntrees
 
 import (
 	"math/rand"
@@ -10,16 +10,16 @@ import (
 )
 
 func TestCascadiaQuery(t *testing.T) {
-	firstChild := trees.Element("div", "div1", trees.Element("span", "span-2"), trees.Element("span", "span-3"))
+	firstChild := Element("div", "div1", Element("span", "span-2"), Element("span", "span-3"))
 	require.NotNil(t, firstChild)
 
-	query, err := trees.Query("div")
+	query, err := Query("div")
 	require.NoError(t, err)
 	require.NotNil(t, query)
 
 	require.True(t, query.Match(firstChild))
 
-	query2, err := trees.Query("div span#span-2")
+	query2, err := Query("div span#span-2")
 	require.NoError(t, err)
 	require.NotNil(t, query2)
 
@@ -29,11 +29,11 @@ func TestCascadiaQuery(t *testing.T) {
 
 var elems = []string{"section", "div", "span", "em", "p", "a", "img"}
 
-func generateRandomNodeTree(n int, base *trees.Node) {
-	node := trees.NewNode(trees.ElementNode, "section", "section-43")
+func generateRandomNodeTree(n int, base *Node) {
+	node := NewNode(ElementNode, "section", "section-43")
 	for i := 0; i < n; i++ {
 		elem := elems[rand.Intn(len(elems))]
-		node.AppendChild(trees.NewNode(trees.ElementNode, elem, strconv.Itoa(i)))
+		node.AppendChild(NewNode(ElementNode, elem, strconv.Itoa(i)))
 	}
 	base.AppendChild(node)
 }

@@ -1,4 +1,4 @@
-package nmap_test
+package nmap
 
 import (
 	"math/rand"
@@ -7,12 +7,10 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/gokit/npkg/nstorage/nmap"
 )
 
 func TestAnyMap(t *testing.T) {
-	var any = nmap.NewAnyMap(10)
+	var any = NewAnyMap(10)
 	require.Equal(t, uint(10), any.Capacity)
 	require.NotNil(t, any)
 
@@ -26,7 +24,7 @@ func TestAnyMap(t *testing.T) {
 }
 
 func TestStringAnyMap(t *testing.T) {
-	var any = nmap.NewStringAnyMap(10)
+	var any = NewStringAnyMap(10)
 	require.Equal(t, uint(10), any.Capacity)
 	require.NotNil(t, any)
 
@@ -40,7 +38,7 @@ func TestStringAnyMap(t *testing.T) {
 }
 
 func TestByteMap(t *testing.T) {
-	var any = nmap.NewByteMap(10)
+	var any = NewByteMap(10)
 	require.Equal(t, uint(10), any.Capacity)
 	require.NotNil(t, any)
 
@@ -54,7 +52,7 @@ func TestByteMap(t *testing.T) {
 }
 
 func TestExpiringByteMap(t *testing.T) {
-	var any = nmap.NewExpiringByteMap()
+	var any = NewExpiringByteMap()
 	require.NotNil(t, any)
 
 	any.Set("amount", string2Bytes("20"), 0)
@@ -76,7 +74,7 @@ func TestExpiringByteMap(t *testing.T) {
 }
 
 func TestStringMap(t *testing.T) {
-	var any = nmap.NewStringMap(10)
+	var any = NewStringMap(10)
 	require.Equal(t, uint(10), any.Capacity)
 	require.NotNil(t, any)
 
@@ -95,7 +93,7 @@ func BenchmarkAnyMap(b *testing.B) {
 	b.Run("set", func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
-		var any = nmap.NewAnyMap()
+		var any = NewAnyMap()
 		any.SetMany(func(cache map[interface{}]interface{}) {
 			for i := 0; i < b.N; i++ {
 				cache[randomString()] = randomString()
@@ -106,7 +104,7 @@ func BenchmarkAnyMap(b *testing.B) {
 	b.Run("set_get", func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
-		var any = nmap.NewAnyMap()
+		var any = NewAnyMap()
 		any.Set("i", 1)
 
 		for i := 0; i < b.N; i++ {
@@ -119,7 +117,7 @@ func BenchmarkStringAnyMap(b *testing.B) {
 	b.Run("set", func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
-		var any = nmap.NewStringAnyMap()
+		var any = NewStringAnyMap()
 		any.SetMany(func(cache map[string]interface{}) {
 			for i := 0; i < b.N; i++ {
 				cache["a"] = i
@@ -130,7 +128,7 @@ func BenchmarkStringAnyMap(b *testing.B) {
 	b.Run("set_get", func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
-		var any = nmap.NewStringAnyMap()
+		var any = NewStringAnyMap()
 		any.Set("i", 1)
 
 		for i := 0; i < b.N; i++ {
@@ -145,10 +143,10 @@ func BenchmarkExpiringByteMap(b *testing.B) {
 	b.Run("set", func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
-		var any = nmap.NewExpiringByteMap(100)
-		any.SetMany(func(cache map[string]nmap.ExpiringValue) {
+		var any = NewExpiringByteMap(100)
+		any.SetMany(func(cache map[string]ExpiringValue) {
 			for i := 0; i < b.N; i++ {
-				cache[randomString()] = nmap.NewExpiringValue(string2Bytes(randomString()), 0)
+				cache[randomString()] = NewExpiringValue(string2Bytes(randomString()), 0)
 			}
 		})
 	})
@@ -156,7 +154,7 @@ func BenchmarkExpiringByteMap(b *testing.B) {
 	b.Run("set_get", func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
-		var any = nmap.NewExpiringByteMap(100)
+		var any = NewExpiringByteMap(100)
 		any.Set("i", string2Bytes("1"), 0)
 
 		for i := 0; i < b.N; i++ {
@@ -171,7 +169,7 @@ func BenchmarkByteMap(b *testing.B) {
 	b.Run("set", func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
-		var any = nmap.NewByteMap(100)
+		var any = NewByteMap(100)
 		any.SetMany(func(cache map[string][]byte) {
 			for i := 0; i < b.N; i++ {
 				cache[randomString()] = string2Bytes(randomString())
@@ -182,7 +180,7 @@ func BenchmarkByteMap(b *testing.B) {
 	b.Run("set_get", func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
-		var any = nmap.NewByteMap(100)
+		var any = NewByteMap(100)
 		any.Set("i", string2Bytes("1"))
 
 		for i := 0; i < b.N; i++ {
@@ -197,7 +195,7 @@ func BenchmarkStringMap(b *testing.B) {
 	b.Run("set", func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
-		var any = nmap.NewStringMap(100)
+		var any = NewStringMap(100)
 		any.SetMany(func(cache map[string]string) {
 			for i := 0; i < b.N; i++ {
 				cache[randomString()] = randomString()
@@ -208,7 +206,7 @@ func BenchmarkStringMap(b *testing.B) {
 	b.Run("set_get", func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
-		var any = nmap.NewStringMap()
+		var any = NewStringMap()
 		any.Set("i", "1")
 
 		for i := 0; i < b.N; i++ {

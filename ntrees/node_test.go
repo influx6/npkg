@@ -1,4 +1,4 @@
-package ntrees_test
+package ntrees
 
 import (
 	"fmt"
@@ -6,27 +6,26 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/gokit/trees"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNode(t *testing.T) {
-	base := trees.NewNode(trees.ElementNode, "red", "767h")
+	base := NewNode(ElementNode, "red", "767h")
 	require.NotNil(t, base)
 
 	for i := 0; i < 1000; i++ {
-		require.NoError(t, base.AppendChild(trees.NewNode(trees.ElementNode, fmt.Sprintf("red%d", i), "65jnj")))
+		require.NoError(t, base.AppendChild(NewNode(ElementNode, fmt.Sprintf("red%d", i), "65jnj")))
 	}
 
 	require.Equal(t, 1000, base.ChildCount())
 }
 
 func TestNode_Remove(t *testing.T) {
-	base := trees.NewNode(trees.ElementNode, "red", "767h")
+	base := NewNode(ElementNode, "red", "767h")
 	require.NotNil(t, base)
 
 	for i := 0; i < 1000; i++ {
-		require.NoError(t, base.AppendChild(trees.NewNode(trees.ElementNode, fmt.Sprintf("red%d", i), "65jnj")))
+		require.NoError(t, base.AppendChild(NewNode(ElementNode, fmt.Sprintf("red%d", i), "65jnj")))
 	}
 
 	require.Equal(t, 1000, base.ChildCount())
@@ -43,11 +42,11 @@ func TestNode_Remove(t *testing.T) {
 }
 
 func TestNode_Remove_Balance(t *testing.T) {
-	base := trees.NewNode(trees.ElementNode, "red", "767h")
+	base := NewNode(ElementNode, "red", "767h")
 	require.NotNil(t, base)
 
 	for i := 0; i < 1000; i++ {
-		require.NoError(t, base.AppendChild(trees.NewNode(trees.ElementNode, fmt.Sprintf("red%d", i), "65jnj")))
+		require.NoError(t, base.AppendChild(NewNode(ElementNode, fmt.Sprintf("red%d", i), "65jnj")))
 	}
 
 	require.Equal(t, 1000, base.ChildCount())
@@ -68,9 +67,9 @@ func BenchmarkNode_Append(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	base := trees.NewNode(trees.ElementNode, "red", "232")
+	base := NewNode(ElementNode, "red", "232")
 	for i := 0; i < 1001; i++ {
-		base.AppendChild(trees.NewNode(trees.ElementNode, strconv.Itoa(i), "45g"))
+		base.AppendChild(NewNode(ElementNode, strconv.Itoa(i), "45g"))
 	}
 }
 
@@ -78,11 +77,11 @@ func BenchmarkNode_Append_Remove_Balance(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	base := trees.NewNode(trees.ElementNode, "red", "232")
+	base := NewNode(ElementNode, "red", "232")
 
 	var count = 4001
 	for i := 0; i < count; i++ {
-		base.AppendChild(trees.NewNode(trees.ElementNode, "sf", strconv.Itoa(i)))
+		base.AppendChild(NewNode(ElementNode, "sf", strconv.Itoa(i)))
 	}
 
 	var deletes = count / 2
@@ -99,11 +98,11 @@ func BenchmarkNode_Append_Remove_With_Balance(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	base := trees.NewNode(trees.ElementNode, "red", "232")
+	base := NewNode(ElementNode, "red", "232")
 
 	var count = 4001
 	for i := 0; i < count; i++ {
-		base.AppendChild(trees.NewNode(trees.ElementNode, strconv.Itoa(i), "343f"))
+		base.AppendChild(NewNode(ElementNode, strconv.Itoa(i), "343f"))
 	}
 
 	var deletes = count / 2
@@ -120,11 +119,11 @@ func BenchmarkNode_Append_SwapAll(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	base := trees.NewNode(trees.ElementNode, "red", "322")
+	base := NewNode(ElementNode, "red", "322")
 
-	var child *trees.Node
+	var child *Node
 	for i := 0; i < 1001; i++ {
-		newChild := trees.NewNode(trees.ElementNode, strconv.Itoa(i), "331")
+		newChild := NewNode(ElementNode, strconv.Itoa(i), "331")
 		if child == nil {
 			base.AppendChild(newChild)
 			continue
@@ -139,11 +138,11 @@ func BenchmarkNode_Append_SwapNode(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	base := trees.NewNode(trees.ElementNode, "red", "112")
+	base := NewNode(ElementNode, "red", "112")
 
-	var child *trees.Node
+	var child *Node
 	for i := 0; i < 1001; i++ {
-		newChild := trees.NewNode(trees.ElementNode, strconv.Itoa(i), "132")
+		newChild := NewNode(ElementNode, strconv.Itoa(i), "132")
 		if child == nil {
 			base.AppendChild(newChild)
 			continue

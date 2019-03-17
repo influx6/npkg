@@ -1,14 +1,12 @@
-package nbadger_test
+package nbadger
 
 import (
 	"os"
 	"testing"
 
 	"github.com/dgraph-io/badger"
-	"github.com/stretchr/testify/require"
-
 	"github.com/gokit/npkg/nstorage/internal/tharness"
-	"github.com/gokit/npkg/nstorage/nbadger"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStoreWithBadgerStore(t *testing.T) {
@@ -19,14 +17,14 @@ func TestStoreWithBadgerStore(t *testing.T) {
 	ops.Dir = "/tmp/badger"
 	ops.ValueDir = "/tmp/badger"
 
-	var store, err = nbadger.NewBadgerStore("", ops, badger.DefaultIteratorOptions)
+	var store, err = NewBadgerStore("", ops, badger.DefaultIteratorOptions)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
 	tharness.TestByteStore(t, store)
 }
 
-func TestsBadgerExpiryStore(t *testing.T) {
+func TestBadgerExpiryStore(t *testing.T) {
 	defer os.RemoveAll("./tmp")
 	require.NoError(t, os.MkdirAll("./tmp/badger", 0777))
 
@@ -34,7 +32,7 @@ func TestsBadgerExpiryStore(t *testing.T) {
 	ops.Dir = "/tmp/badger"
 	ops.ValueDir = "/tmp/badger"
 
-	var store, err = nbadger.NewBadgerStore("", ops, badger.DefaultIteratorOptions)
+	var store, err = NewBadgerStore("", ops, badger.DefaultIteratorOptions)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
