@@ -160,3 +160,26 @@ func BenchmarkBoolSwitchRead(b *testing.B) {
 		ws.Read()
 	}
 }
+
+func BenchmarkAtomWrite(b *testing.B) {
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	var ws = NewAtom(nil)
+	ws.Set(1)
+
+	for i := 0; i < b.N; i++ {
+		ws.Set(i)
+	}
+}
+
+func BenchmarkAtomRead(b *testing.B) {
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	var ws = NewAtom(nil)
+	ws.Set(1)
+	for i := 0; i < b.N; i++ {
+		ws.Read()
+	}
+}
