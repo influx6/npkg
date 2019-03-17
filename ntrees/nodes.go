@@ -249,10 +249,10 @@ func NewNode(nt NodeType, nodeName string, nodeID string) *Node {
 	child.nodeName = nodeName
 	child.id = nxid.New().String()
 
-	child.next = IntAtom()
-	child.prev = IntAtom()
-	child.index = IntAtom()
-	child.kids = newNodeArrayList()
+	child.next = &natomic.IntSwitch{}
+	child.prev = &natomic.IntSwitch{}
+	child.index = &natomic.IntSwitch{}
+	child.kids = &slidingList{}
 
 	child.TextNodes = &NodeHashList{}
 	child.ExpiredNodes = &NodeAttrList{}
