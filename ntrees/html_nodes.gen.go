@@ -13,7 +13,7 @@ func HtmlAnchor(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlAnchor provides Node representation for the element "a" in XHTML/HTML DOM 
+// MustHtmlAnchor provides Node representation for the element "a" in XHTML/HTML DOM 
 // The HTML <a> element (or anchor element) creates a hyperlink to other web pages, files, locations within the same page, email addresses, or any other URL.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a
 func MustHtmlAnchor(id string, renders ...Render) *Node {
@@ -33,7 +33,7 @@ func HtmlAbbreviation(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlAbbreviation provides Node representation for the element "abbr" in XHTML/HTML DOM 
+// MustHtmlAbbreviation provides Node representation for the element "abbr" in XHTML/HTML DOM 
 // The HTML Abbreviation element (<abbr>) represents an abbreviation or acronym; the optional title attribute can provide an expansion or description for the abbreviation.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/abbr
 func MustHtmlAbbreviation(id string, renders ...Render) *Node {
@@ -53,7 +53,7 @@ func HtmlAddress(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlAddress provides Node representation for the element "address" in XHTML/HTML DOM 
+// MustHtmlAddress provides Node representation for the element "address" in XHTML/HTML DOM 
 // The HTML <address> element indicates that the enclosed HTML provides contact information for a person or people, or for an organization.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/address
 func MustHtmlAddress(id string, renders ...Render) *Node {
@@ -73,7 +73,7 @@ func HtmlArea(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlArea provides Node representation for the element "area" in XHTML/HTML DOM 
+// MustHtmlArea provides Node representation for the element "area" in XHTML/HTML DOM 
 // The HTML <area> element defines a hot-spot region on an image, and optionally associates it with a hypertext link. This element is used only within a <map> element.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/area
 func MustHtmlArea(id string, renders ...Render) *Node {
@@ -93,7 +93,7 @@ func HtmlArticle(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlArticle provides Node representation for the element "article" in XHTML/HTML DOM 
+// MustHtmlArticle provides Node representation for the element "article" in XHTML/HTML DOM 
 // The HTML <article> element represents a self-contained composition in a document, page, application, or site, which is intended to be independently distributable or reusable (e.g., in syndication). Examples include: a forum post, a magazine or newspaper article, or a blog entry.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/article
 func MustHtmlArticle(id string, renders ...Render) *Node {
@@ -113,7 +113,7 @@ func HtmlAside(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlAside provides Node representation for the element "aside" in XHTML/HTML DOM 
+// MustHtmlAside provides Node representation for the element "aside" in XHTML/HTML DOM 
 // The HTML <aside> element represents a portion of a document whose content is only indirectly related to the document's main content.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/aside
 func MustHtmlAside(id string, renders ...Render) *Node {
@@ -133,7 +133,7 @@ func HtmlAudio(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlAudio provides Node representation for the element "audio" in XHTML/HTML DOM 
+// MustHtmlAudio provides Node representation for the element "audio" in XHTML/HTML DOM 
 // The HTML <audio> element is used to embed sound content in documents. It may contain one or more audio sources, represented using the src attribute or the <source> element: the browser will choose the most suitable one. It can also be the destination for streamed media, using a MediaStream.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio
 func MustHtmlAudio(id string, renders ...Render) *Node {
@@ -153,7 +153,7 @@ func HtmlBold(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlBold provides Node representation for the element "b" in XHTML/HTML DOM 
+// MustHtmlBold provides Node representation for the element "b" in XHTML/HTML DOM 
 // The HTML Bring Attention To element (<b>)  is used to draw the reader's attention to the element's contents, which are not otherwise granted special importance.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/b
 func MustHtmlBold(id string, renders ...Render) *Node {
@@ -173,7 +173,7 @@ func HtmlBase(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlBase provides Node representation for the element "base" in XHTML/HTML DOM 
+// MustHtmlBase provides Node representation for the element "base" in XHTML/HTML DOM 
 // The HTML <base> element specifies the base URL to use for all relative URLs contained within a document. There can be only one <base> element in a document.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
 func MustHtmlBase(id string, renders ...Render) *Node {
@@ -193,7 +193,7 @@ func HtmlBidirectionalIsolation(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlBidirectionalIsolation provides Node representation for the element "bdi" in XHTML/HTML DOM 
+// MustHtmlBidirectionalIsolation provides Node representation for the element "bdi" in XHTML/HTML DOM 
 // The HTML Bidirectional Isolate element (<bdi>)  tells the browser's bidirectional algorithm to treat the text it contains in isolation from its surrounding text.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdi
 func MustHtmlBidirectionalIsolation(id string, renders ...Render) *Node {
@@ -213,7 +213,7 @@ func HtmlBidirectionalOverride(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlBidirectionalOverride provides Node representation for the element "bdo" in XHTML/HTML DOM 
+// MustHtmlBidirectionalOverride provides Node representation for the element "bdo" in XHTML/HTML DOM 
 // The HTML Bidirectional Text Override element (<bdo>) overrides the current directionality of text, so that the text within is rendered in a different direction.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/bdo
 func MustHtmlBidirectionalOverride(id string, renders ...Render) *Node {
@@ -233,7 +233,7 @@ func HtmlBlockQuote(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlBlockQuote provides Node representation for the element "blockquote" in XHTML/HTML DOM 
+// MustHtmlBlockQuote provides Node representation for the element "blockquote" in XHTML/HTML DOM 
 // The HTML <blockquote> Element (or HTML Block Quotation Element) indicates that the enclosed text is an extended quotation. Usually, this is rendered visually by indentation (see Notes for how to change it). A URL for the source of the quotation may be given using the cite attribute, while a text representation of the source can be given using the <cite> element.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/blockquote
 func MustHtmlBlockQuote(id string, renders ...Render) *Node {
@@ -253,7 +253,7 @@ func HtmlBreak(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlBreak provides Node representation for the element "br" in XHTML/HTML DOM 
+// MustHtmlBreak provides Node representation for the element "br" in XHTML/HTML DOM 
 // The HTML <br> element produces a line break in text (carriage-return). It is useful for writing a poem or an address, where the division of lines is significant.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/br
 func MustHtmlBreak(id string, renders ...Render) *Node {
@@ -273,7 +273,7 @@ func HtmlButton(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlButton provides Node representation for the element "button" in XHTML/HTML DOM 
+// MustHtmlButton provides Node representation for the element "button" in XHTML/HTML DOM 
 // The HTML <button> element represents a clickable button, which can be used in forms or anywhere in a document that needs simple, standard button functionality.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button
 func MustHtmlButton(id string, renders ...Render) *Node {
@@ -293,7 +293,7 @@ func HtmlCanvas(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlCanvas provides Node representation for the element "canvas" in XHTML/HTML DOM 
+// MustHtmlCanvas provides Node representation for the element "canvas" in XHTML/HTML DOM 
 // Use the HTML <canvas> element with either the canvas scripting API or the WebGL API to draw graphics and animations.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/canvas
 func MustHtmlCanvas(id string, renders ...Render) *Node {
@@ -313,7 +313,7 @@ func HtmlCaption(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlCaption provides Node representation for the element "caption" in XHTML/HTML DOM 
+// MustHtmlCaption provides Node representation for the element "caption" in XHTML/HTML DOM 
 // The HTML Table Caption element (<caption>) specifies the caption (or title) of a table, and if used is always the first child of a <table>.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/caption
 func MustHtmlCaption(id string, renders ...Render) *Node {
@@ -333,7 +333,7 @@ func HtmlCitation(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlCitation provides Node representation for the element "cite" in XHTML/HTML DOM 
+// MustHtmlCitation provides Node representation for the element "cite" in XHTML/HTML DOM 
 // The HTML Citation element (<cite>) is used to describe a reference to a cited creative work, and must include the title of that work.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/cite
 func MustHtmlCitation(id string, renders ...Render) *Node {
@@ -353,7 +353,7 @@ func HtmlCode(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlCode provides Node representation for the element "code" in XHTML/HTML DOM 
+// MustHtmlCode provides Node representation for the element "code" in XHTML/HTML DOM 
 // The HTML <code> element displays its contents styled in a fashion intended to indicate that the text is a short fragment of computer code.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/code
 func MustHtmlCode(id string, renders ...Render) *Node {
@@ -373,7 +373,7 @@ func HtmlColumn(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlColumn provides Node representation for the element "col" in XHTML/HTML DOM 
+// MustHtmlColumn provides Node representation for the element "col" in XHTML/HTML DOM 
 // The HTML <col> element defines a column within a table and is used for defining common semantics on all common cells. It is generally found within a <colgroup> element.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/col
 func MustHtmlColumn(id string, renders ...Render) *Node {
@@ -393,7 +393,7 @@ func HtmlColumnGroup(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlColumnGroup provides Node representation for the element "colgroup" in XHTML/HTML DOM 
+// MustHtmlColumnGroup provides Node representation for the element "colgroup" in XHTML/HTML DOM 
 // The HTML <colgroup> element defines a group of columns within a table.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/colgroup
 func MustHtmlColumnGroup(id string, renders ...Render) *Node {
@@ -413,7 +413,7 @@ func HtmlData(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlData provides Node representation for the element "data" in XHTML/HTML DOM 
+// MustHtmlData provides Node representation for the element "data" in XHTML/HTML DOM 
 // The HTML <data> element links a given content with a machine-readable translation. If the content is time- or date-related, the <time> element must be used.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/data
 func MustHtmlData(id string, renders ...Render) *Node {
@@ -433,7 +433,7 @@ func HtmlDataList(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlDataList provides Node representation for the element "datalist" in XHTML/HTML DOM 
+// MustHtmlDataList provides Node representation for the element "datalist" in XHTML/HTML DOM 
 // The HTML <datalist> element contains a set of <option> elements that represent the values available for other controls.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist
 func MustHtmlDataList(id string, renders ...Render) *Node {
@@ -453,7 +453,7 @@ func HtmlDescription(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlDescription provides Node representation for the element "dd" in XHTML/HTML DOM 
+// MustHtmlDescription provides Node representation for the element "dd" in XHTML/HTML DOM 
 // The HTML <dd> element provides the details about or the definition of the preceding term (<dt>) in a description list (<dl>).
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dd
 func MustHtmlDescription(id string, renders ...Render) *Node {
@@ -473,7 +473,7 @@ func HtmlDeletedText(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlDeletedText provides Node representation for the element "del" in XHTML/HTML DOM 
+// MustHtmlDeletedText provides Node representation for the element "del" in XHTML/HTML DOM 
 // The HTML <del> element represents a range of text that has been deleted from a document.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/del
 func MustHtmlDeletedText(id string, renders ...Render) *Node {
@@ -493,7 +493,7 @@ func HtmlDetails(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlDetails provides Node representation for the element "details" in XHTML/HTML DOM 
+// MustHtmlDetails provides Node representation for the element "details" in XHTML/HTML DOM 
 // The HTML Details Element (<details>) creates a disclosure widget in which information is visible only when the widget is toggled into an "open" state.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details
 func MustHtmlDetails(id string, renders ...Render) *Node {
@@ -513,7 +513,7 @@ func HtmlDefinition(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlDefinition provides Node representation for the element "dfn" in XHTML/HTML DOM 
+// MustHtmlDefinition provides Node representation for the element "dfn" in XHTML/HTML DOM 
 // The HTML Definition element (<dfn>) is used to indicate the term being defined within the context of a definition phrase or sentence.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dfn
 func MustHtmlDefinition(id string, renders ...Render) *Node {
@@ -533,7 +533,7 @@ func HtmlDialog(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlDialog provides Node representation for the element "dialog" in XHTML/HTML DOM 
+// MustHtmlDialog provides Node representation for the element "dialog" in XHTML/HTML DOM 
 // The HTML <dialog> element represents a dialog box or other interactive component, such as an inspector or window.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog
 func MustHtmlDialog(id string, renders ...Render) *Node {
@@ -553,7 +553,7 @@ func HtmlDiv(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlDiv provides Node representation for the element "div" in XHTML/HTML DOM 
+// MustHtmlDiv provides Node representation for the element "div" in XHTML/HTML DOM 
 // The HTML Content Division element (<div>) is the generic container for flow content. It has no effect on the content or layout until styled using CSS.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/div
 func MustHtmlDiv(id string, renders ...Render) *Node {
@@ -573,7 +573,7 @@ func HtmlDescriptionList(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlDescriptionList provides Node representation for the element "dl" in XHTML/HTML DOM 
+// MustHtmlDescriptionList provides Node representation for the element "dl" in XHTML/HTML DOM 
 // The HTML <dl> element represents a description list. The element encloses a list of groups of terms (specified using the <dt> element) and descriptions (provided by <dd> elements). Common uses for this element are to implement a glossary or to display metadata (a list of key-value pairs).
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl
 func MustHtmlDescriptionList(id string, renders ...Render) *Node {
@@ -593,7 +593,7 @@ func HtmlDefinitionTerm(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlDefinitionTerm provides Node representation for the element "dt" in XHTML/HTML DOM 
+// MustHtmlDefinitionTerm provides Node representation for the element "dt" in XHTML/HTML DOM 
 // The HTML <dt> element specifies a term in a description or definition list, and as such must be used inside a <dl> element.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt
 func MustHtmlDefinitionTerm(id string, renders ...Render) *Node {
@@ -613,7 +613,7 @@ func HtmlEmphasis(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlEmphasis provides Node representation for the element "em" in XHTML/HTML DOM 
+// MustHtmlEmphasis provides Node representation for the element "em" in XHTML/HTML DOM 
 // The HTML <em> element marks text that has stress emphasis. The <em> element can be nested, with each level of nesting indicating a greater degree of emphasis.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/em
 func MustHtmlEmphasis(id string, renders ...Render) *Node {
@@ -633,7 +633,7 @@ func HtmlEmbed(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlEmbed provides Node representation for the element "embed" in XHTML/HTML DOM 
+// MustHtmlEmbed provides Node representation for the element "embed" in XHTML/HTML DOM 
 // The HTML <embed> element embeds external content at the specified point in the document. This content is provided by an external application or other source of interactive content such as a browser plug-in.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/embed
 func MustHtmlEmbed(id string, renders ...Render) *Node {
@@ -653,7 +653,7 @@ func HtmlFieldSet(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlFieldSet provides Node representation for the element "fieldset" in XHTML/HTML DOM 
+// MustHtmlFieldSet provides Node representation for the element "fieldset" in XHTML/HTML DOM 
 // The HTML <fieldset> element is used to group several controls as well as labels (<label>) within a web form.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/fieldset
 func MustHtmlFieldSet(id string, renders ...Render) *Node {
@@ -673,7 +673,7 @@ func HtmlFigureCaption(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlFigureCaption provides Node representation for the element "figcaption" in XHTML/HTML DOM 
+// MustHtmlFigureCaption provides Node representation for the element "figcaption" in XHTML/HTML DOM 
 // The HTML <figcaption> or Figure Caption element represents a caption or legend describing the rest of the contents of its parent <figure> element.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figcaption
 func MustHtmlFigureCaption(id string, renders ...Render) *Node {
@@ -693,7 +693,7 @@ func HtmlFigure(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlFigure provides Node representation for the element "figure" in XHTML/HTML DOM 
+// MustHtmlFigure provides Node representation for the element "figure" in XHTML/HTML DOM 
 // The HTML <figure> (Figure With Optional Caption) element represents self-contained content, potentially with an optional caption, which is specified using the (<figcaption>) element.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/figure
 func MustHtmlFigure(id string, renders ...Render) *Node {
@@ -713,7 +713,7 @@ func HtmlFooter(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlFooter provides Node representation for the element "footer" in XHTML/HTML DOM 
+// MustHtmlFooter provides Node representation for the element "footer" in XHTML/HTML DOM 
 // The HTML <footer> element represents a footer for its nearest sectioning content or sectioning root element. A footer typically contains information about the author of the section, copyright data or links to related documents.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/footer
 func MustHtmlFooter(id string, renders ...Render) *Node {
@@ -733,7 +733,7 @@ func HtmlForm(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlForm provides Node representation for the element "form" in XHTML/HTML DOM 
+// MustHtmlForm provides Node representation for the element "form" in XHTML/HTML DOM 
 // The HTML <form> element represents a document section that contains interactive controls for submitting information to a web server.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/form
 func MustHtmlForm(id string, renders ...Render) *Node {
@@ -753,7 +753,7 @@ func HtmlHeader1(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlHeader1 provides Node representation for the element "h1" in XHTML/HTML DOM 
+// MustHtmlHeader1 provides Node representation for the element "h1" in XHTML/HTML DOM 
 // The HTML <h1>–<h6> elements represent six levels of section headings. <h1> is the highest section level and <h6> is the lowest.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/Heading_Elements
 func MustHtmlHeader1(id string, renders ...Render) *Node {
@@ -773,7 +773,7 @@ func HtmlHeader(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlHeader provides Node representation for the element "header" in XHTML/HTML DOM 
+// MustHtmlHeader provides Node representation for the element "header" in XHTML/HTML DOM 
 // The HTML <header> element represents introductory content, typically a group of introductory or navigational aids. It may contain some heading elements but also a logo, a search form, an author name, and other elements.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/header
 func MustHtmlHeader(id string, renders ...Render) *Node {
@@ -793,7 +793,7 @@ func HtmlHeadingsGroup(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlHeadingsGroup provides Node representation for the element "hgroup" in XHTML/HTML DOM 
+// MustHtmlHeadingsGroup provides Node representation for the element "hgroup" in XHTML/HTML DOM 
 // The HTML <hgroup> element represents a multi-level heading for a section of a document. It groups a set of <h1>–<h6> elements.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hgroup
 func MustHtmlHeadingsGroup(id string, renders ...Render) *Node {
@@ -813,7 +813,7 @@ func HtmlHorizontalRule(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlHorizontalRule provides Node representation for the element "hr" in XHTML/HTML DOM 
+// MustHtmlHorizontalRule provides Node representation for the element "hr" in XHTML/HTML DOM 
 // The HTML <hr> element represents a thematic break between paragraph-level elements: for example, a change of scene in a story, or a shift of topic within a section.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hr
 func MustHtmlHorizontalRule(id string, renders ...Render) *Node {
@@ -833,7 +833,7 @@ func HtmlItalic(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlItalic provides Node representation for the element "i" in XHTML/HTML DOM 
+// MustHtmlItalic provides Node representation for the element "i" in XHTML/HTML DOM 
 // The HTML <i> element represents a range of text that is set off from the normal text for some reason. Some examples include technical terms, foreign language phrases, or fictional character thoughts. It is typically displayed in italic type.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/i
 func MustHtmlItalic(id string, renders ...Render) *Node {
@@ -853,7 +853,7 @@ func HtmlInlineFrame(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlInlineFrame provides Node representation for the element "iframe" in XHTML/HTML DOM 
+// MustHtmlInlineFrame provides Node representation for the element "iframe" in XHTML/HTML DOM 
 // The HTML Inline Frame element (<iframe>) represents a nested browsing context, embedding another HTML page into the current one.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe
 func MustHtmlInlineFrame(id string, renders ...Render) *Node {
@@ -873,7 +873,7 @@ func HtmlImage(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlImage provides Node representation for the element "img" in XHTML/HTML DOM 
+// MustHtmlImage provides Node representation for the element "img" in XHTML/HTML DOM 
 // The HTML <img> element embeds an image into the document. It is a replaced element.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img
 func MustHtmlImage(id string, renders ...Render) *Node {
@@ -893,7 +893,7 @@ func HtmlInput(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlInput provides Node representation for the element "input" in XHTML/HTML DOM 
+// MustHtmlInput provides Node representation for the element "input" in XHTML/HTML DOM 
 // The HTML <input> element is used to create interactive controls for web-based forms in order to accept data from the user; a wide variety of types of input data and control widgets are available, depending on the device and user agent.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input
 func MustHtmlInput(id string, renders ...Render) *Node {
@@ -913,7 +913,7 @@ func HtmlInsertedText(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlInsertedText provides Node representation for the element "ins" in XHTML/HTML DOM 
+// MustHtmlInsertedText provides Node representation for the element "ins" in XHTML/HTML DOM 
 // The HTML <ins> element represents a range of text that has been added to a document.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ins
 func MustHtmlInsertedText(id string, renders ...Render) *Node {
@@ -933,7 +933,7 @@ func HtmlKeyboardInput(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlKeyboardInput provides Node representation for the element "kbd" in XHTML/HTML DOM 
+// MustHtmlKeyboardInput provides Node representation for the element "kbd" in XHTML/HTML DOM 
 // The HTML Keyboard Input element (<kbd>) represents a span of inline text denoting textual user input from a keyboard, voice input, or any other text entry device.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/kbd
 func MustHtmlKeyboardInput(id string, renders ...Render) *Node {
@@ -953,7 +953,7 @@ func HtmlLabel(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlLabel provides Node representation for the element "label" in XHTML/HTML DOM 
+// MustHtmlLabel provides Node representation for the element "label" in XHTML/HTML DOM 
 // The HTML <label> element represents a caption for an item in a user interface.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label
 func MustHtmlLabel(id string, renders ...Render) *Node {
@@ -973,7 +973,7 @@ func HtmlLegend(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlLegend provides Node representation for the element "legend" in XHTML/HTML DOM 
+// MustHtmlLegend provides Node representation for the element "legend" in XHTML/HTML DOM 
 // The HTML <legend> element represents a caption for the content of its parent <fieldset>.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/legend
 func MustHtmlLegend(id string, renders ...Render) *Node {
@@ -993,7 +993,7 @@ func HtmlListItem(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlListItem provides Node representation for the element "li" in XHTML/HTML DOM 
+// MustHtmlListItem provides Node representation for the element "li" in XHTML/HTML DOM 
 // The HTML <li> element is used to represent an item in a list. It must be contained in a parent element: an ordered list (<ol>), an unordered list (<ul>), or a menu (<menu>). In menus and unordered lists, list items are usually displayed using bullet points. In ordered lists, they are usually displayed with an ascending counter on the left, such as a number or letter.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/li
 func MustHtmlListItem(id string, renders ...Render) *Node {
@@ -1013,7 +1013,7 @@ func HtmlLink(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlLink provides Node representation for the element "link" in XHTML/HTML DOM 
+// MustHtmlLink provides Node representation for the element "link" in XHTML/HTML DOM 
 // The HTML External Resource Link element (<link>) specifies relationships between the current document and an external resource. This element is most commonly used to link to stylesheets, but is also used to establish site icons (both "favicon" style icons and mobile home screen/app icons) among other things.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link
 func MustHtmlLink(id string, renders ...Render) *Node {
@@ -1033,7 +1033,7 @@ func HtmlMain(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlMain provides Node representation for the element "main" in XHTML/HTML DOM 
+// MustHtmlMain provides Node representation for the element "main" in XHTML/HTML DOM 
 // The HTML <main> element represents the dominant content of the <body> of a document. The main content area consists of content that is directly related to or expands upon the central topic of a document, or the central functionality of an application.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/main
 func MustHtmlMain(id string, renders ...Render) *Node {
@@ -1053,7 +1053,7 @@ func HtmlMap(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlMap provides Node representation for the element "map" in XHTML/HTML DOM 
+// MustHtmlMap provides Node representation for the element "map" in XHTML/HTML DOM 
 // The HTML <map> element is used with <area> elements to define an image map (a clickable link area).
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/map
 func MustHtmlMap(id string, renders ...Render) *Node {
@@ -1073,7 +1073,7 @@ func HtmlMark(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlMark provides Node representation for the element "mark" in XHTML/HTML DOM 
+// MustHtmlMark provides Node representation for the element "mark" in XHTML/HTML DOM 
 // The HTML Mark Text element (<mark>) represents text which is marked or highlighted for reference or notation purposes, due to the marked passage's relevance or importance in the enclosing context.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/mark
 func MustHtmlMark(id string, renders ...Render) *Node {
@@ -1093,7 +1093,7 @@ func HtmlMenu(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlMenu provides Node representation for the element "menu" in XHTML/HTML DOM 
+// MustHtmlMenu provides Node representation for the element "menu" in XHTML/HTML DOM 
 // The HTML <menu> element represents a group of commands that a user can perform or activate. This includes both list menus, which might appear across the top of a screen, as well as context menus, such as those that might appear underneath a button after it has been clicked.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/menu
 func MustHtmlMenu(id string, renders ...Render) *Node {
@@ -1113,7 +1113,7 @@ func HtmlMeta(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlMeta provides Node representation for the element "meta" in XHTML/HTML DOM 
+// MustHtmlMeta provides Node representation for the element "meta" in XHTML/HTML DOM 
 // The HTML <meta> element represents metadata that cannot be represented by other HTML meta-related elements, like <base>, <link>, <script>, <style> or <title>.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta
 func MustHtmlMeta(id string, renders ...Render) *Node {
@@ -1133,7 +1133,7 @@ func HtmlMeter(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlMeter provides Node representation for the element "meter" in XHTML/HTML DOM 
+// MustHtmlMeter provides Node representation for the element "meter" in XHTML/HTML DOM 
 // The HTML <meter> element represents either a scalar value within a known range or a fractional value.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meter
 func MustHtmlMeter(id string, renders ...Render) *Node {
@@ -1153,7 +1153,7 @@ func HtmlNavigation(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlNavigation provides Node representation for the element "nav" in XHTML/HTML DOM 
+// MustHtmlNavigation provides Node representation for the element "nav" in XHTML/HTML DOM 
 // The HTML <nav> element represents a section of a page whose purpose is to provide navigation links, either within the current document or to other documents. Common examples of navigation sections are menus, tables of contents, and indexes.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/nav
 func MustHtmlNavigation(id string, renders ...Render) *Node {
@@ -1173,7 +1173,7 @@ func HtmlNoScript(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlNoScript provides Node representation for the element "noscript" in XHTML/HTML DOM 
+// MustHtmlNoScript provides Node representation for the element "noscript" in XHTML/HTML DOM 
 // The HTML <noscript> element defines a section of HTML to be inserted if a script type on the page is unsupported or if scripting is currently turned off in the browser.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/noscript
 func MustHtmlNoScript(id string, renders ...Render) *Node {
@@ -1193,7 +1193,7 @@ func HtmlObject(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlObject provides Node representation for the element "object" in XHTML/HTML DOM 
+// MustHtmlObject provides Node representation for the element "object" in XHTML/HTML DOM 
 // The HTML <object> element represents an external resource, which can be treated as an image, a nested browsing context, or a resource to be handled by a plugin.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/object
 func MustHtmlObject(id string, renders ...Render) *Node {
@@ -1213,7 +1213,7 @@ func HtmlOrderedList(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlOrderedList provides Node representation for the element "ol" in XHTML/HTML DOM 
+// MustHtmlOrderedList provides Node representation for the element "ol" in XHTML/HTML DOM 
 // The HTML <ol> element represents an ordered list of items, typically rendered as a numbered list.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ol
 func MustHtmlOrderedList(id string, renders ...Render) *Node {
@@ -1233,7 +1233,7 @@ func HtmlOptionsGroup(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlOptionsGroup provides Node representation for the element "optgroup" in XHTML/HTML DOM 
+// MustHtmlOptionsGroup provides Node representation for the element "optgroup" in XHTML/HTML DOM 
 // The HTML <optgroup> element creates a grouping of options within a <select> element.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/optgroup
 func MustHtmlOptionsGroup(id string, renders ...Render) *Node {
@@ -1253,7 +1253,7 @@ func HtmlOption(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlOption provides Node representation for the element "option" in XHTML/HTML DOM 
+// MustHtmlOption provides Node representation for the element "option" in XHTML/HTML DOM 
 // The HTML <option> element is used to define an item contained in a <select>, an <optgroup>, or a <datalist> element. As such, <option> can represent menu items in popups and other lists of items in an HTML document.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option
 func MustHtmlOption(id string, renders ...Render) *Node {
@@ -1273,7 +1273,7 @@ func HtmlOutput(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlOutput provides Node representation for the element "output" in XHTML/HTML DOM 
+// MustHtmlOutput provides Node representation for the element "output" in XHTML/HTML DOM 
 // The HTML Output element (<output>) is a container element into which a site or app can inject the results of a calculation or the outcome of a user action.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/output
 func MustHtmlOutput(id string, renders ...Render) *Node {
@@ -1293,7 +1293,7 @@ func HtmlParagraph(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlParagraph provides Node representation for the element "p" in XHTML/HTML DOM 
+// MustHtmlParagraph provides Node representation for the element "p" in XHTML/HTML DOM 
 // The HTML <p> element represents a paragraph.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/p
 func MustHtmlParagraph(id string, renders ...Render) *Node {
@@ -1313,7 +1313,7 @@ func HtmlParameter(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlParameter provides Node representation for the element "param" in XHTML/HTML DOM 
+// MustHtmlParameter provides Node representation for the element "param" in XHTML/HTML DOM 
 // The HTML <param> element defines parameters for an <object> element.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/param
 func MustHtmlParameter(id string, renders ...Render) *Node {
@@ -1333,7 +1333,7 @@ func HtmlPicture(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlPicture provides Node representation for the element "picture" in XHTML/HTML DOM 
+// MustHtmlPicture provides Node representation for the element "picture" in XHTML/HTML DOM 
 // The HTML <picture> element contains zero or more <source> elements and one <img> element to provide versions of an image for different display/device scenarios.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/picture
 func MustHtmlPicture(id string, renders ...Render) *Node {
@@ -1353,7 +1353,7 @@ func HtmlPreformatted(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlPreformatted provides Node representation for the element "pre" in XHTML/HTML DOM 
+// MustHtmlPreformatted provides Node representation for the element "pre" in XHTML/HTML DOM 
 // The HTML <pre> element represents preformatted text which is to be presented exactly as written in the HTML file.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
 func MustHtmlPreformatted(id string, renders ...Render) *Node {
@@ -1373,7 +1373,7 @@ func HtmlProgress(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlProgress provides Node representation for the element "progress" in XHTML/HTML DOM 
+// MustHtmlProgress provides Node representation for the element "progress" in XHTML/HTML DOM 
 // The HTML <progress> element displays an indicator showing the completion progress of a task, typically displayed as a progress bar.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress
 func MustHtmlProgress(id string, renders ...Render) *Node {
@@ -1393,7 +1393,7 @@ func HtmlQuote(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlQuote provides Node representation for the element "q" in XHTML/HTML DOM 
+// MustHtmlQuote provides Node representation for the element "q" in XHTML/HTML DOM 
 // The HTML <q> element  indicates that the enclosed text is a short inline quotation. Most modern browsers implement this by surrounding the text in quotation marks. 
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/q
 func MustHtmlQuote(id string, renders ...Render) *Node {
@@ -1413,7 +1413,7 @@ func HtmlRb(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlRb provides Node representation for the element "rb" in XHTML/HTML DOM 
+// MustHtmlRb provides Node representation for the element "rb" in XHTML/HTML DOM 
 // The HTML Ruby Base (<rb>) element is used to delimit the base text component of a  <ruby> annotation, i.e. the text that is being annotated.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rb
 func MustHtmlRb(id string, renders ...Render) *Node {
@@ -1433,7 +1433,7 @@ func HtmlRubyParenthesis(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlRubyParenthesis provides Node representation for the element "rp" in XHTML/HTML DOM 
+// MustHtmlRubyParenthesis provides Node representation for the element "rp" in XHTML/HTML DOM 
 // The HTML Ruby Fallback Parenthesis (<rp>) element is used to provide fall-back parentheses for browsers that do not support display of ruby annotations using the <ruby> element.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rp
 func MustHtmlRubyParenthesis(id string, renders ...Render) *Node {
@@ -1453,7 +1453,7 @@ func HtmlRubyText(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlRubyText provides Node representation for the element "rt" in XHTML/HTML DOM 
+// MustHtmlRubyText provides Node representation for the element "rt" in XHTML/HTML DOM 
 // The HTML Ruby Text (<rt>) element specifies the ruby text component of a ruby annotation, which is used to provide pronunciation, translation, or transliteration information for East Asian typography. The <rt> element must always be contained within a <ruby> element.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rt
 func MustHtmlRubyText(id string, renders ...Render) *Node {
@@ -1473,7 +1473,7 @@ func HtmlRtc(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlRtc provides Node representation for the element "rtc" in XHTML/HTML DOM 
+// MustHtmlRtc provides Node representation for the element "rtc" in XHTML/HTML DOM 
 // The HTML Ruby Text Container (<rtc>) element embraces semantic annotations of characters presented in a ruby of <rb> elements used inside of <ruby> element. <rb> elements can have both pronunciation (<rt>) and semantic (<rtc>) annotations.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/rtc
 func MustHtmlRtc(id string, renders ...Render) *Node {
@@ -1493,7 +1493,7 @@ func HtmlRuby(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlRuby provides Node representation for the element "ruby" in XHTML/HTML DOM 
+// MustHtmlRuby provides Node representation for the element "ruby" in XHTML/HTML DOM 
 // The HTML <ruby> element represents a ruby annotation. Ruby annotations are for showing pronunciation of East Asian characters.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
 func MustHtmlRuby(id string, renders ...Render) *Node {
@@ -1513,7 +1513,7 @@ func HtmlStrikethrough(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlStrikethrough provides Node representation for the element "s" in XHTML/HTML DOM 
+// MustHtmlStrikethrough provides Node representation for the element "s" in XHTML/HTML DOM 
 // The HTML <s> element renders text with a strikethrough, or a line through it. Use the <s> element to represent things that are no longer relevant or no longer accurate. However, <s> is not appropriate when indicating document edits; for that, use the <del> and <ins> elements, as appropriate.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/s
 func MustHtmlStrikethrough(id string, renders ...Render) *Node {
@@ -1533,7 +1533,7 @@ func HtmlSample(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlSample provides Node representation for the element "samp" in XHTML/HTML DOM 
+// MustHtmlSample provides Node representation for the element "samp" in XHTML/HTML DOM 
 // The HTML Sample Element (<samp>) is used to enclose inline text which represents sample (or quoted) output from a computer program.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/samp
 func MustHtmlSample(id string, renders ...Render) *Node {
@@ -1553,7 +1553,7 @@ func HtmlScript(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlScript provides Node representation for the element "script" in XHTML/HTML DOM 
+// MustHtmlScript provides Node representation for the element "script" in XHTML/HTML DOM 
 // The HTML <script> element is used to embed or reference executable code; this is typically used to embed or refer to JavaScript code.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
 func MustHtmlScript(id string, renders ...Render) *Node {
@@ -1573,7 +1573,7 @@ func HtmlSection(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlSection provides Node representation for the element "section" in XHTML/HTML DOM 
+// MustHtmlSection provides Node representation for the element "section" in XHTML/HTML DOM 
 // The HTML <section> element represents a standalone section — which doesn't have a more specific semantic element to represent it — contained within an HTML document.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section
 func MustHtmlSection(id string, renders ...Render) *Node {
@@ -1593,7 +1593,7 @@ func HtmlSelect(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlSelect provides Node representation for the element "select" in XHTML/HTML DOM 
+// MustHtmlSelect provides Node representation for the element "select" in XHTML/HTML DOM 
 // The HTML <select> element represents a control that provides a menu of options
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select
 func MustHtmlSelect(id string, renders ...Render) *Node {
@@ -1613,7 +1613,7 @@ func HtmlSlot(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlSlot provides Node representation for the element "slot" in XHTML/HTML DOM 
+// MustHtmlSlot provides Node representation for the element "slot" in XHTML/HTML DOM 
 // The HTML <slot> element—part of the Web Components technology suite—is a placeholder inside a web component that you can fill with your own markup, which lets you create separate DOM trees and present them together.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/slot
 func MustHtmlSlot(id string, renders ...Render) *Node {
@@ -1633,7 +1633,7 @@ func HtmlSmall(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlSmall provides Node representation for the element "small" in XHTML/HTML DOM 
+// MustHtmlSmall provides Node representation for the element "small" in XHTML/HTML DOM 
 // The HTML <small> element makes the text font size one size smaller (for example, from large to medium, or from small to x-small) down to the browser's minimum font size.  In HTML5, this element is repurposed to represent side-comments and small print, including copyright and legal text, independent of its styled presentation.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/small
 func MustHtmlSmall(id string, renders ...Render) *Node {
@@ -1653,7 +1653,7 @@ func HtmlSource(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlSource provides Node representation for the element "source" in XHTML/HTML DOM 
+// MustHtmlSource provides Node representation for the element "source" in XHTML/HTML DOM 
 // The HTML <source> element specifies multiple media resources for the <picture>, the <audio> element, or the <video> element.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source
 func MustHtmlSource(id string, renders ...Render) *Node {
@@ -1673,7 +1673,7 @@ func HtmlSpan(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlSpan provides Node representation for the element "span" in XHTML/HTML DOM 
+// MustHtmlSpan provides Node representation for the element "span" in XHTML/HTML DOM 
 // The HTML <span> element is a generic inline container for phrasing content, which does not inherently represent anything. It can be used to group elements for styling purposes (using the class or id attributes), or because they share attribute values, such as lang.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/span
 func MustHtmlSpan(id string, renders ...Render) *Node {
@@ -1693,7 +1693,7 @@ func HtmlStrong(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlStrong provides Node representation for the element "strong" in XHTML/HTML DOM 
+// MustHtmlStrong provides Node representation for the element "strong" in XHTML/HTML DOM 
 // The HTML Strong Importance Element (<strong>) indicates that its contents have strong importance, seriousness, or urgency. Browsers typically render the contents in bold type.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/strong
 func MustHtmlStrong(id string, renders ...Render) *Node {
@@ -1713,7 +1713,7 @@ func HtmlStyle(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlStyle provides Node representation for the element "style" in XHTML/HTML DOM 
+// MustHtmlStyle provides Node representation for the element "style" in XHTML/HTML DOM 
 // The HTML <style> element contains style information for a document, or part of a document.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
 func MustHtmlStyle(id string, renders ...Render) *Node {
@@ -1733,7 +1733,7 @@ func HtmlSubscript(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlSubscript provides Node representation for the element "sub" in XHTML/HTML DOM 
+// MustHtmlSubscript provides Node representation for the element "sub" in XHTML/HTML DOM 
 // The HTML Subscript element (<sub>) specifies inline text which should be displayed as subscript for solely typographical reasons.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sub
 func MustHtmlSubscript(id string, renders ...Render) *Node {
@@ -1753,7 +1753,7 @@ func HtmlSummary(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlSummary provides Node representation for the element "summary" in XHTML/HTML DOM 
+// MustHtmlSummary provides Node representation for the element "summary" in XHTML/HTML DOM 
 // The HTML Disclosure Summary element (<summary>) element specifies a summary, caption, or legend for a <details> element's disclosure box.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary
 func MustHtmlSummary(id string, renders ...Render) *Node {
@@ -1773,7 +1773,7 @@ func HtmlSuperscript(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlSuperscript provides Node representation for the element "sup" in XHTML/HTML DOM 
+// MustHtmlSuperscript provides Node representation for the element "sup" in XHTML/HTML DOM 
 // The HTML Superscript element (<sup>) specifies inline text which is to be displayed as superscript for solely typographical reasons.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/sup
 func MustHtmlSuperscript(id string, renders ...Render) *Node {
@@ -1793,7 +1793,7 @@ func HtmlTable(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlTable provides Node representation for the element "table" in XHTML/HTML DOM 
+// MustHtmlTable provides Node representation for the element "table" in XHTML/HTML DOM 
 // The HTML <table> element represents tabular data — that is, information presented in a two-dimensional table comprised of rows and columns of cells containing data.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table
 func MustHtmlTable(id string, renders ...Render) *Node {
@@ -1813,7 +1813,7 @@ func HtmlTableBody(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlTableBody provides Node representation for the element "tbody" in XHTML/HTML DOM 
+// MustHtmlTableBody provides Node representation for the element "tbody" in XHTML/HTML DOM 
 // The HTML Table Body element (<tbody>) encapsulates a set of table row (<tr> elements), indicating that they comprise the body of the table (<table>).
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tbody
 func MustHtmlTableBody(id string, renders ...Render) *Node {
@@ -1833,7 +1833,7 @@ func HtmlTableData(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlTableData provides Node representation for the element "td" in XHTML/HTML DOM 
+// MustHtmlTableData provides Node representation for the element "td" in XHTML/HTML DOM 
 // The HTML <td> element defines a cell of a table that contains data. It participates in the table model.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td
 func MustHtmlTableData(id string, renders ...Render) *Node {
@@ -1853,7 +1853,7 @@ func HtmlTemplate(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlTemplate provides Node representation for the element "template" in XHTML/HTML DOM 
+// MustHtmlTemplate provides Node representation for the element "template" in XHTML/HTML DOM 
 // The HTML Content Template (<template>) element is a mechanism for holding client-side content that is not to be rendered when a page is loaded but may subsequently be instantiated during runtime using JavaScript.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template
 func MustHtmlTemplate(id string, renders ...Render) *Node {
@@ -1873,7 +1873,7 @@ func HtmlTextArea(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlTextArea provides Node representation for the element "textarea" in XHTML/HTML DOM 
+// MustHtmlTextArea provides Node representation for the element "textarea" in XHTML/HTML DOM 
 // The HTML <textarea> element represents a multi-line plain-text editing control, useful when you want to allow users to enter a sizeable amount of free-form text, for example a comment on a review or feedback form.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/textarea
 func MustHtmlTextArea(id string, renders ...Render) *Node {
@@ -1893,7 +1893,7 @@ func HtmlTableFoot(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlTableFoot provides Node representation for the element "tfoot" in XHTML/HTML DOM 
+// MustHtmlTableFoot provides Node representation for the element "tfoot" in XHTML/HTML DOM 
 // The HTML <tfoot> element defines a set of rows summarizing the columns of the table.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tfoot
 func MustHtmlTableFoot(id string, renders ...Render) *Node {
@@ -1913,7 +1913,7 @@ func HtmlTableHeader(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlTableHeader provides Node representation for the element "th" in XHTML/HTML DOM 
+// MustHtmlTableHeader provides Node representation for the element "th" in XHTML/HTML DOM 
 // The HTML <th> element defines a cell as header of a group of table cells. The exact nature of this group is defined by the scope and headers attributes.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th
 func MustHtmlTableHeader(id string, renders ...Render) *Node {
@@ -1933,7 +1933,7 @@ func HtmlTableHead(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlTableHead provides Node representation for the element "thead" in XHTML/HTML DOM 
+// MustHtmlTableHead provides Node representation for the element "thead" in XHTML/HTML DOM 
 // The HTML <thead> element defines a set of rows defining the head of the columns of the table.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/thead
 func MustHtmlTableHead(id string, renders ...Render) *Node {
@@ -1953,7 +1953,7 @@ func HtmlTime(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlTime provides Node representation for the element "time" in XHTML/HTML DOM 
+// MustHtmlTime provides Node representation for the element "time" in XHTML/HTML DOM 
 // The HTML <time> element represents a specific period in time.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time
 func MustHtmlTime(id string, renders ...Render) *Node {
@@ -1973,7 +1973,7 @@ func HtmlTitle(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlTitle provides Node representation for the element "title" in XHTML/HTML DOM 
+// MustHtmlTitle provides Node representation for the element "title" in XHTML/HTML DOM 
 // The HTML Title element (<title>) defines the document's title that is shown in a browser's title bar or a page's tab.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
 func MustHtmlTitle(id string, renders ...Render) *Node {
@@ -1993,7 +1993,7 @@ func HtmlTableRow(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlTableRow provides Node representation for the element "tr" in XHTML/HTML DOM 
+// MustHtmlTableRow provides Node representation for the element "tr" in XHTML/HTML DOM 
 // The HTML <tr> element defines a row of cells in a table. The row's cells can then be established using a mix of <td> (data cell) and <th> (header cell) elements.The HTML <tr> element specifies that the markup contained inside the <tr> block comprises one row of a table, inside which the <th> and <td> elements create header and data cells, respectively, within the row.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tr
 func MustHtmlTableRow(id string, renders ...Render) *Node {
@@ -2013,7 +2013,7 @@ func HtmlTrack(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlTrack provides Node representation for the element "track" in XHTML/HTML DOM 
+// MustHtmlTrack provides Node representation for the element "track" in XHTML/HTML DOM 
 // The HTML <track> element is used as a child of the media elements <audio> and <video>. It lets you specify timed text tracks (or time-based data), for example to automatically handle subtitles. The tracks are formatted in WebVTT format (.vtt files) — Web Video Text Tracks or Timed Text Markup Language (TTML).
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/track
 func MustHtmlTrack(id string, renders ...Render) *Node {
@@ -2033,7 +2033,7 @@ func HtmlUnderline(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlUnderline provides Node representation for the element "u" in XHTML/HTML DOM 
+// MustHtmlUnderline provides Node representation for the element "u" in XHTML/HTML DOM 
 // The HTML Unarticulated Annotation Element (<u>) represents a span of inline text which should be rendered in a way that indicates that it has a non-textual annotation.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/u
 func MustHtmlUnderline(id string, renders ...Render) *Node {
@@ -2053,7 +2053,7 @@ func HtmlUnorderedList(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlUnorderedList provides Node representation for the element "ul" in XHTML/HTML DOM 
+// MustHtmlUnorderedList provides Node representation for the element "ul" in XHTML/HTML DOM 
 // The HTML <ul> element represents an unordered list of items, typically rendered as a bulleted list.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ul
 func MustHtmlUnorderedList(id string, renders ...Render) *Node {
@@ -2073,7 +2073,7 @@ func HtmlVariable(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlVariable provides Node representation for the element "var" in XHTML/HTML DOM 
+// MustHtmlVariable provides Node representation for the element "var" in XHTML/HTML DOM 
 // The HTML Variable element (<var>) represents the name of a variable in a mathematical expression or a programming context.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/var
 func MustHtmlVariable(id string, renders ...Render) *Node {
@@ -2093,7 +2093,7 @@ func HtmlVideo(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlVideo provides Node representation for the element "video" in XHTML/HTML DOM 
+// MustHtmlVideo provides Node representation for the element "video" in XHTML/HTML DOM 
 // The HTML Video element (<video>) embeds a media player which supports video playback into the document.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video
 func MustHtmlVideo(id string, renders ...Render) *Node {
@@ -2113,7 +2113,7 @@ func HtmlWordBreakOpportunity(id string, renders ...Render) (*Node, error) {
 }
 
 
-// HtmlWordBreakOpportunity provides Node representation for the element "wbr" in XHTML/HTML DOM 
+// MustHtmlWordBreakOpportunity provides Node representation for the element "wbr" in XHTML/HTML DOM 
 // The HTML <wbr> element represents a word break opportunity—a position within text where the browser may optionally break a line, though its line-breaking rules would not otherwise create a break at that location.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/wbr
 func MustHtmlWordBreakOpportunity(id string, renders ...Render) *Node {
