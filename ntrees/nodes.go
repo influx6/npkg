@@ -206,7 +206,7 @@ type Node struct {
 	Attrs        AttrList
 	TextNodes    *NodeHashList
 	ExpiredNodes *NodeAttrList
-	Event []EventResponder
+	Event *EventHashList
 
 	parent   *Node
 	id       string
@@ -249,7 +249,7 @@ func NewNode(nt NodeType, nodeName string, nodeID string) *Node {
 	child.nodeID = nodeID
 	child.nodeName = nodeName
 	child.id = nxid.New().String()
-
+	child.Event = NewEventHashList()
 	child.next = &natomic.IntSwitch{}
 	child.prev = &natomic.IntSwitch{}
 	child.index = &natomic.IntSwitch{}

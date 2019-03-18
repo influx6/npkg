@@ -28,6 +28,13 @@ type EventHashList struct {
 	nodes map[string]EventDescriptor
 }
 
+// NewEventHashList returns a new instance EventHashList.
+func NewEventHashList() *EventHashList {
+	return &EventHashList{
+		nodes: map[string]EventDescriptor{},
+	}
+}
+
 // Reset resets the internal hashmap used for storing
 // nodes. There by removing all registered nodes.
 func (na *EventHashList) Reset() {
