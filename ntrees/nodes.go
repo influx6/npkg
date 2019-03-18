@@ -206,6 +206,7 @@ type Node struct {
 	Attrs        AttrList
 	TextNodes    *NodeHashList
 	ExpiredNodes *NodeAttrList
+	Event []EventResponder
 
 	parent   *Node
 	id       string
@@ -302,6 +303,11 @@ func (n *Node) Get(index int) (*Node, error) {
 // RefID returns the reference id of giving node.
 func (n *Node) RefID() string {
 	return n.id
+}
+
+// Respond implements the natomic.SignalResponder interface.
+func (n *Node) Respond(s natomic.Signal) string {
+	n.
 }
 
 // ID returns user-provided id of giving node.
