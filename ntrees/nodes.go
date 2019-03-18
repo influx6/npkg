@@ -206,18 +206,17 @@ type Node struct {
 	Attrs        AttrList
 	TextNodes    *NodeHashList
 	ExpiredNodes *NodeAttrList
-	Event *EventHashList
-
-	parent   *Node
-	id       string
-	nodeID   string
-	nodeName string
-	content  Stringer
-	nt       NodeType
-	index    *natomic.IntSwitch
-	next     *natomic.IntSwitch
-	prev     *natomic.IntSwitch
-	kids     *slidingList
+	Event        *EventHashList
+	parent       *Node
+	id           string
+	nodeID       string
+	nodeName     string
+	content      Stringer
+	nt           NodeType
+	index        *natomic.IntSwitch
+	next         *natomic.IntSwitch
+	prev         *natomic.IntSwitch
+	kids         *slidingList
 }
 
 // NewNode returns a new Node instance with the giving Node as
@@ -248,12 +247,12 @@ func NewNode(nt NodeType, nodeName string, nodeID string) *Node {
 	child.nt = nt
 	child.nodeID = nodeID
 	child.nodeName = nodeName
+	child.kids = &slidingList{}
 	child.id = nxid.New().String()
 	child.Event = NewEventHashList()
 	child.next = &natomic.IntSwitch{}
 	child.prev = &natomic.IntSwitch{}
 	child.index = &natomic.IntSwitch{}
-	child.kids = &slidingList{}
 
 	child.TextNodes = &NodeHashList{}
 	child.ExpiredNodes = &NodeAttrList{}
@@ -306,8 +305,8 @@ func (n *Node) RefID() string {
 }
 
 // Respond implements the natomic.SignalResponder interface.
-func (n *Node) Respond(s natomic.Signal) string {
-	n.
+func (n *Node) Respond(s natomic.Signal) {
+
 }
 
 // ID returns user-provided id of giving node.
