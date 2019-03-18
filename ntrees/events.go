@@ -4,46 +4,34 @@ import (
 	"github.com/gokit/npkg/natomic"
 )
 
-type EventHandler func(natomic.Signal)
-
-type EventResponder struct {
+// EventDescriptor defines a type representing a event descriptor with
+// associated response.
+type EventDescriptor struct {
 	Name            string
 	Immediate       bool
 	PreventDefault  bool
 	StopPropagation bool
-	Handlers        []EventHandler
-}
-
-// Add adds giving handlers to the list of EventResponder handlers.
-func (er *EventResponder) Add(h EventHandler) {
-	if capacity := cap(er.Handlers); capacity == len(er.Handlers) {
-		if capacity == 0 {
-			capacity = 1
-		}
-		var newHandlers = make([]EventHandler, capacity*2)
-		var copied = copy(newHandlers, er.Handlers)
-		er.Handlers = newHandlers[:copied]
-	}
-	er.Handlers = append(er.Handlers, h)
+	Handler         natomic.SignalResponder
 }
 
 // Respond delivers giving event signal to all handlers.
-func (er *EventResponder) Respond(s natomic.Signal) {
-	for _, h := range er.Handlers {
-		h(s)
+func (er *EventDescriptor) Respond(s natomic.Signal) {
+	if er.Handler == nil {
+		return
 	}
+	er.Handler.Respond(s)
 }
 
 // EventHashList implements the a set list for Nodes using
 // their Node.RefID() value as unique keys.
 type EventHashList struct {
-	nodes map[string]EventResponder
+	nodes map[string]EventDescriptor
 }
 
 // Reset resets the internal hashmap used for storing
 // nodes. There by removing all registered nodes.
 func (na *EventHashList) Reset() {
-	na.nodes = map[string]EventResponder{}
+	na.nodes = map[string]EventDescriptor{}
 }
 
 // Count returns the total content count of map
@@ -56,18 +44,26 @@ func (na *EventHashList) Count() int {
 
 // Add adds giving node into giving list if it has
 // giving attribute value.
-func (na *EventHashList) Add(event string, handler EventHandler) {
+func (na *EventHashList) Add(event string, preventDef bool, stopPropagate bool, immediate bool) {
 	if na.nodes == nil {
-		na.nodes = map[string]EventResponder{}
+		na.nodes = map[string]EventDescriptor{}
 	}
+
+	var desc EventDescriptor
+	desc.Name = event
+	desc.Immediate = immediate
+	desc.PreventDefault = preventDef
+	desc.StopPropagation = stopPropagate
+	na.nodes[event] = desc
 }
 
 // Remove removes giving node into giving list if it has
 // giving attribute value.
-func (na *EventHashList) Remove(event string, handler EventHandler) {
+func (na *EventHashList) Remove(event string) {
 	if na.nodes == nil {
-		na.nodes = map[string]EventResponder{}
+		na.nodes = map[string]EventDescriptor{}
 	}
+	delete(na.nodes, event)
 }
 
 // Event defines a giving underline signal representing an event.
