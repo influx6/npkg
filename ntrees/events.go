@@ -4,6 +4,10 @@ import (
 	"github.com/gokit/npkg/natomic"
 )
 
+//*****************************************************
+// Event
+//*****************************************************
+
 // EventPreventer wraps a giving event signal returning
 // default prevention.
 type EventPreventer struct {
@@ -38,6 +42,10 @@ func (e *Event) Source() string {
 func (e *Event) Target() string {
 	return e.TargetID
 }
+
+//*****************************************************
+// EventDescriptor
+//*****************************************************
 
 // EventDescriptorResponder defines an interface which responds to a
 // signal with giving EventDescriptor.
