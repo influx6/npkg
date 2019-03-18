@@ -8,13 +8,6 @@ import (
 // Event
 //*****************************************************
 
-// EventPreventer wraps a giving event signal returning
-// default prevention.
-type EventPreventer struct {
-	natomic.Signal
-	PreventDefault bool
-}
-
 // Event defines a giving underline signal representing an event.
 type Event struct {
 	TypeName string
@@ -46,6 +39,13 @@ func (e *Event) Target() string {
 //*****************************************************
 // EventDescriptor
 //*****************************************************
+
+// EventPreventer wraps a giving event signal returning
+// default prevention.
+type EventPreventer struct {
+	natomic.Signal
+	PreventDefault bool
+}
 
 // EventDescriptorResponder defines an interface which responds to a
 // signal with giving EventDescriptor.
