@@ -311,6 +311,24 @@ func (n *Node) Respond(s natomic.Signal) {
 	}
 }
 
+// RespondEvent implements the EventDescriptorResponder interface.
+//
+// RespondEvent will propagate event up the tree to it's parent if
+// the provided descriptor does not stop propagation.
+func (n *Node) RespondEvent(s natomic.Signal, desc EventDescriptor) {
+	if n.Event != nil {
+		n.Event.Respond(s)
+	}
+
+	if desc.StopPropagation {
+		return
+	}
+
+	if n.parent != nil {
+		n.parent.Respond(s)
+	}
+}
+
 // ID returns user-provided id of giving node.
 func (n *Node) ID() string {
 	return n.nodeID

@@ -4,6 +4,13 @@ import (
 	"github.com/gokit/npkg/natomic"
 )
 
+// EventPreventer wraps a giving event signal returning
+// default prevention.
+type EventPreventer struct {
+	natomic.Signal
+	PreventDefault bool
+}
+
 // Event defines a giving underline signal representing an event.
 type Event struct {
 	TypeName string
@@ -32,22 +39,20 @@ func (e *Event) Target() string {
 	return e.TargetID
 }
 
+// EventDescriptorResponder defines an interface which responds to a
+// signal with giving EventDescriptor.
+type EventDescriptorResponder interface {
+	RespondEvent(natomic.Signal, EventDescriptor)
+}
+
 // EventDescriptor defines a type representing a event descriptor with
 // associated response.
 type EventDescriptor struct {
 	Name            string
-	Immediate       bool
 	PreventDefault  bool
 	StopPropagation bool
-	Handler         natomic.SignalResponder
-}
-
-// Respond delivers giving event signal to all handlers.
-func (er *EventDescriptor) Respond(s natomic.Signal) {
-	if er.Handler == nil {
-		return
-	}
-	er.Handler.Respond(s)
+	SignalResponder natomic.SignalResponder
+	EventResponder  EventDescriptorResponder
 }
 
 // EventHashList implements the a set list for Nodes using
@@ -71,8 +76,22 @@ func (na *EventHashList) Respond(s natomic.Signal) {
 
 	var descSet = na.nodes[s.Type()]
 	for _, desc := range descSet {
-		if desc.Handler != nil {
-			desc.Handler.Respond(s)
+		// if we are expected to prevent default, then wrap it before sending
+		// signal.
+		if _, ok := s.(*EventPreventer); ok && desc.PreventDefault {
+			s = &EventPreventer{
+				Signal:         s,
+				PreventDefault: desc.PreventDefault,
+			}
+		}
+
+		if desc.EventResponder != nil {
+			desc.EventResponder.RespondEvent(s, desc)
+			continue
+		}
+		if desc.SignalResponder != nil {
+			desc.SignalResponder.Respond(s)
+			continue
 		}
 	}
 }
@@ -93,7 +112,7 @@ func (na *EventHashList) Count() int {
 
 // Add adds giving node into giving list if it has
 // giving attribute value.
-func (na *EventHashList) Add(event string, preventDef bool, stopPropagate bool, immediate bool, responder natomic.SignalResponder) {
+func (na *EventHashList) Add(event string, preventDef bool, stopPropagate bool, responder natomic.SignalResponder) {
 	if na.nodes == nil {
 		na.nodes = map[string][]EventDescriptor{}
 	}
