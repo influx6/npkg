@@ -63,6 +63,20 @@ func NewEventHashList() *EventHashList {
 	}
 }
 
+// Respond delivers giving event to all descriptors of events within hash.
+func (na *EventHashList) Respond(s natomic.Signal) {
+	if na.nodes == nil || len(na.nodes) == 0 {
+		return
+	}
+
+	var descSet = na.nodes[s.Type()]
+	for _, desc := range descSet {
+		if desc.Handler != nil {
+			desc.Handler.Respond(s)
+		}
+	}
+}
+
 // Reset resets the internal hashmap used for storing
 // nodes. There by removing all registered nodes.
 func (na *EventHashList) Reset() {
