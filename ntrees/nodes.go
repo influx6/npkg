@@ -166,7 +166,7 @@ func MustText(comment Stringer, renders ...Render) *Node {
 
 // Comment returns a new Node of Comment Type which has no children
 // or attributes.
-func Comment(comment Stringer, renders ...Render) *Node {
+func Comment(comment Stringer, renders ...Render) (*Node, error) {
 	var doc = NewNode(CommentNode, CommentNode.String(), randomString(5))
 	doc.content = comment
 	for _, applier := range renders {
