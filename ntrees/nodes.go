@@ -306,7 +306,9 @@ func (n *Node) RefID() string {
 
 // Respond implements the natomic.SignalResponder interface.
 func (n *Node) Respond(s natomic.Signal) {
-
+	if n.Event != nil {
+		n.Event.Respond(s)
+	}
 }
 
 // ID returns user-provided id of giving node.
