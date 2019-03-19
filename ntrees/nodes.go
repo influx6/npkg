@@ -208,6 +208,10 @@ func NewNode(nt NodeType, nodeName string, nodeID string) *Node {
 	child.prev = &natomic.IntSwitch{}
 	child.index = &natomic.IntSwitch{}
 
+	child.next.Flip(-1)
+	child.prev.Flip(-1)
+	child.index.Flip(-1)
+
 	child.TextNodes = &NodeHashList{}
 	child.ExpiredNodes = &NodeAttrList{}
 	return &child
