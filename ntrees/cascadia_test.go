@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/gokit/trees"
 	"github.com/stretchr/testify/require"
 )
 

@@ -98,7 +98,9 @@ func (fn FunctionApplier) Mounter(n *Node) error {
 func Document(renders ...Mounter) *Node {
 	doc := NewNode(DocumentNode, "doc", "#document")
 	for _, mounter := range renders {
-		mounter.Mount(doc)
+		if err := mounter.Mount(doc); err != nil {
+			panic(err.Error())
+		}
 	}
 	return doc
 }
@@ -108,7 +110,9 @@ func Document(renders ...Mounter) *Node {
 func Element(name string, id string, renders ...Mounter) *Node {
 	doc := NewNode(ElementNode, name, id)
 	for _, mounter := range renders {
-		mounter.Mount(doc)
+		if err := mounter.Mount(doc); err != nil {
+			panic(err.Error())
+		}
 	}
 	return doc
 }
@@ -119,7 +123,9 @@ func Text(content Stringer, renders ...Mounter) *Node {
 	var doc = NewNode(TextNode, TextNode.String(), randomString(5))
 	doc.content = content
 	for _, mounter := range renders {
-		mounter.Mount(doc)
+		if err := mounter.Mount(doc); err != nil {
+			panic(err.Error())
+		}
 	}
 	return doc
 }
@@ -130,7 +136,9 @@ func Comment(comment Stringer, renders ...Mounter) *Node {
 	var doc = NewNode(CommentNode, CommentNode.String(), randomString(5))
 	doc.content = comment
 	for _, mounter := range renders {
-		mounter.Mount(doc)
+		if err := mounter.Mount(doc); err != nil {
+			panic(err.Error())
+		}
 	}
 	return doc
 }
@@ -346,18 +354,10 @@ func (n *Node) Match(other *Node) bool {
 	return true
 }
 
-// Mounter uses provided Mounter to mount itself into the underline
-// display for rendering.
-func (n *Node) Mounter(mounter Mounter) {
-	mounter.Mount(n)
-}
-
 // Mount implements the Mounter interface where it mounts the provided
 // node as a child node of it self.
-func (n *Node) Mount(parent *Node) {
-	if err := parent.AppendChild(n); err != nil {
-		panic(err)
-	}
+func (n *Node) Mount(parent *Node) error {
+	return parent.AppendChild(n)
 }
 
 // AppendChild adds new child into node tree creating a relationship of child
