@@ -1,5 +1,10 @@
 package ntrees
 
+import (
+	"strconv"
+	"strings"
+)
+
 var _ Attrs = (*AttrList)(nil)
 
 // AttrEncoder defines an interface which provides means of encoding
@@ -43,6 +48,119 @@ type Attr interface {
 	Contains(value string) bool
 }
 
+// IntAttr implements the Attr interface for a string key-value pair.
+type IntAttr struct {
+	Name string
+	Val  int
+}
+
+// NewIntAttr returns a new instance of a IntAttr.
+func NewIntAttr(n string, v int) IntAttr {
+	return IntAttr{Name: n, Val: v}
+}
+
+// Key returns giving key or name of attribute.
+func (s IntAttr) Key() string {
+	return s.Name
+}
+
+// Value returns giving value of attribute.
+func (s IntAttr) Value() interface{} {
+	return s.Val
+}
+
+// Text returns giving value of attribute as text.
+func (s IntAttr) Text() string {
+	return strconv.Itoa(s.Val)
+}
+
+// Mount implements the Mounter interface.
+func (s IntAttr) Mount(parent *Node) error {
+	parent.Attrs.Add(s)
+	return nil
+}
+
+// Contains returns true/false if provided value is contained in attr.
+//
+// Since we are dealing with a number, we attempt to convert the provided
+// value into a number and match else return false.
+func (s IntAttr) Contains(other string) bool {
+	var vm, err = strconv.Atoi(other)
+	if err != nil {
+		return false
+	}
+	return vm == s.Val
+}
+
+// EncodeAttr implements the AttrEncodable interface.
+func (s IntAttr) EncodeAttr(encoder AttrEncoder) error {
+	return encoder.Int(s.Name, s.Val)
+}
+
+// Match returns true/false if giving attributes matches.
+func (s IntAttr) Match(other Attr) bool {
+	if other.Key() != s.Name {
+		return false
+	}
+	if other.Text() != s.Text() {
+		return false
+	}
+	return true
+}
+
+// StringAttr implements the Attr interface for a string key-value pair.
+type StringAttr struct {
+	Name string
+	Val  string
+}
+
+// NewStringAttr returns a new instance of a StringAttr
+func NewStringAttr(n string, v string) StringAttr {
+	return StringAttr{Name: n, Val: v}
+}
+
+// Key returns giving key or name of attribute.
+func (s StringAttr) Key() string {
+	return s.Name
+}
+
+// Value returns giving value of attribute.
+func (s StringAttr) Value() interface{} {
+	return s.Val
+}
+
+// Text returns giving value of attribute as text.
+func (s StringAttr) Text() string {
+	return s.Val
+}
+
+// Mount implements the Mounter interface.
+func (s StringAttr) Mount(parent *Node) error {
+	parent.Attrs.Add(s)
+	return nil
+}
+
+// Contains returns true/false if provided value is contained in attr.
+func (s StringAttr) Contains(other string) bool {
+	return strings.Contains(s.Val, other)
+}
+
+// EncodeAttr implements the AttrEncodable interface.
+func (s StringAttr) EncodeAttr(encoder AttrEncoder) error {
+	return encoder.String(s.Name, s.Val)
+}
+
+// Match returns true/false if giving attributes matches.
+func (s StringAttr) Match(other Attr) bool {
+	if other.Key() != s.Name {
+		return false
+	}
+	if other.Text() != s.Val {
+		return false
+	}
+	return true
+}
+
 // IterableAttr defines an interface that exposes a method to
 // iterate through all possible attribute values or value.
 type IterableAttr interface {
@@ -76,6 +194,11 @@ type Attrs interface {
 
 // AttrList implements Attrs interface.
 type AttrList []Attr
+
+// Add adds giving attribute into list.
+func (l *AttrList) Add(v Attr) {
+	*l = append(*l, v)
+}
 
 // EncodeAttr encodes all attributes within it's list with
 // provided encoder.

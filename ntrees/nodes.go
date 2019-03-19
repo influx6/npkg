@@ -292,7 +292,7 @@ func (n *Node) RespondEvent(s natomic.Signal, desc EventDescriptor) {
 		}
 	}
 
-	if desc.StopPropagation || desc.rootCrisscross {
+	if desc.StopPropagation {
 		return
 	}
 

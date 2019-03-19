@@ -7,16 +7,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/gokit/npkg/natomic"
 )
 
 type counter int
 
-func (c counter) Respond(s Signal) {
-	c++
+func (c *counter) Respond(_ natomic.Signal) {
+	*c++
 }
 
 func TestNodeEvent(t *testing.T) {
-	var c counter
+	var c = new(counter)
 	var parent = HTMLDiv("page-block", NewEventDescriptor("click", c))
 
 	var clicked = NewClickEvent("1")
@@ -24,7 +26,7 @@ func TestNodeEvent(t *testing.T) {
 		parent.Respond(clicked)
 	}
 
-	require.Equal(t, 5, int(c))
+	require.Equal(t, 5, int(*c))
 }
 
 func TestNode(t *testing.T) {

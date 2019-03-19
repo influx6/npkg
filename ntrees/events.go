@@ -1,6 +1,8 @@
 package ntrees
 
 import (
+	"strings"
+
 	"github.com/gokit/npkg/natomic"
 )
 
@@ -168,11 +170,12 @@ func NewEventDescriptor(event string, responder interface{}, mods ...EventDescri
 }
 
 // Mount implements the RenderMount interface.
-func (ed *EventDescriptor) Mount(n *Node) {
+func (ed *EventDescriptor) Mount(n *Node) error {
 	n.Events.Add(*ed)
+	return nil
 }
 
-// Remove implements the RenderMount interface.
+// Unmount implements the RenderMount interface.
 func (ed *EventDescriptor) Unmount(n *Node) {
 	n.Events.Remove(*ed)
 }
@@ -196,10 +199,12 @@ func (na *EventHashList) Respond(s natomic.Signal) {
 		return
 	}
 
-	var descSet = na.nodes[s.Type()]
+	var name = strings.ToLower(s.Type())
+	var descSet = na.nodes[name]
+
 	for _, desc := range descSet {
-		// if we are expected to prevent default, then wrap it before sending
-		// signal.
+		// if we are expected to prevent default,
+		// then wrap it before sending signal.
 		if em, ok := s.(*EventPreventer); ok {
 			if desc.PreventDefault {
 				em.PreventDefault = true
@@ -245,7 +250,8 @@ func (na *EventHashList) Add(event EventDescriptor) {
 		na.nodes = map[string][]EventDescriptor{}
 	}
 
-	na.nodes[event.Name] = append(na.nodes[event.Name], event)
+	var name = strings.ToLower(event.Name)
+	na.nodes[event.Name] = append(na.nodes[name], event)
 }
 
 // RemoveAll removes giving node in list if it has
@@ -264,16 +270,17 @@ func (na *EventHashList) Remove(event EventDescriptor) {
 		na.nodes = map[string][]EventDescriptor{}
 	}
 
-	var set = na.nodes[event.Name]
+	var name = strings.ToLower(event.Name)
+	var set = na.nodes[name]
 	for index, desc := range set {
 		if desc.SignalResponder != nil && desc.SignalResponder == event.SignalResponder {
 			set = append(set[:index], set[index+1:]...)
-			na.nodes[event.Name] = set
+			na.nodes[name] = set
 			return
 		}
 		if desc.EventResponder != nil && desc.EventResponder == event.EventResponder {
 			set = append(set[:index], set[index+1:]...)
-			na.nodes[event.Name] = set
+			na.nodes[name] = set
 			return
 		}
 	}
@@ -286,6 +293,7 @@ func (na *EventHashList) RemoveSignalResponder(event string, r natomic.SignalRes
 	}
 
 	var set = na.nodes[event]
+	event = strings.ToLower(event)
 	for index, desc := range set {
 		if desc.SignalResponder == r {
 			set = append(set[:index], set[index+1:]...)
@@ -302,6 +310,7 @@ func (na *EventHashList) RemoveEventResponder(event string, r EventDescriptorRes
 	}
 
 	var set = na.nodes[event]
+	event = strings.ToLower(event)
 	for index, desc := range set {
 		if desc.EventResponder == r {
 			set = append(set[:index], set[index+1:]...)
