@@ -28,6 +28,14 @@ type SignalResponder interface {
 	Respond(Signal)
 }
 
+// SignalRespondHandler defines a function type.
+type SignalRespondHandler func(Signal)
+
+// Respond implements the SignalResponder interface.
+func (sr SignalRespondHandler) Respond(s Signal) {
+	sr(s)
+}
+
 // SignalResponderNotification defines an interface defining
 // methods on a SignalResponder to deliver certain information
 // regarding it's addition, removal from a ResponderGroup.

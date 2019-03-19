@@ -8,12 +8,44 @@ import (
 // Event
 //*****************************************************
 
+// EventModder defines a function to modify a giving
+// EventDescriptor.
+type EventModder func(*Event)
+
 // Event defines a giving underline signal representing an event.
 type Event struct {
 	TypeName string
 	SourceID string
 	TargetID string
 	Data     interface{}
+}
+
+// EventTarget returns an new EventModder setting the
+// value of the SourceID to giving value.
+func EventTarget(s string) EventModder {
+	return func(e *Event) {
+		e.TargetID = s
+	}
+}
+
+// EventSource returns an new EventModder setting the
+// value of the SourceID to giving value.
+func EventSource(s string) EventModder {
+	return func(e *Event) {
+		e.SourceID = s
+	}
+}
+
+// NewEvent returns a new instance of a Event.
+func NewEvent(eventName string, data interface{}, mods ...EventModder) *Event {
+	var ev = &Event{
+		TypeName: eventName,
+		Data:     data,
+	}
+	for _, mod := range mods {
+		mod(ev)
+	}
+	return ev
 }
 
 // Type returns the underline typename of the event.
@@ -75,13 +107,21 @@ type EventDescriptorResponder interface {
 	RespondEvent(natomic.Signal, EventDescriptor)
 }
 
-// EventModder defines a function to modify a giving
+// EventDescriptorRespondHandler defines a function matching the EventDescriptorResponder.
+type EventDescriptorRespondHandler func(natomic.Signal, EventDescriptor)
+
+// RespondEvent implements the EventDescriptorResponder interface.
+func (eh EventDescriptorRespondHandler) RespondEvent(ns natomic.Signal, ed EventDescriptor) {
+	eh(ns, ed)
+}
+
+// EventDescriptorModder defines a function to modify a giving
 // EventDescriptor.
-type EventModder func(*EventDescriptor)
+type EventDescriptorModder func(*EventDescriptor)
 
 // PreventDefault returns a EventModder that sets true
 // to EventDescriptor.PreventDefault flag..
-func PreventDefault() EventModder {
+func PreventDefault() EventDescriptorModder {
 	return func(e *EventDescriptor) {
 		e.PreventDefault = true
 	}
@@ -89,7 +129,7 @@ func PreventDefault() EventModder {
 
 // StopPropagation returns a EventModder that sets true
 // to EventDescriptor.StopPropagation flag..
-func StopPropagation() EventModder {
+func StopPropagation() EventDescriptorModder {
 	return func(e *EventDescriptor) {
 		e.StopPropagation = true
 	}
@@ -103,15 +143,10 @@ type EventDescriptor struct {
 	StopPropagation bool
 	SignalResponder natomic.SignalResponder
 	EventResponder  EventDescriptorResponder
-
-	// rootCrisscross tells us this is an event
-	// from a lower node to it's parent, we should
-	// avoid doing upward propagation.
-	rootCrisscross bool
 }
 
 // NewEventDescriptor returns a new instance of an EventDescriptor.
-func NewEventDescriptor(event string, responder interface{}, mods ...EventModder) *EventDescriptor {
+func NewEventDescriptor(event string, responder interface{}, mods ...EventDescriptorModder) *EventDescriptor {
 	var desc EventDescriptor
 	desc.Name = event
 

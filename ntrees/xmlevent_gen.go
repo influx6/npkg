@@ -89,6 +89,7 @@ func main() {
 	for _, name := range names {
 		e := events[name]
 		fmt.Fprintf(file, nodeFormat, name, e.Name, descToComments(e.Desc), e.Link[6:], name, e.Name)
+		fmt.Fprintf(file, newFormat, name, e.Name, descToComments(e.Desc), e.Link[6:], name, e.Name)
 	}
 
 	log.Println("DOM Events Finished!")
@@ -126,8 +127,18 @@ const nodeFormat = `
 // %sEvent provides DOM Event representation for the Event %q.
 // %s
 // https://developer.mozilla.org%s
-func %sEvent(handler interface{}, mods ...EventModder) *EventDescriptor {
+func %sEvent(handler interface{}, mods ...EventDescriptorModder) *EventDescriptor {
 	return NewEventDescriptor("%s", handler, mods...)
+}
+
+`
+
+const newFormat = `
+// New%sEvent returns a new object representing a triggered event of %q type.
+// %s
+// https://developer.mozilla.org%s
+func New%sEvent(data interface{}, mods ...EventModder) *Event {
+	return NewEvent("%s", data, mods...)
 }
 
 `

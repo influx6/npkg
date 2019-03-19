@@ -79,10 +79,10 @@ type Matchable interface {
 }
 
 // Mounter defines an interface which exposes a method to mount a provided
-// node. This exists to allow custom logic to be provided for what to be done
-// for mounting a giving node into a host.
+// implementer into a provided Node instance. Basically the provided node
+// is the parent to be mounted into.
 type Mounter interface {
-	Mount(n *Node) error
+	Mount(parent *Node) error
 }
 
 // FunctionApplier defines a function type that implements the Mounter interface.

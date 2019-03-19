@@ -9,6 +9,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type counter int
+
+func (c counter) Respond(s Signal) {
+	c++
+}
+
+func TestNodeEvent(t *testing.T) {
+	var c counter
+	var parent = HTMLDiv("page-block", NewEventDescriptor("click", c))
+
+	var clicked = NewClickEvent("1")
+	for i := 0; i < 5; i++ {
+		parent.Respond(clicked)
+	}
+
+	require.Equal(t, 5, int(c))
+}
+
 func TestNode(t *testing.T) {
 	base := NewNode(ElementNode, "red", "767h")
 	require.NotNil(t, base)
