@@ -852,7 +852,7 @@ func HTMLWordBreakOpportunity(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGAnchor provides Node representation for the element "a" in XML SVG DOM 
+// SVGAnchor provides Node representation for the element "a" in XML/SVG DOM 
 // The <a> SVG element creates a hyperlink to other web pages, files, locations within the same page, email addresses, or any other URL.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/a
 func SVGAnchor(id string, renders ...Mounter) *Node {
@@ -860,7 +860,7 @@ func SVGAnchor(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGAnimate provides Node representation for the element "animate" in XML SVG DOM 
+// SVGAnimate provides Node representation for the element "animate" in XML/SVG DOM 
 // This element implements the SVGAnimateElement interface.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/animate
 func SVGAnimate(id string, renders ...Mounter) *Node {
@@ -868,7 +868,7 @@ func SVGAnimate(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGAnimateMotion provides Node representation for the element "animateMotion" in XML SVG DOM 
+// SVGAnimateMotion provides Node representation for the element "animateMotion" in XML/SVG DOM 
 // The <animateMotion> element causes a referenced element to move along a motion path.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/animateMotion
 func SVGAnimateMotion(id string, renders ...Mounter) *Node {
@@ -876,7 +876,7 @@ func SVGAnimateMotion(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGAnimateTransform provides Node representation for the element "animateTransform" in XML SVG DOM 
+// SVGAnimateTransform provides Node representation for the element "animateTransform" in XML/SVG DOM 
 // The animateTransform element animates a transformation attribute on a target element, thereby allowing animations to control translation, scaling, rotation and/or skewing.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/animateTransform
 func SVGAnimateTransform(id string, renders ...Mounter) *Node {
@@ -884,7 +884,7 @@ func SVGAnimateTransform(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGCircle provides Node representation for the element "circle" in XML SVG DOM 
+// SVGCircle provides Node representation for the element "circle" in XML/SVG DOM 
 // The <circle> SVG element is an SVG basic shape, used to create circles based on a center point and a radius.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/circle
 func SVGCircle(id string, renders ...Mounter) *Node {
@@ -892,7 +892,7 @@ func SVGCircle(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGClipPath provides Node representation for the element "clipPath" in XML SVG DOM 
+// SVGClipPath provides Node representation for the element "clipPath" in XML/SVG DOM 
 // The <clipPath> SVG element defines a clipping path. A clipping path is used/referenced using the clip-path property.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/clipPath
 func SVGClipPath(id string, renders ...Mounter) *Node {
@@ -900,7 +900,7 @@ func SVGClipPath(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGColorProfile provides Node representation for the element "color-profile" in XML SVG DOM 
+// SVGColorProfile provides Node representation for the element "color-profile" in XML/SVG DOM 
 // The <color-profile> element allows describing the color profile used for the image.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/color-profile
 func SVGColorProfile(id string, renders ...Mounter) *Node {
@@ -908,7 +908,7 @@ func SVGColorProfile(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGDefs provides Node representation for the element "defs" in XML SVG DOM 
+// SVGDefs provides Node representation for the element "defs" in XML/SVG DOM 
 // The <defs> element is used to store graphical objects that will be used at a later time. Objects created inside a <defs> element are not rendered directly. To display them you have to reference them (with a <use> element for example).
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/defs
 func SVGDefs(id string, renders ...Mounter) *Node {
@@ -916,7 +916,7 @@ func SVGDefs(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGDesc provides Node representation for the element "desc" in XML SVG DOM 
+// SVGDesc provides Node representation for the element "desc" in XML/SVG DOM 
 // Each container element or graphics element in an SVG drawing can supply a description string using the <desc> element where the description is text-only.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/desc
 func SVGDesc(id string, renders ...Mounter) *Node {
@@ -924,7 +924,7 @@ func SVGDesc(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGDiscard provides Node representation for the element "discard" in XML SVG DOM 
+// SVGDiscard provides Node representation for the element "discard" in XML/SVG DOM 
 // The <discard> SVG element allows authors to specify the time at which particular elements are to be discarded, thereby reducing the resources required by an SVG user agent. This is particularly useful to help SVG viewers conserve memory while displaying long-running documents.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/discard
 func SVGDiscard(id string, renders ...Mounter) *Node {
@@ -932,7 +932,7 @@ func SVGDiscard(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGEllipse provides Node representation for the element "ellipse" in XML SVG DOM 
+// SVGEllipse provides Node representation for the element "ellipse" in XML/SVG DOM 
 // The <ellipse> element is an SVG basic shape, used to create ellipses based on a center coordinate, and both their x and y radius.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/ellipse
 func SVGEllipse(id string, renders ...Mounter) *Node {
@@ -940,7 +940,7 @@ func SVGEllipse(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeBlend provides Node representation for the element "feBlend" in XML SVG DOM 
+// SVGFeBlend provides Node representation for the element "feBlend" in XML/SVG DOM 
 // The <feBlend> SVG filter primitive composes two objects together ruled by a certain blending mode. This is similar to what is known from image editing software when blending two layers. The mode is defined by the mode attribute.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feBlend
 func SVGFeBlend(id string, renders ...Mounter) *Node {
@@ -948,7 +948,7 @@ func SVGFeBlend(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeColorMatrix provides Node representation for the element "feColorMatrix" in XML SVG DOM 
+// SVGFeColorMatrix provides Node representation for the element "feColorMatrix" in XML/SVG DOM 
 // The <feColorMatrix> SVG filter element changes colors based on a transformation matrix. Every pixel's color value (represented by an [R,G,B,A] vector) is matrix multiplied to create a new color:
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feColorMatrix
 func SVGFeColorMatrix(id string, renders ...Mounter) *Node {
@@ -956,7 +956,7 @@ func SVGFeColorMatrix(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeComponentTransfer provides Node representation for the element "feComponentTransfer" in XML SVG DOM 
+// SVGFeComponentTransfer provides Node representation for the element "feComponentTransfer" in XML/SVG DOM 
 // Th <feComponentTransfer> SVG filter primitive performs color-component-wise remapping of data for each pixel. It allows operations like brightness adjustment, contrast adjustment, color balance or thresholding.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feComponentTransfer
 func SVGFeComponentTransfer(id string, renders ...Mounter) *Node {
@@ -964,7 +964,7 @@ func SVGFeComponentTransfer(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeComposite provides Node representation for the element "feComposite" in XML SVG DOM 
+// SVGFeComposite provides Node representation for the element "feComposite" in XML/SVG DOM 
 // The <feComposite> SVG filter primitive performs the combination of two input images pixel-wise in image space using one of the Porter-Duff compositing operations: over, in, atop, out, xor, and lighter. Additionally, a component-wise arithmetic operation (with the result clamped between [0..1]) can be applied.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feComposite
 func SVGFeComposite(id string, renders ...Mounter) *Node {
@@ -972,7 +972,7 @@ func SVGFeComposite(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeConvolveMatrix provides Node representation for the element "feConvolveMatrix" in XML SVG DOM 
+// SVGFeConvolveMatrix provides Node representation for the element "feConvolveMatrix" in XML/SVG DOM 
 // The <feConvolveMatrix> SVG filter primitive applies a matrix convolution filter effect. A convolution combines pixels in the input image with neighboring pixels to produce a resulting image. A wide variety of imaging operations can be achieved through convolutions, including blurring, edge detection, sharpening, embossing and beveling.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feConvolveMatrix
 func SVGFeConvolveMatrix(id string, renders ...Mounter) *Node {
@@ -980,7 +980,7 @@ func SVGFeConvolveMatrix(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeDiffuseLighting provides Node representation for the element "feDiffuseLighting" in XML SVG DOM 
+// SVGFeDiffuseLighting provides Node representation for the element "feDiffuseLighting" in XML/SVG DOM 
 // The <feDiffuseLighting> SVG filter primitive lights an image using the alpha channel as a bump map. The resulting image, which is an RGBA opaque image, depends on the light color, light position and surface geometry of the input bump map.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feDiffuseLighting
 func SVGFeDiffuseLighting(id string, renders ...Mounter) *Node {
@@ -988,7 +988,7 @@ func SVGFeDiffuseLighting(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeDisplacementMap provides Node representation for the element "feDisplacementMap" in XML SVG DOM 
+// SVGFeDisplacementMap provides Node representation for the element "feDisplacementMap" in XML/SVG DOM 
 // The <feDisplacementMap> SVG filter primitive uses the pixel values from the image from in2 to spatially displace the image from in.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feDisplacementMap
 func SVGFeDisplacementMap(id string, renders ...Mounter) *Node {
@@ -996,7 +996,7 @@ func SVGFeDisplacementMap(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeDistantLight provides Node representation for the element "feDistantLight" in XML SVG DOM 
+// SVGFeDistantLight provides Node representation for the element "feDistantLight" in XML/SVG DOM 
 // The <feDistantLight> filter primitive defines a distant light source that can be used within a lighting filter primitive: <feDiffuseLighting> or <feSpecularLighting>.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feDistantLight
 func SVGFeDistantLight(id string, renders ...Mounter) *Node {
@@ -1004,7 +1004,7 @@ func SVGFeDistantLight(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeDropShadow provides Node representation for the element "feDropShadow" in XML SVG DOM 
+// SVGFeDropShadow provides Node representation for the element "feDropShadow" in XML/SVG DOM 
 // The <feDropShadow> filter primitive creates a drop shadow of the input image. It is a shorthand filter, and is defined in terms of combinations of other filter primitives.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feDropShadow
 func SVGFeDropShadow(id string, renders ...Mounter) *Node {
@@ -1012,7 +1012,7 @@ func SVGFeDropShadow(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeFlood provides Node representation for the element "feFlood" in XML SVG DOM 
+// SVGFeFlood provides Node representation for the element "feFlood" in XML/SVG DOM 
 // The <feFlood> SVG filter primitive fills the filter subregion with the color and opacity defined by flood-color and flood-opacity.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feFlood
 func SVGFeFlood(id string, renders ...Mounter) *Node {
@@ -1020,7 +1020,7 @@ func SVGFeFlood(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeFuncA provides Node representation for the element "feFuncA" in XML SVG DOM 
+// SVGFeFuncA provides Node representation for the element "feFuncA" in XML/SVG DOM 
 // The <feFuncA> SVG filter primitive defines the transfer function for the alpha component of the input graphic of its parent <feComponentTransfer> element.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feFuncA
 func SVGFeFuncA(id string, renders ...Mounter) *Node {
@@ -1028,7 +1028,7 @@ func SVGFeFuncA(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeFuncB provides Node representation for the element "feFuncB" in XML SVG DOM 
+// SVGFeFuncB provides Node representation for the element "feFuncB" in XML/SVG DOM 
 // The <feFuncB> SVG filter primitive defines the transfer function for the blue component of the input graphic of its parent <feComponentTransfer> element.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feFuncB
 func SVGFeFuncB(id string, renders ...Mounter) *Node {
@@ -1036,7 +1036,7 @@ func SVGFeFuncB(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeFuncG provides Node representation for the element "feFuncG" in XML SVG DOM 
+// SVGFeFuncG provides Node representation for the element "feFuncG" in XML/SVG DOM 
 // The <feFuncG> SVG filter primitive defines the transfer function for the green component of the input graphic of its parent <feComponentTransfer> element.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feFuncG
 func SVGFeFuncG(id string, renders ...Mounter) *Node {
@@ -1044,7 +1044,7 @@ func SVGFeFuncG(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeFuncR provides Node representation for the element "feFuncR" in XML SVG DOM 
+// SVGFeFuncR provides Node representation for the element "feFuncR" in XML/SVG DOM 
 // The <feFuncR> SVG filter primitive defines the transfer function for the red component of the input graphic of its parent <feComponentTransfer> element.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feFuncR
 func SVGFeFuncR(id string, renders ...Mounter) *Node {
@@ -1052,7 +1052,7 @@ func SVGFeFuncR(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeGaussianBlur provides Node representation for the element "feGaussianBlur" in XML SVG DOM 
+// SVGFeGaussianBlur provides Node representation for the element "feGaussianBlur" in XML/SVG DOM 
 // The <feGaussianBlur> SVG filter primitive blurs the input image by the amount specified in stdDeviation, which defines the bell-curve.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feGaussianBlur
 func SVGFeGaussianBlur(id string, renders ...Mounter) *Node {
@@ -1060,7 +1060,7 @@ func SVGFeGaussianBlur(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeImage provides Node representation for the element "feImage" in XML SVG DOM 
+// SVGFeImage provides Node representation for the element "feImage" in XML/SVG DOM 
 // The <feImage> SVG filter primitive fetches image data from an external source and provides the pixel data as output (meaning if the external source is an SVG image, it is rasterized.)
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feImage
 func SVGFeImage(id string, renders ...Mounter) *Node {
@@ -1068,7 +1068,7 @@ func SVGFeImage(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeMerge provides Node representation for the element "feMerge" in XML SVG DOM 
+// SVGFeMerge provides Node representation for the element "feMerge" in XML/SVG DOM 
 // The <feMerge> SVG element allows filter effects to be applied concurrently instead of sequentially. This is achieved by other filters storing their output via the result attribute and then accessing it in a <feMergeNode> child.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feMerge
 func SVGFeMerge(id string, renders ...Mounter) *Node {
@@ -1076,7 +1076,7 @@ func SVGFeMerge(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeMergeNode provides Node representation for the element "feMergeNode" in XML SVG DOM 
+// SVGFeMergeNode provides Node representation for the element "feMergeNode" in XML/SVG DOM 
 // The feMergeNode takes the result of another filter to be processed by its parent <feMerge>.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feMergeNode
 func SVGFeMergeNode(id string, renders ...Mounter) *Node {
@@ -1084,7 +1084,7 @@ func SVGFeMergeNode(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeMorphology provides Node representation for the element "feMorphology" in XML SVG DOM 
+// SVGFeMorphology provides Node representation for the element "feMorphology" in XML/SVG DOM 
 // The <feMorphology> SVG filter primitive is used to erode or dilate the input image. It's usefulness lies especially in fattening or thinning effects.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feMorphology
 func SVGFeMorphology(id string, renders ...Mounter) *Node {
@@ -1092,7 +1092,7 @@ func SVGFeMorphology(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeOffset provides Node representation for the element "feOffset" in XML SVG DOM 
+// SVGFeOffset provides Node representation for the element "feOffset" in XML/SVG DOM 
 // The <feOffset> SVG filter primitive allows to offset the input image. The input image as a whole is offset by the values specified in the dx and dy attributes.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feOffset
 func SVGFeOffset(id string, renders ...Mounter) *Node {
@@ -1100,7 +1100,7 @@ func SVGFeOffset(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFePointLight provides Node representation for the element "fePointLight" in XML SVG DOM 
+// SVGFePointLight provides Node representation for the element "fePointLight" in XML/SVG DOM 
 // The <fePointLight> filter primitive defines a light source which allows to create a point light effect. It that can be used within a lighting filter primitive: <feDiffuseLighting> or <feSpecularLighting>.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/fePointLight
 func SVGFePointLight(id string, renders ...Mounter) *Node {
@@ -1108,7 +1108,7 @@ func SVGFePointLight(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeSpecularLighting provides Node representation for the element "feSpecularLighting" in XML SVG DOM 
+// SVGFeSpecularLighting provides Node representation for the element "feSpecularLighting" in XML/SVG DOM 
 // The <feSpecularLighting> SVG filter primitive lights a source graphic using the alpha channel as a bump map. The resulting image is an RGBA image based on the light color. The lighting calculation follows the standard specular component of the Phong lighting model. The resulting image depends on the light color, light position and surface geometry of the input bump map. The result of the lighting calculation is added. The filter primitive assumes that the viewer is at infinity in the z direction.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feSpecularLighting
 func SVGFeSpecularLighting(id string, renders ...Mounter) *Node {
@@ -1116,7 +1116,7 @@ func SVGFeSpecularLighting(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeSpotLight provides Node representation for the element "feSpotLight" in XML SVG DOM 
+// SVGFeSpotLight provides Node representation for the element "feSpotLight" in XML/SVG DOM 
 // The <feSpotLight> SVG filter primitive defines a light source which allows to create a spotlight effect. It that can be used within a lighting filter primitive: <feDiffuseLighting> or <feSpecularLighting>.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feSpotLight
 func SVGFeSpotLight(id string, renders ...Mounter) *Node {
@@ -1124,7 +1124,7 @@ func SVGFeSpotLight(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeTile provides Node representation for the element "feTile" in XML SVG DOM 
+// SVGFeTile provides Node representation for the element "feTile" in XML/SVG DOM 
 // The <feTile> SVG filter primitive allows to fill a target rectangle with a repeated, tiled pattern of an input image. The effect is similar to the one of a <pattern>.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feTile
 func SVGFeTile(id string, renders ...Mounter) *Node {
@@ -1132,7 +1132,7 @@ func SVGFeTile(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFeTurbulence provides Node representation for the element "feTurbulence" in XML SVG DOM 
+// SVGFeTurbulence provides Node representation for the element "feTurbulence" in XML/SVG DOM 
 // The <feTurbulence> SVG filter primitive creates an image using the Perlin turbulence function. It allows the synthesis of artificial textures like clouds or marble. The resulting image will fill the entire filter primitive subregion.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feTurbulence
 func SVGFeTurbulence(id string, renders ...Mounter) *Node {
@@ -1140,7 +1140,7 @@ func SVGFeTurbulence(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGFilter provides Node representation for the element "filter" in XML SVG DOM 
+// SVGFilter provides Node representation for the element "filter" in XML/SVG DOM 
 // The <filter> SVG element serves as container for atomic filter operations. It is never rendered directly. A filter is referenced by using the filter attribute on the target SVG element or via the filter CSS property.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/filter
 func SVGFilter(id string, renders ...Mounter) *Node {
@@ -1148,7 +1148,7 @@ func SVGFilter(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGForeignObject provides Node representation for the element "foreignObject" in XML SVG DOM 
+// SVGForeignObject provides Node representation for the element "foreignObject" in XML/SVG DOM 
 // The <foreignObject> SVG element allows for inclusion of a different XML namespace. In the context of a browser it is most likely XHTML/HTML.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/foreignObject
 func SVGForeignObject(id string, renders ...Mounter) *Node {
@@ -1156,7 +1156,7 @@ func SVGForeignObject(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGGroup provides Node representation for the element "g" in XML SVG DOM 
+// SVGGroup provides Node representation for the element "g" in XML/SVG DOM 
 // The <g> SVG element is a container used to group other SVG elements.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/g
 func SVGGroup(id string, renders ...Mounter) *Node {
@@ -1164,7 +1164,7 @@ func SVGGroup(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGHatch provides Node representation for the element "hatch" in XML SVG DOM 
+// SVGHatch provides Node representation for the element "hatch" in XML/SVG DOM 
 // The <hatch> SVG element is used to fill or stroke an object using one or more pre-defined paths that are repeated at fixed intervals in a specified direction to cover the areas to be painted.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/hatch
 func SVGHatch(id string, renders ...Mounter) *Node {
@@ -1172,7 +1172,7 @@ func SVGHatch(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGHatchpath provides Node representation for the element "hatchpath" in XML SVG DOM 
+// SVGHatchpath provides Node representation for the element "hatchpath" in XML/SVG DOM 
 // The <hatchpath> SVG element defines a hatch path used by the <hatch> element.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/hatchpath
 func SVGHatchpath(id string, renders ...Mounter) *Node {
@@ -1180,7 +1180,7 @@ func SVGHatchpath(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGImage provides Node representation for the element "image" in XML SVG DOM 
+// SVGImage provides Node representation for the element "image" in XML/SVG DOM 
 // The <image> SVG element includes images inside SVG documents. It can display raster image files or other SVG files.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/image
 func SVGImage(id string, renders ...Mounter) *Node {
@@ -1188,7 +1188,7 @@ func SVGImage(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGLine provides Node representation for the element "line" in XML SVG DOM 
+// SVGLine provides Node representation for the element "line" in XML/SVG DOM 
 // The <line> element is an SVG basic shape used to create a line connecting two points.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/line
 func SVGLine(id string, renders ...Mounter) *Node {
@@ -1196,7 +1196,7 @@ func SVGLine(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGLinearGradient provides Node representation for the element "linearGradient" in XML SVG DOM 
+// SVGLinearGradient provides Node representation for the element "linearGradient" in XML/SVG DOM 
 // The <linearGradient> element lets authors define linear gradients that can be applied to fill or stroke of graphical elements.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/linearGradient
 func SVGLinearGradient(id string, renders ...Mounter) *Node {
@@ -1204,7 +1204,7 @@ func SVGLinearGradient(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGMarker provides Node representation for the element "marker" in XML SVG DOM 
+// SVGMarker provides Node representation for the element "marker" in XML/SVG DOM 
 // The <marker> element defines the graphic that is to be used for drawing arrowheads or polymarkers on a given <path>, <line>, <polyline> or <polygon> element.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/marker
 func SVGMarker(id string, renders ...Mounter) *Node {
@@ -1212,7 +1212,7 @@ func SVGMarker(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGMask provides Node representation for the element "mask" in XML SVG DOM 
+// SVGMask provides Node representation for the element "mask" in XML/SVG DOM 
 // The <mask> element defines an alpha mask for compositing the current object into the background. A mask is used/referenced using the mask property.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/mask
 func SVGMask(id string, renders ...Mounter) *Node {
@@ -1220,7 +1220,7 @@ func SVGMask(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGMesh provides Node representation for the element "mesh" in XML SVG DOM 
+// SVGMesh provides Node representation for the element "mesh" in XML/SVG DOM 
 // The documentation about this has not yet been written; please consider contributing!
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/mesh
 func SVGMesh(id string, renders ...Mounter) *Node {
@@ -1228,7 +1228,7 @@ func SVGMesh(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGMeshgradient provides Node representation for the element "meshgradient" in XML SVG DOM 
+// SVGMeshgradient provides Node representation for the element "meshgradient" in XML/SVG DOM 
 // The documentation about this has not yet been written; please consider contributing!
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/meshgradient
 func SVGMeshgradient(id string, renders ...Mounter) *Node {
@@ -1236,7 +1236,7 @@ func SVGMeshgradient(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGMeshpatch provides Node representation for the element "meshpatch" in XML SVG DOM 
+// SVGMeshpatch provides Node representation for the element "meshpatch" in XML/SVG DOM 
 // The documentation about this has not yet been written; please consider contributing!
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/meshpatch
 func SVGMeshpatch(id string, renders ...Mounter) *Node {
@@ -1244,7 +1244,7 @@ func SVGMeshpatch(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGMeshrow provides Node representation for the element "meshrow" in XML SVG DOM 
+// SVGMeshrow provides Node representation for the element "meshrow" in XML/SVG DOM 
 // The documentation about this has not yet been written; please consider contributing!
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/meshrow
 func SVGMeshrow(id string, renders ...Mounter) *Node {
@@ -1252,7 +1252,7 @@ func SVGMeshrow(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGMetadata provides Node representation for the element "metadata" in XML SVG DOM 
+// SVGMetadata provides Node representation for the element "metadata" in XML/SVG DOM 
 // The <metadata> SVG element allows to add metadata to SVG content. Metadata is structured information about data. The contents of <metadata> elements should be elements from other XML namespaces such as RDF, FOAF, etc.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/metadata
 func SVGMetadata(id string, renders ...Mounter) *Node {
@@ -1260,7 +1260,7 @@ func SVGMetadata(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGMpath provides Node representation for the element "mpath" in XML SVG DOM 
+// SVGMpath provides Node representation for the element "mpath" in XML/SVG DOM 
 // The <mpath> sub-element for the <animateMotion> element provides the ability to reference an external <path> element as the definition of a motion path.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/mpath
 func SVGMpath(id string, renders ...Mounter) *Node {
@@ -1268,7 +1268,7 @@ func SVGMpath(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGPath provides Node representation for the element "path" in XML SVG DOM 
+// SVGPath provides Node representation for the element "path" in XML/SVG DOM 
 // The <path> SVG element is the generic element to define a shape. All the basic shapes can be created with a path element.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/path
 func SVGPath(id string, renders ...Mounter) *Node {
@@ -1276,7 +1276,7 @@ func SVGPath(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGPattern provides Node representation for the element "pattern" in XML SVG DOM 
+// SVGPattern provides Node representation for the element "pattern" in XML/SVG DOM 
 // The <pattern> element defines a graphics object which can be redrawn at repeated x and y-coordinate intervals ("tiled") to cover an area.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/pattern
 func SVGPattern(id string, renders ...Mounter) *Node {
@@ -1284,7 +1284,7 @@ func SVGPattern(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGPolygon provides Node representation for the element "polygon" in XML SVG DOM 
+// SVGPolygon provides Node representation for the element "polygon" in XML/SVG DOM 
 // The <polygon> element defines a closed shape consisting of a set of connected straight line segments. The last point is connected to the first point. For open shapes see the <polyline> element.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/polygon
 func SVGPolygon(id string, renders ...Mounter) *Node {
@@ -1292,7 +1292,7 @@ func SVGPolygon(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGPolyline provides Node representation for the element "polyline" in XML SVG DOM 
+// SVGPolyline provides Node representation for the element "polyline" in XML/SVG DOM 
 // The <polyline> SVG element is an SVG basic shape that creates straight lines connecting several points. Typically a polyline is used to create open shapes as the last point doesn't have to be connected to the first point. For closed shapes see the <polygon> element.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/polyline
 func SVGPolyline(id string, renders ...Mounter) *Node {
@@ -1300,7 +1300,7 @@ func SVGPolyline(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGRadialGradient provides Node representation for the element "radialGradient" in XML SVG DOM 
+// SVGRadialGradient provides Node representation for the element "radialGradient" in XML/SVG DOM 
 // The <radialGradient> SVG element lets authors define radial gradients to fill or stroke graphical elements.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/radialGradient
 func SVGRadialGradient(id string, renders ...Mounter) *Node {
@@ -1308,7 +1308,7 @@ func SVGRadialGradient(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGRect provides Node representation for the element "rect" in XML SVG DOM 
+// SVGRect provides Node representation for the element "rect" in XML/SVG DOM 
 // The <rect> element is a basic SVG shape that creates rectangles, defined by their corner's position, their width, and their height. The rectangles may have their corners rounded.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/rect
 func SVGRect(id string, renders ...Mounter) *Node {
@@ -1316,7 +1316,7 @@ func SVGRect(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGScript provides Node representation for the element "script" in XML SVG DOM 
+// SVGScript provides Node representation for the element "script" in XML/SVG DOM 
 // A SVG script element is equivalent to the script element in HTML and thus is the place for scripts (e.g., ECMAScript).
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/script
 func SVGScript(id string, renders ...Mounter) *Node {
@@ -1324,7 +1324,7 @@ func SVGScript(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGSet provides Node representation for the element "set" in XML SVG DOM 
+// SVGSet provides Node representation for the element "set" in XML/SVG DOM 
 // The <set> element provides a simple means of just setting the value of an attribute for a specified duration. It supports all attribute types, including those that cannot reasonably be interpolated, such as string and boolean values. The <set> element is non-additive. The additive and accumulate attributes are not allowed, and will be ignored if specified.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/set
 func SVGSet(id string, renders ...Mounter) *Node {
@@ -1332,7 +1332,7 @@ func SVGSet(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGSolidcolor provides Node representation for the element "solidcolor" in XML SVG DOM 
+// SVGSolidcolor provides Node representation for the element "solidcolor" in XML/SVG DOM 
 // The <solidcolor> SVG element lets authors define a single color for use in multiple places in an SVG document. It is also useful as away of animating a palette colors.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/solidcolor
 func SVGSolidcolor(id string, renders ...Mounter) *Node {
@@ -1340,7 +1340,7 @@ func SVGSolidcolor(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGStop provides Node representation for the element "stop" in XML SVG DOM 
+// SVGStop provides Node representation for the element "stop" in XML/SVG DOM 
 // The <stop> SVG element defines the ramp of colors to use on a gradient, which is a child element to either the <linearGradient> or the <radialGradient> element.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/stop
 func SVGStop(id string, renders ...Mounter) *Node {
@@ -1348,7 +1348,7 @@ func SVGStop(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGStyle provides Node representation for the element "style" in XML SVG DOM 
+// SVGStyle provides Node representation for the element "style" in XML/SVG DOM 
 // The <style> SVG element allows style sheets to be embedded directly within SVG content. SVG's style element has the same attributes as the corresponding element in HTML (see HTML's <style> element).
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/style
 func SVGStyle(id string, renders ...Mounter) *Node {
@@ -1356,7 +1356,7 @@ func SVGStyle(id string, renders ...Mounter) *Node {
 }
 
 
-// Svg provides Node representation for the element "svg" in XML SVG DOM 
+// Svg provides Node representation for the element "svg" in XML/SVG DOM 
 // The svg element is a container that defines a new coordinate system and viewport. It is used as the outermost element of any SVG document but it can also be used to embed a SVG fragment inside any SVG or HTML document.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg
 func Svg(id string, renders ...Mounter) *Node {
@@ -1364,7 +1364,7 @@ func Svg(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGSwitch provides Node representation for the element "switch" in XML SVG DOM 
+// SVGSwitch provides Node representation for the element "switch" in XML/SVG DOM 
 // The <switch> SVG element evaluates the requiredFeatures, requiredExtensions and systemLanguage attributes on its direct child elements in order, and then processes and renders the first child for which these attributes evaluate to true. All others will be bypassed and therefore not rendered. If the child element is a container element such as a <g>, then the entire subtree is either processed/rendered or bypassed/not rendered.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/switch
 func SVGSwitch(id string, renders ...Mounter) *Node {
@@ -1372,7 +1372,7 @@ func SVGSwitch(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGSymbol provides Node representation for the element "symbol" in XML SVG DOM 
+// SVGSymbol provides Node representation for the element "symbol" in XML/SVG DOM 
 // The <symbol> element is used to define graphical template objects which can be instantiated by a <use> element.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/symbol
 func SVGSymbol(id string, renders ...Mounter) *Node {
@@ -1380,7 +1380,7 @@ func SVGSymbol(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGText provides Node representation for the element "text" in XML SVG DOM 
+// SVGText provides Node representation for the element "text" in XML/SVG DOM 
 // The SVG <text> element defines a graphics element consisting of text. It's possible to apply a gradient, pattern, clipping path, mask, or filter to <text>, just like any other SVG graphics element.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/text
 func SVGText(id string, renders ...Mounter) *Node {
@@ -1388,7 +1388,7 @@ func SVGText(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGTextPath provides Node representation for the element "textPath" in XML SVG DOM 
+// SVGTextPath provides Node representation for the element "textPath" in XML/SVG DOM 
 // In addition to text drawn in a straight line, SVG also includes the ability to place text along the shape of a <path> element. To specify that a block of text is to be rendered along the shape of a <path>, include the given text within a <textPath> element which includes an href attribute with a reference to a <path> element.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/textPath
 func SVGTextPath(id string, renders ...Mounter) *Node {
@@ -1396,7 +1396,7 @@ func SVGTextPath(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGTitle provides Node representation for the element "title" in XML SVG DOM 
+// SVGTitle provides Node representation for the element "title" in XML/SVG DOM 
 // Each container element or graphics element in an SVG drawing can supply a <title> element containing a description string where the description is text-only. When the current SVG document fragment is rendered as SVG on visual media, <title> element is not rendered as part of the graphics. However, some user agents may, for example, display the <title> element as a tooltip. Alternate presentations are possible, both visual and aural, which display the <title> element but do not display path elements or other graphics elements. The <title> element generally improves accessibility of SVG documents.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/title
 func SVGTitle(id string, renders ...Mounter) *Node {
@@ -1404,7 +1404,7 @@ func SVGTitle(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGTspan provides Node representation for the element "tspan" in XML SVG DOM 
+// SVGTspan provides Node representation for the element "tspan" in XML/SVG DOM 
 // Within a <text> element, text and font properties and the current text position can be adjusted with absolute or relative coordinate values by including a <tspan> element.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/tspan
 func SVGTspan(id string, renders ...Mounter) *Node {
@@ -1412,7 +1412,7 @@ func SVGTspan(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGUnknown provides Node representation for the element "unknown" in XML SVG DOM 
+// SVGUnknown provides Node representation for the element "unknown" in XML/SVG DOM 
 // The documentation about this has not yet been written; please consider contributing!
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/unknown
 func SVGUnknown(id string, renders ...Mounter) *Node {
@@ -1420,7 +1420,7 @@ func SVGUnknown(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGUse provides Node representation for the element "use" in XML SVG DOM 
+// SVGUse provides Node representation for the element "use" in XML/SVG DOM 
 // The <use> element takes nodes from within the SVG document, and duplicates them somewhere else.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use
 func SVGUse(id string, renders ...Mounter) *Node {
@@ -1428,7 +1428,7 @@ func SVGUse(id string, renders ...Mounter) *Node {
 }
 
 
-// SVGView provides Node representation for the element "view" in XML SVG DOM 
+// SVGView provides Node representation for the element "view" in XML/SVG DOM 
 // A view is a defined way to view the image, like a zoom level or a detail view.
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element/view
 func SVGView(id string, renders ...Mounter) *Node {

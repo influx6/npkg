@@ -41,6 +41,27 @@ func (e Event) Target() string {
 // EventDescriptor
 //*****************************************************
 
+// parentEvent defines a string type for defining a
+// parent event listen list.
+type parentEvent string
+
+// Mount adds giving event into parent event listen list.
+func (p parentEvent) Mount(n *Node) error {
+	n.crossEvents[string(p)] = true
+	if n.parent != nil {
+		n.parent.addChildEventListener(string(p), n)
+	}
+	return nil
+}
+
+// OnParentEvent returns a event which will be added to the
+// parent of the node it is added to, this will have the
+// node's parent nodify the node on the occurrence of that
+// event.
+func OnParentEvent(eventName string) Mounter {
+	return parentEvent(eventName)
+}
+
 // EventPreventer wraps a giving event signal returning
 // default prevention.
 type EventPreventer struct {
@@ -82,6 +103,11 @@ type EventDescriptor struct {
 	StopPropagation bool
 	SignalResponder natomic.SignalResponder
 	EventResponder  EventDescriptorResponder
+
+	// rootCrisscross tells us this is an event
+	// from a lower node to it's parent, we should
+	// avoid doing upward propagation.
+	rootCrisscross bool
 }
 
 // NewEventDescriptor returns a new instance of an EventDescriptor.
@@ -93,25 +119,27 @@ func NewEventDescriptor(event string, responder interface{}, mods ...EventModder
 		mod(&desc)
 	}
 
-	switch tm := responder.(type) {
-	case EventDescriptorResponder:
-		desc.EventResponder = tm
-	case natomic.SignalResponder:
-		desc.SignalResponder = tm
-	default:
-		panic("Unknown type for event handler")
+	if responder != nil {
+		switch tm := responder.(type) {
+		case EventDescriptorResponder:
+			desc.EventResponder = tm
+		case natomic.SignalResponder:
+			desc.SignalResponder = tm
+		default:
+			panic("Unknown type for event handler")
+		}
 	}
 	return &desc
 }
 
 // Mount implements the RenderMount interface.
 func (ed *EventDescriptor) Mount(n *Node) {
-	n.Event.Add(*ed)
+	n.Events.Add(*ed)
 }
 
 // Remove implements the RenderMount interface.
 func (ed *EventDescriptor) Unmount(n *Node) {
-	n.Event.Remove(*ed)
+	n.Events.Remove(*ed)
 }
 
 // EventHashList implements the a set list for Nodes using
@@ -137,7 +165,13 @@ func (na *EventHashList) Respond(s natomic.Signal) {
 	for _, desc := range descSet {
 		// if we are expected to prevent default, then wrap it before sending
 		// signal.
-		if _, ok := s.(*EventPreventer); ok && desc.PreventDefault {
+		if em, ok := s.(*EventPreventer); ok {
+			if desc.PreventDefault {
+				em.PreventDefault = true
+			} else {
+				em.PreventDefault = false
+			}
+		} else if desc.PreventDefault {
 			s = &EventPreventer{
 				Signal:         s,
 				PreventDefault: desc.PreventDefault,

@@ -157,21 +157,25 @@ func (n NodeList) Mounter(parent *Node) {
 // root, next and previous siblings using a underline growing array as
 // the basis.
 type Node struct {
-	Attrs        AttrList
-	TextNodes    *NodeHashList
-	ExpiredNodes *NodeAttrList
-	Event        *EventHashList
-	parent       *Node
-	id           string
-	nodeID       string
-	nodeName     string
-	content      Stringer
-	nt           NodeType
-	index        *natomic.IntSwitch
-	next         *natomic.IntSwitch
-	prev         *natomic.IntSwitch
-	kids         *slidingList
+	Attrs          AttrList
+	TextNodes      *NodeHashList
+	ExpiredNodes   *NodeAttrList
+	Events         *EventHashList
+	parent         *Node
+	id             string
+	nodeID         string
+	nodeName       string
+	content        Stringer
+	nt             NodeType
+	index          *natomic.IntSwitch
+	next           *natomic.IntSwitch
+	prev           *natomic.IntSwitch
+	kids           *slidingList
+	crossEvents    map[string]bool
+	childListeners map[string]nodeHash
 }
+
+type nodeHash map[*Node]struct{}
 
 // NewNode returns a new Node instance with the giving Node as
 // underline parent pointer. It uses the provided `nodeName` as
@@ -203,10 +207,12 @@ func NewNode(nt NodeType, nodeName string, nodeID string) *Node {
 	child.nodeName = nodeName
 	child.kids = &slidingList{}
 	child.id = nxid.New().String()
-	child.Event = NewEventHashList()
+	child.Events = NewEventHashList()
 	child.next = &natomic.IntSwitch{}
 	child.prev = &natomic.IntSwitch{}
 	child.index = &natomic.IntSwitch{}
+	child.crossEvents = map[string]bool{}
+	child.childListeners = map[string]nodeHash{}
 
 	child.next.Flip(-1)
 	child.prev.Flip(-1)
@@ -264,9 +270,10 @@ func (n *Node) RefID() string {
 
 // Respond implements the natomic.SignalResponder interface.
 func (n *Node) Respond(s natomic.Signal) {
-	if n.Event != nil {
-		n.Event.Respond(s)
+	if n.Events == nil {
+		return
 	}
+	n.Events.Respond(s)
 }
 
 // RespondEvent implements the EventDescriptorResponder interface.
@@ -274,11 +281,18 @@ func (n *Node) Respond(s natomic.Signal) {
 // RespondEvent will propagate event up the tree to it's parent if
 // the provided descriptor does not stop propagation.
 func (n *Node) RespondEvent(s natomic.Signal, desc EventDescriptor) {
-	if n.Event != nil {
-		n.Event.Respond(s)
+	if n.Events == nil {
+		return
 	}
 
-	if desc.StopPropagation {
+	n.Events.Respond(s)
+	if kids, ok := n.childListeners[s.Type()]; ok {
+		for kid := range kids {
+			kid.Events.Respond(s)
+		}
+	}
+
+	if desc.StopPropagation || desc.rootCrisscross {
 		return
 	}
 
@@ -323,6 +337,10 @@ func (n *Node) Remove() error {
 	}
 
 	var parent = n.parent
+	for event := range n.crossEvents {
+		parent.rmChildEventListener(event, n)
+	}
+
 	if _, err := n.parent.kids.RemoveAndSwap(n.index.Read()); err != nil {
 		return err
 	}
@@ -390,6 +408,9 @@ func (n *Node) AppendChild(kid *Node) error {
 	}
 
 	kid.parent = n
+	for event := range n.crossEvents {
+		n.addChildEventListener(event, kid)
+	}
 
 	// if it's a text node, we optimize by adding a reference to it.
 	if kid.nt == TextNode {
@@ -509,6 +530,25 @@ func (n *Node) NodeAttr() NodeAttr {
 // ChildCount returns the current total count of kids.
 func (n *Node) ChildCount() int {
 	return n.kids.Length()
+}
+
+func (n *Node) addChildEventListener(eventName string, child *Node) {
+	if cross, ok := n.childListeners[eventName]; ok {
+		cross[child] = struct{}{}
+		return
+	}
+
+	var nodes = nodeHash{}
+	nodes[child] = struct{}{}
+	n.childListeners[eventName] = nodes
+}
+
+func (n *Node) rmChildEventListener(eventName string, child *Node) {
+	cross, ok := n.childListeners[eventName]
+	if !ok {
+		return
+	}
+	delete(cross, child)
 }
 
 func (n *Node) reset() {

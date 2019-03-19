@@ -23,12 +23,12 @@ func AfterPrintEvent(handler interface{}, mods ...EventModder) *EventDescriptor 
 }
 
 
-// AfterscriptexecuteEvent provides DOM Event representation for the Event "afterscriptexecute".
+// AfterScriptExecuteEvent provides DOM Event representation for the Event "AfterScriptExecute".
 // 
 // A script has been executed.
 // https://developer.mozilla.org/docs/Web/Events/afterscriptexecute
-func AfterscriptexecuteEvent(handler interface{}, mods ...EventModder) *EventDescriptor {
-	return NewEventDescriptor("afterscriptexecute", handler, mods...)
+func AfterScriptExecuteEvent(handler interface{}, mods ...EventModder) *EventDescriptor {
+	return NewEventDescriptor("AfterScriptExecute", handler, mods...)
 }
 
 

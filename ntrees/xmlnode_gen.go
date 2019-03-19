@@ -196,12 +196,12 @@ func buildHTML(w io.Writer, errs chan error) {
 
 			if text == "Heading elements" || text == "<h1>–<h6>" {
 				// fmt.Printf("Write with %q\n", text)
-				writeElem(w, "h1", desc, link)
-				writeElem(w, "h2", desc, link)
-				writeElem(w, "h3", desc, link)
-				writeElem(w, "h4", desc, link)
-				writeElem(w, "h5", desc, link)
-				writeElem(w, "h6", desc, link)
+				writeElem(w, "h1", desc, link, "Html", "HTML", "XHTML/HTML")
+				writeElem(w, "h2", desc, link, "Html", "HTML", "XHTML/HTML")
+				writeElem(w, "h3", desc, link, "Html", "HTML", "XHTML/HTML")
+				writeElem(w, "h4", desc, link, "Html", "HTML", "XHTML/HTML")
+				writeElem(w, "h5", desc, link, "Html", "HTML", "XHTML/HTML")
+				writeElem(w, "h6", desc, link, "Html", "HTML", "XHTML/HTML")
 				return
 			}
 
@@ -215,7 +215,7 @@ func buildHTML(w io.Writer, errs chan error) {
 				return
 			}
 
-			writeElem(w, name, desc, link)
+			writeElem(w, name, desc, link, "Html", "HTML", "XHTML/HTML")
 			doneHtml[name] = true
 		})
 	}); err != nil {
@@ -255,7 +255,7 @@ func buildSVG(w io.Writer, errs chan error) {
 				return
 			}
 
-			writeSVGElem(w, name, desc, link)
+			writeElem(w, name, desc, link, "Svg", "SVG", "XML/SVG")
 			doneSvg[name] = true
 		})
 	}); err != nil {
@@ -265,52 +265,27 @@ func buildSVG(w io.Writer, errs chan error) {
 
 var badSymbs = regexp.MustCompile("-(.+)")
 
-func writeSVGElem(w io.Writer, name, desc, link string) {
-	funName := elemNameMap[name]
+func writeElem(w io.Writer, name, desc, link string, exception string, prefix string, ty string) {
+	var funName = name
+	if bName, ok := elemNameMap[strings.ToLower(name)]; ok {
+		funName = bName
+	}
+
 	funName = restruct(funName)
 
-	if funName == "" {
-		funName = restruct(name)
-
-		for badSymbs.MatchString(funName) {
-			if simbs := badSymbs.FindStringSubmatch(funName); len(simbs) > 0 {
-				item := capitalize(simbs[1])
-				funName = badSymbs.ReplaceAllString(funName, item)
-			}
+	for badSymbs.MatchString(funName) {
+		if simbs := badSymbs.FindStringSubmatch(funName); len(simbs) > 0 {
+			item := capitalize(simbs[1])
+			funName = badSymbs.ReplaceAllString(funName, item)
 		}
-
-		funName = capitalize(funName)
 	}
 
-	if funName != "Svg" {
-		funName = "SVG" + funName
+	funName = capitalize(funName)
+	if funName != exception {
+		funName = prefix + funName
 	}
 
-	fmt.Fprintf(w, nodeFormat, funName, name, "XML SVG", desc, link, funName, name)
-}
-
-func writeElem(w io.Writer, name, desc, link string) {
-	funName := elemNameMap[name]
-	funName = restruct(funName)
-
-	if funName == "" {
-		funName = restruct(name)
-
-		for badSymbs.MatchString(funName) {
-			if simbs := badSymbs.FindStringSubmatch(funName); len(simbs) > 0 {
-				item := capitalize(simbs[1])
-				funName = badSymbs.ReplaceAllString(funName, item)
-			}
-		}
-
-		funName = capitalize(funName)
-	}
-
-	if funName != "Html" {
-		funName = "HTML" + funName
-	}
-
-	fmt.Fprintf(w, nodeFormat, funName, name, "XHTML/HTML", desc, link, funName, name)
+	fmt.Fprintf(w, nodeFormat, funName, name, ty, desc, link, funName, name)
 }
 
 // capitalize capitalizes the first character in a string
