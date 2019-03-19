@@ -108,7 +108,7 @@ func Document(renders ...Mounter) *Node {
 func Element(name string, id string, renders ...Mounter) *Node {
 	doc := NewNode(ElementNode, name, id)
 	for _, mounter := range renders {
-		mounter.Mounter(doc)
+		mounter.Mount(doc)
 	}
 	return doc
 }
@@ -119,7 +119,7 @@ func Text(content Stringer, renders ...Mounter) *Node {
 	var doc = NewNode(TextNode, TextNode.String(), randomString(5))
 	doc.content = content
 	for _, mounter := range renders {
-		mounter.Mounter(doc)
+		mounter.Mount(doc)
 	}
 	return doc
 }
@@ -130,7 +130,7 @@ func Comment(comment Stringer, renders ...Mounter) *Node {
 	var doc = NewNode(CommentNode, CommentNode.String(), randomString(5))
 	doc.content = comment
 	for _, mounter := range renders {
-		mounter.Mounter(doc)
+		mounter.Mount(doc)
 	}
 	return doc
 }
