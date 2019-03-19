@@ -6,8 +6,8 @@ boot-redis:
 	redis-server &
 	sleep 5s
 
-build-docker-test:
+build-docker-ci:
 	docker build -t npkg-docker-tests -f ./dockerfile-test .
 
-run-docker-test:
+docker-ci: build-docker-ci
 	docker run -it npkg-docker-tests make ci

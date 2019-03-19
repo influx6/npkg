@@ -22,7 +22,7 @@ script:
 jobs:
   include:
     - stage: tests
-      script: make run-docker-test
+      script: make docker-ci
 
 # only execute the following instructions in
 # the case of a success (failing at this point
