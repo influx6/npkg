@@ -108,7 +108,7 @@ func (l AttrList) Has(key string) bool {
 	return false
 }
 
-// Attribute returns giving Attribute with provided key.
+// Attr returns giving Attribute with provided key.
 func (l AttrList) Attr(key string) (Attr, bool) {
 	for _, item := range l {
 		if item.Key() == key {

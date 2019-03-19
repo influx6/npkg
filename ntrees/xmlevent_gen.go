@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"sort"
 	"strings"
@@ -28,6 +29,8 @@ func main() {
 		"cssRuleViewRefreshed":      "CSSRuleViewRefreshed",
 		"cssRuleViewChanged":        "CSSRuleViewChange",
 		"afterprint":                "AfterPrint",
+		"afterscriptExecute":        "AfterScriptExecute",
+		"icccardlockerror":          "ICCCardLockError",
 		"animationend":              "AnimationEnd",
 		"animationiteration":        "AnimationIteration",
 		"animationstart":            "AnimationStart",
@@ -196,51 +199,20 @@ func main() {
 
 	sort.Strings(names)
 
-	file, err := os.Create("event.gen.go")
+	file, err := os.Create("xml_events.gen.go")
 	if err != nil {
 		panic(err)
 	}
 	defer file.Close()
 
-	fmt.Fprint(file, `// The generation of this package was inspired by Neelance work on DOM (https://github.com/neelance/dom)
-
-//go:generate go run generate.go
-
-// Documentation source: "Event reference" by Mozilla Contributors, https://developer.mozilla.org/en-US/docs/Web/Events, licensed under CC-BY-SA 2.5.
-
-//Package events defines the event binding system that combines different libraries to create a interesting event system.
-package events
-
-import (
-	"github.com/gokit/trees"
-	"github.com/gokit/npkg/natomic"
-)
-
-`)
+	fmt.Fprint(file, fileHeader)
 
 	for _, name := range names {
 		e := events[name]
-		fmt.Fprintf(file, `
-// %sEvent Documentation is as below: %q
-// https://developer.mozilla.org%s
-func %sEvent(responder natomic.SignalResponder) EventDescription {
-	var handler EventHandler
-	ops := append([]trees.EventOptions{trees.EventType(%q)}, options...)
-
-	ev := trees.NewEvent(ops...)
-
-	eventHandler := common.NewEventBroadcastHandler(func (evm common.EventBroadcast){
-		if ev.ID() != evm.EventID{
-			return
-		}
-
-		handler(evm.Event, ev.Tree)
-	})
-
-	return ev
-}
-`, name, descToComments(e.Desc), e.Link[6:], name, e.Name)
+		fmt.Fprintf(file, nodeFormat, name, e.Name, descToComments(e.Desc), e.Link[6:], name, e.Name)
 	}
+
+	log.Println("DOM Events Finished!")
 }
 
 func capitalize(s string) string {
@@ -264,3 +236,19 @@ func descToComments(desc string) string {
 	}
 	return c
 }
+
+const fileHeader = `// Code auto-generated to provide HTML and SVG DOM Nodes.
+// Documentation source:  "Event reference" by Mozilla Contributors.
+// https://developer.mozilla.org/en-US/docs/Web/Events., licensed under CC-BY-SA 2.5.
+
+package ntrees
+`
+const nodeFormat = `
+// %sEvent provides DOM Event representation for the Event %q.
+// %s
+// https://developer.mozilla.org%s
+func %sEvent(handler interface{}, mods ...EventModder) *EventDescriptor {
+	return NewEventDescriptor("%s", handler, mods...)
+}
+
+`

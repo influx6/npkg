@@ -78,125 +78,71 @@ type Matchable interface {
 	Match(*Node) bool
 }
 
-// RenderMounter defines an interface which exposes a method to mount a provided
+// Mounter defines an interface which exposes a method to mount a provided
 // node. This exists to allow custom logic to be provided for what to be done
 // for mounting a giving node into a host.
-type RenderMounter interface {
+type Mounter interface {
 	Mount(n *Node) error
 }
 
-// Render takes a provided RenderMounter which it will use to mount it's
-// generated node representation.
-type Render interface {
-	Render(mount RenderMounter) error
-}
-
-// FunctionApplier defines a function type that implements the Render interface.
+// FunctionApplier defines a function type that implements the Mounter interface.
 type FunctionApplier func(*Node) error
 
-// Render implements the Render interface.
-func (fn FunctionApplier) Render(n *Node) error {
+// Mounter implements the Mounter interface.
+func (fn FunctionApplier) Mounter(n *Node) error {
 	return fn(n)
 }
 
 // Document returns the document node type which has no parent
 // and should be the start position of all nodes.
-func Document(renders ...Render) (*Node, error) {
+func Document(renders ...Mounter) *Node {
 	doc := NewNode(DocumentNode, "doc", "#document")
-	for _, applier := range renders {
-		if err := applier.Render(doc); err != nil {
-			return nil, err
-		}
+	for _, mounter := range renders {
+		mounter.Mount(doc)
 	}
-	return doc, nil
-}
-
-// MustDocument panics if an invalid operation was to be performed
-// on a created document node.
-func MustDocument(renders ...Render) *Node {
-	var node, err = Document(renders...)
-	if err != nil {
-		panic(err)
-	}
-	return node
+	return doc
 }
 
 // Element returns a element node type which can be added into a parent
 // or use as a base for other nodes.
-func Element(name string, id string, renders ...Render) (*Node, error) {
+func Element(name string, id string, renders ...Mounter) *Node {
 	doc := NewNode(ElementNode, name, id)
-	for _, applier := range renders {
-		if err := applier.Render(doc); err != nil {
-			return nil, err
-		}
+	for _, mounter := range renders {
+		mounter.Mounter(doc)
 	}
-	return doc, nil
-}
-
-// MustElement panics if render calls fails, it returns a Node.
-func MustElement(name string, id string, renders ...Render) *Node {
-	var node, err = Element(name, id, renders...)
-	if err != nil {
-		panic(err)
-	}
-	return node
+	return doc
 }
 
 // Text returns a new Node of Text Type which has no children
 // or attributes.
-func Text(content Stringer, renders ...Render) (*Node, error) {
+func Text(content Stringer, renders ...Mounter) *Node {
 	var doc = NewNode(TextNode, TextNode.String(), randomString(5))
 	doc.content = content
-	for _, applier := range renders {
-		if err := applier.Render(doc); err != nil {
-			return nil, err
-		}
+	for _, mounter := range renders {
+		mounter.Mounter(doc)
 	}
-	return doc, nil
-}
-
-// MustText panics if any of the render calls fails.
-func MustText(comment Stringer, renders ...Render) *Node {
-	var node, err = Text(comment, renders...)
-	if err != nil {
-		panic(err)
-	}
-	return node
+	return doc
 }
 
 // Comment returns a new Node of Comment Type which has no children
 // or attributes.
-func Comment(comment Stringer, renders ...Render) (*Node, error) {
+func Comment(comment Stringer, renders ...Mounter) *Node {
 	var doc = NewNode(CommentNode, CommentNode.String(), randomString(5))
 	doc.content = comment
-	for _, applier := range renders {
-		if err := applier.Render(doc); err != nil {
-			return nil, err
-		}
+	for _, mounter := range renders {
+		mounter.Mounter(doc)
 	}
-	return doc, nil
+	return doc
 }
 
-// MustComment panics if any of the render calls fails.
-func MustComment(comment Stringer, renders ...Render) *Node {
-	var node, err = Comment(comment, renders...)
-	if err != nil {
-		panic(err)
-	}
-	return node
-}
-
-// NodeList defines a type for slice of nodes, implementing the Render interface.
+// NodeList defines a type for slice of nodes, implementing the Mounter interface.
 type NodeList []*Node
 
-// Render applies giving nodes in list to provided parent node.
-func (n NodeList) Render(parent *Node) error {
+// Mounter applies giving nodes in list to provided parent node.
+func (n NodeList) Mounter(parent *Node) {
 	for _, elem := range n {
-		if err := parent.AppendChild(elem); err != nil {
-			return err
-		}
+		parent.AppendChild(elem)
 	}
-	return nil
 }
 
 // Node defines a concrete type implementing a combined linked-list with
@@ -400,19 +346,18 @@ func (n *Node) Match(other *Node) bool {
 	return true
 }
 
-// Render uses provided RenderMounter to mount itself into the underline
+// Mounter uses provided Mounter to mount itself into the underline
 // display for rendering.
-func (n *Node) Render(mounter RenderMounter) error {
-	return mounter.Mount(n)
+func (n *Node) Mounter(mounter Mounter) {
+	mounter.Mount(n)
 }
 
-// Mount implements the RenderMounter interface where it mounts the provided
+// Mount implements the Mounter interface where it mounts the provided
 // node as a child node of it self.
-func (n *Node) Mount(kid *Node) error {
-	if n == kid {
-		return ErrInvalidOp
+func (n *Node) Mount(parent *Node) {
+	if err := parent.AppendChild(n); err != nil {
+		panic(err)
 	}
-	return n.AppendChild(kid)
 }
 
 // AppendChild adds new child into node tree creating a relationship of child

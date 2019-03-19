@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -139,40 +140,39 @@ func pullDoc(url string, fx func(doc *goquery.Document)) error {
 }
 
 func main() {
-	htmlFile, err := os.Create("html_nodes.gen.go")
-	if err != nil {
-		panic(err)
-	}
-
-	svgFile, err := os.Create("svg_nodes.gen.go")
+	htmlFile, err := os.Create("xml_nodes.gen.go")
 	if err != nil {
 		panic(err)
 	}
 
 	defer htmlFile.Close()
-	defer svgFile.Close()
 
 	fmt.Fprint(htmlFile, fileHeader)
-	fmt.Fprint(svgFile, fileHeader)
 
-	var htmlErr = make(chan error, 1)
-	var svgErr = make(chan error, 1)
+	var htmlErr = make(chan error, 2)
+
+	var html, svg bytes.Buffer
 
 	workers.Add(2)
-	go buildHTML(htmlFile, htmlErr)
-	go buildSVG(svgFile, svgErr)
+	go buildHTML(&html, htmlErr)
+	go buildSVG(&svg, htmlErr)
 
 	workers.Wait()
 
 	select {
 	case err := <-htmlErr:
-		log.Fatalf("Unable to build HTML ELEMENTS: %s", err)
-		return
-	case err := <-svgErr:
-		log.Fatalf("Unable to build HTML ELEMENTS: %s", err)
+		log.Fatalf(err.Error())
 		return
 	default:
-		log.Println("Done!")
+		if _, err := html.WriteTo(htmlFile); err != nil {
+			log.Fatalf(err.Error())
+			return
+		}
+		if _, err := svg.WriteTo(htmlFile); err != nil {
+			log.Fatalf(err.Error())
+			return
+		}
+		log.Println("XML Nodes Finished!")
 	}
 }
 
@@ -283,11 +283,10 @@ func writeSVGElem(w io.Writer, name, desc, link string) {
 	}
 
 	if funName != "Svg" {
-		funName = "Svg" + funName
+		funName = "SVG" + funName
 	}
 
 	fmt.Fprintf(w, nodeFormat, funName, name, "XML SVG", desc, link, funName, name)
-	fmt.Fprintf(w, mustNodeFormat, funName, name, "XML SVG", desc, link, funName, name)
 }
 
 func writeElem(w io.Writer, name, desc, link string) {
@@ -308,11 +307,10 @@ func writeElem(w io.Writer, name, desc, link string) {
 	}
 
 	if funName != "Html" {
-		funName = "Html" + funName
+		funName = "HTML" + funName
 	}
 
 	fmt.Fprintf(w, nodeFormat, funName, name, "XHTML/HTML", desc, link, funName, name)
-	fmt.Fprintf(w, mustNodeFormat, funName, name, "XHTML/HTML", desc, link, funName, name)
 }
 
 // capitalize capitalizes the first character in a string
@@ -337,9 +335,8 @@ func restruct(s string) string {
 	return s
 }
 
-const fileHeader = `// Code auto-generated to provide html and svg element types for 
-// trees.
-// Documentation source: "HTML element reference" by Mozilla Contributors, 
+const fileHeader = `// Code auto-generated to provide HTML and SVG DOM Nodes.
+// Documentation source: "HTML element reference" by Mozilla Contributors.
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element, licensed under CC-BY-SA 2.5.
 
 package ntrees
@@ -348,22 +345,8 @@ const nodeFormat = `
 // %s provides Node representation for the element %q in %s DOM 
 // %s
 // https://developer.mozilla.org%s
-func %s(id string, renders ...Render) (*Node, error) {
+func %s(id string, renders ...Mounter) *Node {
 	return Element("%s", id, renders...)
-}
-
-`
-
-const mustNodeFormat = `
-// Must%s provides Node representation for the element %q in %s DOM 
-// %s
-// https://developer.mozilla.org%s
-func Must%s(id string, renders ...Render) *Node {
-	var node, err = Element("%s", id, renders...)
-	if err != nil {
-		panic(err)
-	}
-	return node
 }
 
 `

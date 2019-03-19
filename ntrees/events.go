@@ -54,6 +54,26 @@ type EventDescriptorResponder interface {
 	RespondEvent(natomic.Signal, EventDescriptor)
 }
 
+// EventModder defines a function to modify a giving
+// EventDescriptor.
+type EventModder func(*EventDescriptor)
+
+// PreventDefault returns a EventModder that sets true
+// to EventDescriptor.PreventDefault flag..
+func PreventDefault() EventModder {
+	return func(e *EventDescriptor) {
+		e.PreventDefault = true
+	}
+}
+
+// StopPropagation returns a EventModder that sets true
+// to EventDescriptor.StopPropagation flag..
+func StopPropagation() EventModder {
+	return func(e *EventDescriptor) {
+		e.StopPropagation = true
+	}
+}
+
 // EventDescriptor defines a type representing a event descriptor with
 // associated response.
 type EventDescriptor struct {
@@ -62,6 +82,36 @@ type EventDescriptor struct {
 	StopPropagation bool
 	SignalResponder natomic.SignalResponder
 	EventResponder  EventDescriptorResponder
+}
+
+// NewEventDescriptor returns a new instance of an EventDescriptor.
+func NewEventDescriptor(event string, responder interface{}, mods ...EventModder) *EventDescriptor {
+	var desc EventDescriptor
+	desc.Name = event
+
+	for _, mod := range mods {
+		mod(&desc)
+	}
+
+	switch tm := responder.(type) {
+	case EventDescriptorResponder:
+		desc.EventResponder = tm
+	case natomic.SignalResponder:
+		desc.SignalResponder = tm
+	default:
+		panic("Unknown type for event handler")
+	}
+	return &desc
+}
+
+// Mount implements the RenderMount interface.
+func (ed *EventDescriptor) Mount(n *Node) {
+	n.Event.Add(*ed)
+}
+
+// Remove implements the RenderMount interface.
+func (ed *EventDescriptor) Unmount(n *Node) {
+	n.Event.Remove(*ed)
 }
 
 // EventHashList implements the a set list for Nodes using
@@ -121,29 +171,54 @@ func (na *EventHashList) Count() int {
 
 // Add adds giving node into giving list if it has
 // giving attribute value.
-func (na *EventHashList) Add(event string, preventDef bool, stopPropagate bool, responder natomic.SignalResponder) {
+func (na *EventHashList) Add(event EventDescriptor) {
 	if na.nodes == nil {
 		na.nodes = map[string][]EventDescriptor{}
 	}
 
-	var desc EventDescriptor
-	desc.Name = event
-	desc.Handler = responder
-	desc.Immediate = immediate
-	desc.PreventDefault = preventDef
-	desc.StopPropagation = stopPropagate
-	na.nodes[event] = append(na.nodes[event], desc)
+	na.nodes[event.Name] = append(na.nodes[event.Name], event)
 }
 
-// RemoveResponder removes giving event descriptor for giving  responder.
-func (na *EventHashList) RemoveResponder(event string, r natomic.SignalResponder) {
+// RemoveAll removes giving node in list if it has
+// giving attribute value.
+func (na *EventHashList) RemoveAll(event string) {
+	if na.nodes == nil {
+		na.nodes = map[string][]EventDescriptor{}
+	}
+	delete(na.nodes, event)
+}
+
+// Remove removes giving node in list if it has
+// giving handler.
+func (na *EventHashList) Remove(event EventDescriptor) {
+	if na.nodes == nil {
+		na.nodes = map[string][]EventDescriptor{}
+	}
+
+	var set = na.nodes[event.Name]
+	for index, desc := range set {
+		if desc.SignalResponder != nil && desc.SignalResponder == event.SignalResponder {
+			set = append(set[:index], set[index+1:]...)
+			na.nodes[event.Name] = set
+			return
+		}
+		if desc.EventResponder != nil && desc.EventResponder == event.EventResponder {
+			set = append(set[:index], set[index+1:]...)
+			na.nodes[event.Name] = set
+			return
+		}
+	}
+}
+
+// RemoveSignalResponder removes giving event descriptor for giving  responder.
+func (na *EventHashList) RemoveSignalResponder(event string, r natomic.SignalResponder) {
 	if na.nodes == nil {
 		na.nodes = map[string][]EventDescriptor{}
 	}
 
 	var set = na.nodes[event]
 	for index, desc := range set {
-		if desc.Handler == r {
+		if desc.SignalResponder == r {
 			set = append(set[:index], set[index+1:]...)
 			na.nodes[event] = set
 			return
@@ -151,11 +226,18 @@ func (na *EventHashList) RemoveResponder(event string, r natomic.SignalResponder
 	}
 }
 
-// Remove removes giving node into giving list if it has
-// giving attribute value.
-func (na *EventHashList) Remove(event string) {
+// RemoveEventResponder removes giving event descriptor for giving  responder.
+func (na *EventHashList) RemoveEventResponder(event string, r EventDescriptorResponder) {
 	if na.nodes == nil {
 		na.nodes = map[string][]EventDescriptor{}
 	}
-	delete(na.nodes, event)
+
+	var set = na.nodes[event]
+	for index, desc := range set {
+		if desc.EventResponder == r {
+			set = append(set[:index], set[index+1:]...)
+			na.nodes[event] = set
+			return
+		}
+	}
 }
