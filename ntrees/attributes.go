@@ -3,6 +3,7 @@ package ntrees
 import (
 	"strconv"
 	"strings"
+	"sync"
 )
 
 var _ Attrs = (*AttrList)(nil)
@@ -14,16 +15,131 @@ type AttrEncoder interface {
 	Attr(string, AttrEncodable) error
 
 	Int(string, int) error
-	Int64(string, int64) error
-	Bool(string, string) error
 	String(string, string) error
-	Float64(string, float64) error
+	List(string, ...string) error
 }
 
 // AttrEncodable exposes a interface which provides method for encoder attributes
 // using provided encoder.
 type AttrEncodable interface {
 	EncodeAttr(encoder AttrEncoder) error
+}
+
+var stringPool = sync.Pool{
+	New: func() interface{} {
+		var content strings.Builder
+		return &content
+	},
+}
+
+// DOMAttrEncoder implements a not to optimized AttrEncoder interface.
+type DOMAttrEncoder struct {
+	Key     string
+	Content *strings.Builder
+}
+
+// NewDOMAttrEncoder returns a new DOMAttrEncoder.
+func NewDOMAttrEncoder(key string) *DOMAttrEncoder {
+	var content strings.Builder
+	return &DOMAttrEncoder{
+		Key:     key,
+		Content: &content,
+	}
+}
+
+// Attr implements encoding of multi-attribute based values.
+func (dm DOMAttrEncoder) Attr(key string, attrs AttrEncodable) error {
+	var err error
+	var content = stringPool.Get().(*strings.Builder)
+	defer stringPool.Put(content)
+
+	if dm.Key != "" {
+		key = dm.Key + "." + key
+	}
+
+	var dmer = &DOMAttrEncoder{
+		Key:     key,
+		Content: content,
+	}
+
+	if err = attrs.EncodeAttr(dmer); err != nil {
+		return err
+	}
+
+	if _, err = dm.Content.WriteString(content.String()); err != nil {
+		return err
+	}
+	if _, err = dm.Content.WriteString(" "); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Attr encodes giving list of string values for string key.
+func (dm *DOMAttrEncoder) List(key string, set ...string) error {
+	var err error
+	var content = stringPool.Get().(*strings.Builder)
+	defer stringPool.Put(content)
+
+	for i, s := 0, len(set); i < s; i++ {
+		if _, err = content.WriteString(set[i]); err != nil {
+			return err
+		}
+		if i < (s - 1) {
+			if _, err = content.WriteString(","); err != nil {
+				return err
+			}
+		}
+	}
+
+	if dm.Key != "" {
+		if _, err = dm.Content.WriteString(dm.Key + "."); err != nil {
+			return err
+		}
+	}
+	if _, err = dm.Content.WriteString(key); err != nil {
+		return err
+	}
+	if _, err = dm.Content.WriteString("=\""); err != nil {
+		return err
+	}
+	if _, err = dm.Content.WriteString(content.String()); err != nil {
+		return err
+	}
+	if _, err = dm.Content.WriteString("\" "); err != nil {
+		return err
+	}
+	return nil
+}
+
+// String encodes giving string value for string key.
+func (dm *DOMAttrEncoder) String(key string, val string) error {
+	var err error
+	if dm.Key != "" {
+		if _, err = dm.Content.WriteString(dm.Key + "."); err != nil {
+			return err
+		}
+	}
+	if _, err = dm.Content.WriteString(key); err != nil {
+		return err
+	}
+	if _, err = dm.Content.WriteString("=\""); err != nil {
+		return err
+	}
+	if _, err = dm.Content.WriteString(val); err != nil {
+		return err
+	}
+	if _, err = dm.Content.WriteString("\" "); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Int encodes giving int value for string key.
+func (dm *DOMAttrEncoder) Int(key string, val int) error {
+	var content [8]byte
+	var appended = strconv.AppendInt(content[:], int64(val), 10)
+	return dm.String(key, string(appended))
 }
 
 // Attr defines a series of method representing a Attribute.
@@ -99,6 +215,65 @@ func (s IntAttr) EncodeAttr(encoder AttrEncoder) error {
 
 // Match returns true/false if giving attributes matches.
 func (s IntAttr) Match(other Attr) bool {
+	if other.Key() != s.Name {
+		return false
+	}
+	if other.Text() != s.Text() {
+		return false
+	}
+	return true
+}
+
+// StringListAttr implements the Attr interface for a string key-value pair.
+type StringListAttr struct {
+	Join string
+	Name string
+	Val  []string
+}
+
+// NewStringListAttr returns a new instance of a StringListAttr
+func NewStringListAttr(n string, v ...string) StringListAttr {
+	return StringListAttr{Name: n, Val: v}
+}
+
+// Key returns giving key or name of attribute.
+func (s StringListAttr) Key() string {
+	return s.Name
+}
+
+// Value returns giving value of attribute.
+func (s StringListAttr) Value() interface{} {
+	return s.Val
+}
+
+// Text returns giving value of attribute as text.
+func (s StringListAttr) Text() string {
+	return strings.Join(s.Val, s.Join)
+}
+
+// Mount implements the Mounter interface.
+func (s StringListAttr) Mount(parent *Node) error {
+	parent.Attrs.Add(s)
+	return nil
+}
+
+// Contains returns true/false if provided value is contained in attr.
+func (s StringListAttr) Contains(other string) bool {
+	for _, cn := range s.Val {
+		if cn == other {
+			return true
+		}
+	}
+	return false
+}
+
+// EncodeAttr implements the AttrEncodable interface.
+func (s StringListAttr) EncodeAttr(encoder AttrEncoder) error {
+	return encoder.List(s.Name, s.Val...)
+}
+
+// Match returns true/false if giving attributes matches.
+func (s StringListAttr) Match(other Attr) bool {
 	if other.Key() != s.Name {
 		return false
 	}

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/gokit/npkg/natomic"
+	"github.com/gokit/npkg/nerror"
 )
 
 //*****************************************************
@@ -167,6 +168,64 @@ func NewEventDescriptor(event string, responder interface{}, mods ...EventDescri
 		}
 	}
 	return &desc
+}
+
+const eventName = "event"
+
+// Key returns giving key or name of attribute.
+func (ed *EventDescriptor) Key() string {
+	return eventName
+}
+
+// Value returns giving value of attribute.
+func (ed *EventDescriptor) Value() interface{} {
+	return ed.Name
+}
+
+// Text returns giving value of attribute as text.
+func (ed *EventDescriptor) Text() string {
+	return ed.Name
+}
+
+// EncodeAttr implements the AttrEncodable interface.
+func (ed *EventDescriptor) EncodeAttr(encoder AttrEncoder) error {
+	var bits = "-"
+
+	// set flag for prevent-default behaviour.
+	if ed.PreventDefault {
+		bits += "1"
+	} else {
+		bits += "0"
+	}
+
+	// set flag for stop-propagation.
+	if ed.StopPropagation {
+		bits += "1"
+	} else {
+		bits += "0"
+	}
+
+	return encoder.List(eventName, ed.Name+bits)
+}
+
+// Contains returns true/false if giving string is the same
+// name as giving event.
+func (ed *EventDescriptor) Contains(s string) error {
+	if ed.Name != s {
+		return nerror.New("value is not the same as event name")
+	}
+	return nil
+}
+
+// Match returns true/false if giving attributes matched.
+func (ed *EventDescriptor) Match(other Attr) bool {
+	if other.Key() != eventName {
+		return false
+	}
+	if other.Text() != ed.Name {
+		return false
+	}
+	return true
 }
 
 // Mount implements the RenderMount interface.

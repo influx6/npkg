@@ -146,10 +146,12 @@ func Comment(comment Stringer, renders ...Mounter) *Node {
 // NodeList defines a type for slice of nodes, implementing the Mounter interface.
 type NodeList []*Node
 
-// Mounter applies giving nodes in list to provided parent node.
-func (n NodeList) Mounter(parent *Node) {
+// Mount applies giving nodes in list to provided parent node.
+func (n NodeList) Mount(parent *Node) error {
 	for _, elem := range n {
-		parent.AppendChild(elem)
+		if err := parent.AppendChild(elem); err != nil {
+			return err
+		}
 	}
 }
 
@@ -549,6 +551,41 @@ func (n *Node) rmChildEventListener(eventName string, child *Node) {
 		return
 	}
 	delete(cross, child)
+}
+
+// ResetNode resets giving node alone without affecting it's underline sub-tree.
+//
+// It keeps it's children as it was for re-use. See ResetTree for a more
+// expansive reset call.
+func (n *Node) ResetNode() {
+	n.reset()
+	n.Events.Reset()
+	n.TextNodes.Reset()
+	n.Attrs = n.Attrs[:0]
+	n.ExpiredNodes.Reset()
+	n.crossEvents = map[string]bool{}
+	n.childListeners = map[string]nodeHash{}
+}
+
+// ResetTree resets both the node and it's children nodes in a depth-first manner.
+//
+// It accepts a function which will be called against this node and all children nodes
+// to allow user provide a garbage action like adding nodes back into an object pool.
+//
+// The list of nodes is set back to empty once done, allowing this node to be re-used.
+func (n *Node) ResetTree(doNode func(*Node)) {
+	n.ResetNode()
+
+	n.kids.Each(func(child *Node, _ int) bool {
+		child.ResetTree(doNode)
+		return true
+	})
+
+	n.kids.items = n.kids.items[:0]
+
+	if doNode != nil {
+		doNode(n)
+	}
 }
 
 func (n *Node) reset() {
