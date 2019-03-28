@@ -1,12 +1,19 @@
 package ntrees
 
 import (
+	"io"
 	"strconv"
 	"strings"
 	"sync"
 )
 
 var _ Attrs = (*AttrList)(nil)
+var stringPool = sync.Pool{
+	New: func() interface{} {
+		var content strings.Builder
+		return &content
+	},
+}
 
 // AttrEncoder defines an interface which provides means of encoding
 // attribute key-value pairs and possible sub-attributes using provided
@@ -15,21 +22,16 @@ type AttrEncoder interface {
 	Attr(string, AttrEncodable) error
 
 	Int(string, int) error
-	String(string, string) error
+	Float(string, float64) error
 	List(string, ...string) error
+	QuotedString(string, string) error
+	UnquotedString(string, string) error
 }
 
 // AttrEncodable exposes a interface which provides method for encoder attributes
 // using provided encoder.
 type AttrEncodable interface {
 	EncodeAttr(encoder AttrEncoder) error
-}
-
-var stringPool = sync.Pool{
-	New: func() interface{} {
-		var content strings.Builder
-		return &content
-	},
 }
 
 // DOMAttrEncoder implements a not to optimized AttrEncoder interface.
@@ -47,11 +49,55 @@ func NewDOMAttrEncoder(key string) *DOMAttrEncoder {
 	}
 }
 
+// String returns the encoded attribute list of elements.
+func (dm *DOMAttrEncoder) WriteTo(w io.Writer) (int64, error) {
+	var n, err = w.Write([]byte(dm.Content.String()))
+	return int64(n), err
+}
+
+// String returns the encoded attribute list of elements.
+func (dm *DOMAttrEncoder) String() string {
+	return dm.Content.String()
+}
+
 // Attr implements encoding of multi-attribute based values.
-func (dm DOMAttrEncoder) Attr(key string, attrs AttrEncodable) error {
+func (dm *DOMAttrEncoder) WithAttr(key string, fn func(encoder AttrEncoder) error) error {
 	var err error
 	var content = stringPool.Get().(*strings.Builder)
 	defer stringPool.Put(content)
+
+	content.Reset()
+
+	if dm.Key != "" {
+		key = dm.Key + "." + key
+	}
+
+	var dmer = &DOMAttrEncoder{
+		Key:     key,
+		Content: content,
+	}
+	if err = fn(dmer); err != nil {
+		return err
+	}
+
+	if dm.Content.Len() > 0 {
+		if _, err = dm.Content.WriteString(" "); err != nil {
+			return err
+		}
+	}
+	if _, err = dm.Content.WriteString(content.String()); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Attr implements encoding of multi-attribute based values.
+func (dm *DOMAttrEncoder) Attr(key string, attrs AttrEncodable) error {
+	var err error
+	var content = stringPool.Get().(*strings.Builder)
+	defer stringPool.Put(content)
+
+	content.Reset()
 
 	if dm.Key != "" {
 		key = dm.Key + "." + key
@@ -66,10 +112,12 @@ func (dm DOMAttrEncoder) Attr(key string, attrs AttrEncodable) error {
 		return err
 	}
 
-	if _, err = dm.Content.WriteString(content.String()); err != nil {
-		return err
+	if dm.Content.Len() > 0 {
+		if _, err = dm.Content.WriteString(" "); err != nil {
+			return err
+		}
 	}
-	if _, err = dm.Content.WriteString(" "); err != nil {
+	if _, err = dm.Content.WriteString(content.String()); err != nil {
 		return err
 	}
 	return nil
@@ -80,6 +128,8 @@ func (dm *DOMAttrEncoder) List(key string, set ...string) error {
 	var err error
 	var content = stringPool.Get().(*strings.Builder)
 	defer stringPool.Put(content)
+
+	content.Reset()
 
 	for i, s := 0, len(set); i < s; i++ {
 		if _, err = content.WriteString(set[i]); err != nil {
@@ -92,6 +142,11 @@ func (dm *DOMAttrEncoder) List(key string, set ...string) error {
 		}
 	}
 
+	if dm.Content.Len() > 0 {
+		if _, err = dm.Content.WriteString(" "); err != nil {
+			return err
+		}
+	}
 	if dm.Key != "" {
 		if _, err = dm.Content.WriteString(dm.Key + "."); err != nil {
 			return err
@@ -106,15 +161,20 @@ func (dm *DOMAttrEncoder) List(key string, set ...string) error {
 	if _, err = dm.Content.WriteString(content.String()); err != nil {
 		return err
 	}
-	if _, err = dm.Content.WriteString("\" "); err != nil {
+	if _, err = dm.Content.WriteString("\""); err != nil {
 		return err
 	}
 	return nil
 }
 
-// String encodes giving string value for string key.
-func (dm *DOMAttrEncoder) String(key string, val string) error {
+// QuotedString encodes giving string value for string key.
+func (dm *DOMAttrEncoder) QuotedString(key string, val string) error {
 	var err error
+	if dm.Content.Len() > 0 {
+		if _, err = dm.Content.WriteString(" "); err != nil {
+			return err
+		}
+	}
 	if dm.Key != "" {
 		if _, err = dm.Content.WriteString(dm.Key + "."); err != nil {
 			return err
@@ -129,17 +189,49 @@ func (dm *DOMAttrEncoder) String(key string, val string) error {
 	if _, err = dm.Content.WriteString(val); err != nil {
 		return err
 	}
-	if _, err = dm.Content.WriteString("\" "); err != nil {
+	if _, err = dm.Content.WriteString("\""); err != nil {
 		return err
 	}
 	return nil
 }
 
+// UnquotedString encodes giving string value for string key.
+func (dm *DOMAttrEncoder) UnquotedString(key string, val string) error {
+	var err error
+	if dm.Content.Len() > 0 {
+		if _, err = dm.Content.WriteString(" "); err != nil {
+			return err
+		}
+	}
+	if dm.Key != "" {
+		if _, err = dm.Content.WriteString(dm.Key + "."); err != nil {
+			return err
+		}
+	}
+	if _, err = dm.Content.WriteString(key); err != nil {
+		return err
+	}
+	if _, err = dm.Content.WriteString("="); err != nil {
+		return err
+	}
+	if _, err = dm.Content.WriteString(val); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Float encodes giving int value for string key.
+func (dm *DOMAttrEncoder) Float(key string, val float64) error {
+	var content [8]byte
+	var appended = strconv.AppendFloat(content[:0], val, 'f', -1, 64)
+	return dm.UnquotedString(key, string(appended))
+}
+
 // Int encodes giving int value for string key.
 func (dm *DOMAttrEncoder) Int(key string, val int) error {
 	var content [8]byte
-	var appended = strconv.AppendInt(content[:], int64(val), 10)
-	return dm.String(key, string(appended))
+	var appended = strconv.AppendInt(content[:0], int64(val), 10)
+	return dm.UnquotedString(key, string(appended))
 }
 
 // Attr defines a series of method representing a Attribute.
@@ -322,7 +414,7 @@ func (s StringAttr) Contains(other string) bool {
 
 // EncodeAttr implements the AttrEncodable interface.
 func (s StringAttr) EncodeAttr(encoder AttrEncoder) error {
-	return encoder.String(s.Name, s.Val)
+	return encoder.QuotedString(s.Name, s.Val)
 }
 
 // Match returns true/false if giving attributes matches.

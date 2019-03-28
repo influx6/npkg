@@ -2,7 +2,6 @@ module github.com/gokit/npkg
 
 require (
 	github.com/AndreasBriese/bbloom v0.0.0-20180913140656-343706a395b7 // indirect
-	github.com/PuerkitoBio/goquery v1.5.0
 	github.com/alicebob/gopher-json v0.0.0-20180125190556-5a6b3ba71ee6 // indirect
 	github.com/alicebob/miniredis v2.4.6+incompatible
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
@@ -11,7 +10,6 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20190104051053-3adb47b1fb0f // indirect
 	github.com/dimfeld/httptreemux v5.0.1+incompatible
 	github.com/go-redis/redis v6.15.2+incompatible
-	github.com/gokit/trees v0.0.0-20190121061959-9685edf718da
 	github.com/golang/protobuf v1.3.0 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e

@@ -153,6 +153,7 @@ func (n NodeList) Mount(parent *Node) error {
 			return err
 		}
 	}
+	return nil
 }
 
 // Node defines a concrete type implementing a combined linked-list with
