@@ -65,6 +65,14 @@ type Stringer interface {
 	String() string
 }
 
+// TextContent implements the Stringer interface for type string.
+type TextContent string
+
+// String returns the underline string type.
+func (t TextContent) String() string {
+	return string(t)
+}
+
 //****************************************************************************
 // Node
 //****************************************************************************
@@ -253,12 +261,15 @@ func (n *Node) SwapAll(m *Node) error {
 // RenderNode renders giving Nodes using a html markup syntax format.
 //
 // Underneath it calls Node.RenderNodeTo (See comments for method).
-func (n *Node) RenderNode(w io.Writer) error {
+func (n *Node) RenderNode(w io.Writer, indented bool) error {
 	var content = stringPool.Get().(*strings.Builder)
 	defer stringPool.Put(content)
 
 	content.Reset()
-	return n.RenderNodeTo(content)
+	if err := n.renderNode(content, indented, 0); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	return nil
 }
 
 // RenderNodeTo renders giving Nodes using a html markup syntax format
@@ -269,36 +280,36 @@ func (n *Node) RenderNode(w io.Writer) error {
 //
 // It runs depth-first collected all internal representation of a node, it's
 // attributes and children.
-func (n *Node) RenderNodeTo(content *strings.Builder) error {
-	if err := n.renderNode(content, false); err != nil {
-		return err
+func (n *Node) RenderNodeTo(content *strings.Builder, indented bool) error {
+	if err := n.renderNode(content, indented, 0); err != nil {
+		return nerror.WrapOnly(err)
 	}
 	return nil
 }
 
-func (n *Node) renderNode(build *strings.Builder, indented bool) error {
+func (n *Node) renderNode(build *strings.Builder, indented bool, indentCount int) error {
 	// create the current tag for giving type of node.
 	// Rules are:
 	switch n.nt {
 	case DocumentNode:
 		// 1. if Document node then skip and render children, except for
 		// html node.
-		if n.Name() == "html" {
-			return n.renderRoot(build, indented)
+		if n.Name() == "html" && n.parent == nil {
+			return n.renderRoot(build, indented, indentCount)
 		}
-		return n.renderChildren(build, indented)
+		return n.renderChildren(build, indented, indentCount)
 	case TextNode:
 		// 2. If text then render as a text node with no intricate tag as html allows
 		// wrapping text.
-		return n.renderText(build, indented)
+		return n.renderText(build, indented, indentCount)
 	case CommentNode:
 		// 2. If comment then render as a html comment node with appropriate
 		// prefix and suffix.
-		return n.renderComment(build, indented)
+		return n.renderComment(build, indented, indentCount)
 	case ElementNode:
 		// 3. If a element node, then render the name, attributes, events then
 		// children with enclosing tag.
-		return n.renderElement(build, indented)
+		return n.renderElement(build, indented, indentCount)
 	default:
 		// 4. If it's not a known type then return error.
 		return ErrInvalidNodeType
@@ -312,14 +323,27 @@ const (
 	blockBegin    = "<"
 	blockEnd      = ">"
 	spacer        = " "
+	equalSign     = "="
+	quotation     = "\""
+	eventHeader   = "events"
 	blockEndBegin = "</"
 	blockSelfEnd  = "/>"
 	newline       = "\n"
+	dentation     = "\t"
 	htmlTag       = "html"
 )
 
-func (n *Node) renderComment(build *strings.Builder, indented bool) error {
+func (n *Node) renderComment(build *strings.Builder, indented bool, indentCount int) error {
 	if n.content != nil {
+		if indented {
+			if indentCount > 0 {
+				for i := indentCount; i > 0; i-- {
+					if _, err := build.WriteString(dentation); err != nil {
+						return err
+					}
+				}
+			}
+		}
 		if _, err := build.WriteString(commentBegin); err != nil {
 			return err
 		}
@@ -327,6 +351,13 @@ func (n *Node) renderComment(build *strings.Builder, indented bool) error {
 			if _, err := build.WriteString(newline); err != nil {
 				return err
 			}
+			if indentCount > 0 {
+				for i := indentCount; i > 0; i-- {
+					if _, err := build.WriteString(dentation); err != nil {
+						return err
+					}
+				}
+			}
 		}
 		if _, err := build.WriteString(n.content.String()); err != nil {
 			return err
@@ -335,18 +366,44 @@ func (n *Node) renderComment(build *strings.Builder, indented bool) error {
 			if _, err := build.WriteString(newline); err != nil {
 				return err
 			}
+			if indentCount > 0 {
+				for i := indentCount; i > 0; i-- {
+					if _, err := build.WriteString(dentation); err != nil {
+						return err
+					}
+				}
+			}
 		}
 		if _, err := build.WriteString(commentEnd); err != nil {
 			return err
+		}
+		if indented {
+			if _, err := build.WriteString(newline); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func (n *Node) renderText(build *strings.Builder, indented bool) error {
+func (n *Node) renderText(build *strings.Builder, indented bool, indentCount int) error {
 	if n.content != nil {
+		if indented {
+			if indentCount > 0 {
+				for i := indentCount; i > 0; i-- {
+					if _, err := build.WriteString(dentation); err != nil {
+						return err
+					}
+				}
+			}
+		}
 		if _, err := build.WriteString(n.content.String()); err != nil {
 			return err
+		}
+		if indented {
+			if _, err := build.WriteString(newline); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -359,6 +416,20 @@ func (n *Node) renderAttributes(build *strings.Builder, indented bool) error {
 
 	var err error
 	var encoder = DOMAttrEncoderWith("", build)
+	if n.nodeID != "" {
+		if err = encoder.QuotedString("id", n.nodeID); err != nil {
+			return err
+		}
+	}
+
+	if err = encoder.QuotedString("_tid", n.id); err != nil {
+		return err
+	}
+
+	if n.Attrs.Len() == 0 {
+		return nil
+	}
+
 	n.Attrs.Each(func(attr Attr) bool {
 		if err = attr.EncodeAttr(encoder); err != nil {
 			return false
@@ -369,24 +440,41 @@ func (n *Node) renderAttributes(build *strings.Builder, indented bool) error {
 }
 
 func (n *Node) renderEvents(build *strings.Builder, indented bool) error {
+	if n.Events.Len() == 0 {
+		return nil
+	}
+
 	if _, err := build.WriteString(spacer); err != nil {
 		return err
 	}
-
-	var err error
-	var encoder = DOMAttrEncoderWith("", build)
-	for _, events := range n.Events.nodes {
-		if len(events) == 0 {
-			continue
-		}
-		if err = events[0].EncodeAttr(encoder); err != nil {
-			return err
-		}
+	if _, err := build.WriteString(eventHeader); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(equalSign); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(quotation); err != nil {
+		return err
+	}
+	if err := n.Events.EncodeEvents(build); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(quotation); err != nil {
+		return err
 	}
 	return nil
 }
 
-func (n *Node) renderElement(build *strings.Builder, indented bool) error {
+func (n *Node) renderElement(build *strings.Builder, indented bool, indentCount int) error {
+	if indented {
+		if indentCount > 0 {
+			for i := indentCount; i > 0; i-- {
+				if _, err := build.WriteString(dentation); err != nil {
+					return err
+				}
+			}
+		}
+	}
 	if _, err := build.WriteString(blockBegin); err != nil {
 		return err
 	}
@@ -394,6 +482,9 @@ func (n *Node) renderElement(build *strings.Builder, indented bool) error {
 		return err
 	}
 	if err := n.renderAttributes(build, indented); err != nil {
+		return err
+	}
+	if err := n.renderEvents(build, indented); err != nil {
 		return err
 	}
 	if _, err := build.WriteString(blockEnd); err != nil {
@@ -404,12 +495,18 @@ func (n *Node) renderElement(build *strings.Builder, indented bool) error {
 			return err
 		}
 	}
-	if err := n.renderChildren(build, indented); err != nil {
+
+	var newIndent = indentCount + 1
+	if err := n.renderChildren(build, indented, newIndent); err != nil {
 		return err
 	}
 	if indented {
-		if _, err := build.WriteString(newline); err != nil {
-			return err
+		if indentCount > 0 {
+			for i := indentCount; i > 0; i-- {
+				if _, err := build.WriteString(dentation); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	if _, err := build.WriteString(blockEndBegin); err != nil {
@@ -421,10 +518,15 @@ func (n *Node) renderElement(build *strings.Builder, indented bool) error {
 	if _, err := build.WriteString(blockEnd); err != nil {
 		return err
 	}
+	if indented {
+		if _, err := build.WriteString(newline); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-func (n *Node) renderRoot(build *strings.Builder, indented bool) error {
+func (n *Node) renderRoot(build *strings.Builder, indented bool, indentCount int) error {
 	if _, err := build.WriteString(blockBegin); err != nil {
 		return err
 	}
@@ -432,6 +534,9 @@ func (n *Node) renderRoot(build *strings.Builder, indented bool) error {
 		return err
 	}
 	if err := n.renderAttributes(build, indented); err != nil {
+		return err
+	}
+	if err := n.renderEvents(build, indented); err != nil {
 		return err
 	}
 	if _, err := build.WriteString(blockEnd); err != nil {
@@ -442,7 +547,7 @@ func (n *Node) renderRoot(build *strings.Builder, indented bool) error {
 			return err
 		}
 	}
-	if err := n.renderChildren(build, indented); err != nil {
+	if err := n.renderChildren(build, indented, indentCount); err != nil {
 		return err
 	}
 	if indented {
@@ -462,9 +567,9 @@ func (n *Node) renderRoot(build *strings.Builder, indented bool) error {
 	return nil
 }
 
-func (n *Node) renderChildren(build *strings.Builder, indented bool) (err error) {
+func (n *Node) renderChildren(build *strings.Builder, indented bool, indentCount int) (err error) {
 	n.kids.Each(func(node *Node, _ int) bool {
-		if err = node.renderNode(build, indented); err != nil {
+		if err = node.renderNode(build, indented, indentCount); err != nil {
 			return false
 		}
 		return true
@@ -1131,6 +1236,10 @@ func (al *slidingList) Add(n *Node) (int, error) {
 	}
 
 	al.lastNode = n.index
+	if al.firstNode == nil {
+		al.firstNode = n.index
+	}
+
 	al.incrementLastExpansion(1)
 	return index, nil
 }
@@ -1177,6 +1286,10 @@ func (al *slidingList) SortList() {
 		return
 	}
 
+	if al.firstNode == nil && al.lastNode != nil {
+		panic("Invalid pointer state for slidingList.firstNode")
+	}
+
 	var count = len(al.items)
 	if count == 0 {
 		return
@@ -1186,6 +1299,7 @@ func (al *slidingList) SortList() {
 
 	var index int
 	var next = al.firstNode.Read()
+
 	for next != -1 {
 		item := al.items[next]
 		next = item.next.Read()
@@ -1230,6 +1344,14 @@ func (al *slidingList) Each(fn func(*Node, int) bool) {
 
 	var index int
 	var next = al.firstNode
+	if next == nil && al.lastNode != nil {
+		panic("Invalid pointer state for slidingList.firstNode")
+	}
+
+	if next == nil {
+		return
+	}
+
 	for next.Read() != -1 {
 		item := al.items[next.Read()]
 		if !fn(item, index) {

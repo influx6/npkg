@@ -475,6 +475,11 @@ type Attrs interface {
 // AttrList implements Attrs interface.
 type AttrList []Attr
 
+// Len returns the underline length of slice.
+func (l *AttrList) Len() int {
+	return len(*l)
+}
+
 // Add adds giving attribute into list.
 func (l *AttrList) Add(v Attr) {
 	*l = append(*l, v)

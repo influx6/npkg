@@ -170,7 +170,7 @@ func NewEventDescriptor(event string, responder interface{}, mods ...EventDescri
 	return &desc
 }
 
-const eventName = "event"
+const eventName = "events"
 
 // Key returns giving key or name of attribute.
 func (ed *EventDescriptor) Key() string {
@@ -187,8 +187,13 @@ func (ed *EventDescriptor) Text() string {
 	return ed.Name
 }
 
-// EncodeAttr implements the AttrEncodable interface.
-func (ed *EventDescriptor) EncodeAttr(encoder AttrEncoder) error {
+// Namespace returns the underline namespace format for giving EventDescriptor.
+//
+// Namespace uses a suffix format where the PreventDefault and StopPropagation are
+// arrange in the 00 order, where the first is PreventDefault and the second StopPropagation.
+//
+// A value of 1 means to turn it on and 0 means it's off and should be ignored.
+func (ed *EventDescriptor) Namespace() string {
 	var bits = "-"
 
 	// set flag for prevent-default behaviour.
@@ -205,7 +210,7 @@ func (ed *EventDescriptor) EncodeAttr(encoder AttrEncoder) error {
 		bits += "0"
 	}
 
-	return encoder.List(eventName, ed.Name+bits)
+	return ed.Name + bits
 }
 
 // Contains returns true/false if giving string is the same
@@ -250,6 +255,11 @@ func NewEventHashList() *EventHashList {
 	return &EventHashList{
 		nodes: map[string][]EventDescriptor{},
 	}
+}
+
+// Len returns the underline length of events in map.
+func (na *EventHashList) Len() int {
+	return len(na.nodes)
 }
 
 // Respond delivers giving event to all descriptors of events within hash.
@@ -302,6 +312,28 @@ func (na *EventHashList) Count() int {
 	return len(na.nodes)
 }
 
+// EncodeEvents encodes all giving event within provided event hash list.
+func (na *EventHashList) EncodeEvents(encoder *strings.Builder) error {
+	if na.nodes != nil {
+		var count int
+		for _, events := range na.nodes {
+			if len(events) == 0 {
+				continue
+			}
+			if count > 0 {
+				if _, err := encoder.WriteString(spacer); err != nil {
+					return err
+				}
+			}
+			if _, err := encoder.WriteString(events[0].Namespace()); err != nil {
+				return err
+			}
+			count++
+		}
+	}
+	return nil
+}
+
 // Add adds giving node into giving list if it has
 // giving attribute value.
 func (na *EventHashList) Add(event EventDescriptor) {
@@ -343,6 +375,10 @@ func (na *EventHashList) Remove(event EventDescriptor) {
 			return
 		}
 	}
+
+	if len(set) == 0 {
+		delete(na.nodes, name)
+	}
 }
 
 // RemoveSignalResponder removes giving event descriptor for giving  responder.
@@ -360,6 +396,10 @@ func (na *EventHashList) RemoveSignalResponder(event string, r natomic.SignalRes
 			return
 		}
 	}
+
+	if len(set) == 0 {
+		delete(na.nodes, event)
+	}
 }
 
 // RemoveEventResponder removes giving event descriptor for giving  responder.
@@ -376,5 +416,9 @@ func (na *EventHashList) RemoveEventResponder(event string, r EventDescriptorRes
 			na.nodes[event] = set
 			return
 		}
+	}
+
+	if len(set) == 0 {
+		delete(na.nodes, event)
 	}
 }
