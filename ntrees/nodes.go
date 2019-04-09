@@ -3,12 +3,15 @@ package ntrees
 import (
 	"errors"
 	"fmt"
+	"io"
 	"math/rand"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 
 	"github.com/gokit/npkg/natomic"
+	"github.com/gokit/npkg/nerror"
 	"github.com/gokit/npkg/nxid"
 )
 
@@ -65,6 +68,11 @@ type Stringer interface {
 //****************************************************************************
 // Node
 //****************************************************************************
+
+var (
+	// ErrInvalidNodeType returns if giving node type is not supported.
+	ErrInvalidNodeType = nerror.New("invalid node type, unsupported")
+)
 
 // Reconcilable requires implementers expose methods to reconcile
 // themselves and their internal state with a previous or different node.
@@ -240,6 +248,222 @@ func (n *Node) SwapAll(m *Node) error {
 
 	n.reset()
 	return nil
+}
+
+// RenderNode renders giving Nodes using a html markup syntax format.
+//
+// It implements an efficient means of using HTML as the defactor means of
+// visualizing the produced output of a giving node and it's children.
+//
+// It runs depth-first collected all internal representation of a node, it's
+// attributes and children.
+func (n *Node) RenderNode(w io.Writer) error {
+	var content = stringPool.Get().(*strings.Builder)
+	defer stringPool.Put(content)
+
+	content.Reset()
+
+	if err := n.renderNode(content, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (n *Node) renderNode(build *strings.Builder, indented bool) error {
+	// create the current tag for giving type of node.
+	// Rules are:
+	switch n.nt {
+	case DocumentNode:
+		// 1. if Document node then skip and render children, except for
+		// html node.
+		if n.Name() == "html" {
+			return n.renderRoot(build, indented)
+		}
+		return n.renderChildren(build, indented)
+	case TextNode:
+		// 2. If text then render as a text node with no intricate tag as html allows
+		// wrapping text.
+		return n.renderText(build, indented)
+	case CommentNode:
+		// 2. If comment then render as a html comment node with appropriate
+		// prefix and suffix.
+		return n.renderComment(build, indented)
+	case ElementNode:
+		// 3. If a element node, then render the name, attributes, events then
+		// children with enclosing tag.
+		return n.renderElement(build, indented)
+	default:
+		// 4. If it's not a known type then return error.
+		return ErrInvalidNodeType
+	}
+}
+
+// comment and tag constants
+const (
+	commentBegin  = "<!-- "
+	commentEnd    = " -->"
+	blockBegin    = "<"
+	blockEnd      = ">"
+	spacer        = " "
+	blockEndBegin = "</"
+	blockSelfEnd  = "/>"
+	newline       = "\n"
+	htmlTag       = "html"
+)
+
+func (n *Node) renderComment(build *strings.Builder, indented bool) error {
+	if n.content != nil {
+		if _, err := build.WriteString(commentBegin); err != nil {
+			return err
+		}
+		if indented {
+			if _, err := build.WriteString(newline); err != nil {
+				return err
+			}
+		}
+		if _, err := build.WriteString(n.content.String()); err != nil {
+			return err
+		}
+		if indented {
+			if _, err := build.WriteString(newline); err != nil {
+				return err
+			}
+		}
+		if _, err := build.WriteString(commentEnd); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (n *Node) renderText(build *strings.Builder, indented bool) error {
+	if n.content != nil {
+		if _, err := build.WriteString(n.content.String()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (n *Node) renderAttributes(build *strings.Builder, indented bool) error {
+	if _, err := build.WriteString(spacer); err != nil {
+		return err
+	}
+
+	var err error
+	var encoder = DOMAttrEncoderWith("", build)
+	n.Attrs.Each(func(attr Attr) bool {
+		if err = attr.EncodeAttr(encoder); err != nil {
+			return false
+		}
+		return true
+	})
+	return err
+}
+
+func (n *Node) renderEvents(build *strings.Builder, indented bool) error {
+	if _, err := build.WriteString(spacer); err != nil {
+		return err
+	}
+
+	var err error
+	var encoder = DOMAttrEncoderWith("", build)
+	for _, events := range n.Events.nodes {
+		if len(events) == 0 {
+			continue
+		}
+		if err = events[0].EncodeAttr(encoder); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (n *Node) renderElement(build *strings.Builder, indented bool) error {
+	if _, err := build.WriteString(blockBegin); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(n.nodeName); err != nil {
+		return err
+	}
+	if err := n.renderAttributes(build, indented); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(blockEnd); err != nil {
+		return err
+	}
+	if indented {
+		if _, err := build.WriteString(newline); err != nil {
+			return err
+		}
+	}
+	if err := n.renderChildren(build, indented); err != nil {
+		return err
+	}
+	if indented {
+		if _, err := build.WriteString(newline); err != nil {
+			return err
+		}
+	}
+	if _, err := build.WriteString(blockEndBegin); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(n.nodeName); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(blockEnd); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (n *Node) renderRoot(build *strings.Builder, indented bool) error {
+	if _, err := build.WriteString(blockBegin); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(htmlTag); err != nil {
+		return err
+	}
+	if err := n.renderAttributes(build, indented); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(blockEnd); err != nil {
+		return err
+	}
+	if indented {
+		if _, err := build.WriteString(newline); err != nil {
+			return err
+		}
+	}
+	if err := n.renderChildren(build, indented); err != nil {
+		return err
+	}
+	if indented {
+		if _, err := build.WriteString(newline); err != nil {
+			return err
+		}
+	}
+	if _, err := build.WriteString(blockEndBegin); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(htmlTag); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(blockEnd); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (n *Node) renderChildren(build *strings.Builder, indented bool) (err error) {
+	n.kids.Each(func(node *Node, _ int) bool {
+		if err = node.renderNode(build, indented); err != nil {
+			return false
+		}
+		return true
+	})
+	return
 }
 
 // SwapNode swaps provided node with myself within parent's list. The swapped node

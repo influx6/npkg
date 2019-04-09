@@ -49,6 +49,14 @@ func NewDOMAttrEncoder(key string) *DOMAttrEncoder {
 	}
 }
 
+// DOMAttrEncoderWith returns a new DOMAttrEncoder.
+func DOMAttrEncoderWith(key string, content *strings.Builder) *DOMAttrEncoder {
+	return &DOMAttrEncoder{
+		Key:     key,
+		Content: content,
+	}
+}
+
 // String returns the encoded attribute list of elements.
 func (dm *DOMAttrEncoder) WriteTo(w io.Writer) (int64, error) {
 	var n, err = w.Write([]byte(dm.Content.String()))
@@ -384,6 +392,11 @@ type StringAttr struct {
 // NewStringAttr returns a new instance of a StringAttr
 func NewStringAttr(n string, v string) StringAttr {
 	return StringAttr{Name: n, Val: v}
+}
+
+// NamespaceAttr returns a new StringAttr with Name set to "namespace".
+func NamespaceAttr(v string) StringAttr {
+	return StringAttr{Name: "namespace", Val: v}
 }
 
 // Key returns giving key or name of attribute.
