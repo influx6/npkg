@@ -3,6 +3,7 @@ package ntrees
 import (
 	"strings"
 
+	"github.com/gokit/npkg"
 	"github.com/gokit/npkg/natomic"
 	"github.com/gokit/npkg/nerror"
 )
@@ -244,6 +245,21 @@ func (ed *EventDescriptor) Unmount(n *Node) {
 	n.Events.Remove(*ed)
 }
 
+// EncodeObject implements encoding using the npkg.EncodableObject interface.
+func (ed *EventDescriptor) EncodeObject(enc npkg.ObjectEncoder) error {
+	var err error
+	if err = enc.String("name", ed.Name); err != nil {
+		return err
+	}
+	if err = enc.Bool("preventDefault", ed.PreventDefault); err != nil {
+		return err
+	}
+	if err = enc.Bool("stopPropagation", ed.StopPropagation); err != nil {
+		return err
+	}
+	return nil
+}
+
 // EventHashList implements the a set list for Nodes using
 // their Node.RefID() value as unique keys.
 type EventHashList struct {
@@ -260,6 +276,19 @@ func NewEventHashList() *EventHashList {
 // Len returns the underline length of events in map.
 func (na *EventHashList) Len() int {
 	return len(na.nodes)
+}
+
+// EncodeList encodes underline events into provided list encoder.
+func (na *EventHashList) EncodeList(enc npkg.ListEncoder) error {
+	for _, events := range na.nodes {
+		if len(events) == 0 {
+			continue
+		}
+		if err := enc.AddObject(&events[0]); err != nil {
+			return nerror.WrapOnly(err)
+		}
+	}
+	return nil
 }
 
 // Respond delivers giving event to all descriptors of events within hash.

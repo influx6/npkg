@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/gokit/npkg"
 )
 
 var _ Attrs = (*AttrList)(nil)
@@ -245,6 +247,7 @@ func (dm *DOMAttrEncoder) Int(key string, val int) error {
 // Attr defines a series of method representing a Attribute.
 type Attr interface {
 	AttrEncodable
+	npkg.EncodableObject
 
 	// Key returns the key for the attribute.
 	Key() string
@@ -296,6 +299,18 @@ func (s IntAttr) Mount(parent *Node) error {
 	return nil
 }
 
+// EncodeObject implements encoding using the npkg.EncodableObject interface.
+func (s IntAttr) EncodeObject(enc npkg.ObjectEncoder) error {
+	var err error
+	if err = enc.String("name", s.Name); err != nil {
+		return err
+	}
+	if err = enc.Int("value", s.Val); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Contains returns true/false if provided value is contained in attr.
 //
 // Since we are dealing with a number, we attempt to convert the provided
@@ -344,6 +359,25 @@ func (s StringListAttr) Key() string {
 // Value returns giving value of attribute.
 func (s StringListAttr) Value() interface{} {
 	return s.Val
+}
+
+// EncodeObject implements encoding using the npkg.EncodableObject interface.
+func (s StringListAttr) EncodeObject(enc npkg.ObjectEncoder) error {
+	var err error
+	if err = enc.String("name", s.Name); err != nil {
+		return err
+	}
+	if err = enc.ListFor("values", func(enc npkg.ListEncoder) error {
+		for _, item := range s.Val {
+			if err := enc.AddString(item); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Text returns giving value of attribute as text.
@@ -412,6 +446,18 @@ func (s StringAttr) Value() interface{} {
 // Text returns giving value of attribute as text.
 func (s StringAttr) Text() string {
 	return s.Val
+}
+
+// EncodeObject implements encoding using the npkg.EncodableObject interface.
+func (s StringAttr) EncodeObject(enc npkg.ObjectEncoder) error {
+	var err error
+	if err = enc.String("name", s.Name); err != nil {
+		return err
+	}
+	if err = enc.String("value", s.Val); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Mount implements the Mounter interface.
@@ -490,6 +536,17 @@ func (l *AttrList) Add(v Attr) {
 func (l AttrList) EncodeAttr(encoder AttrEncoder) error {
 	for _, item := range l {
 		if err := item.EncodeAttr(encoder); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// EncodeList encodes list of all attributes.
+func (l AttrList) EncodeList(encoder npkg.ListEncoder) error {
+	var err error
+	for _, item := range l {
+		if err = encoder.AddObject(item); err != nil {
 			return err
 		}
 	}

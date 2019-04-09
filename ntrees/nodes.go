@@ -10,8 +10,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gokit/npkg"
 	"github.com/gokit/npkg/natomic"
 	"github.com/gokit/npkg/nerror"
+	"github.com/gokit/npkg/njson"
 	"github.com/gokit/npkg/nxid"
 )
 
@@ -332,6 +334,83 @@ const (
 	dentation     = "\t"
 	htmlTag       = "html"
 )
+
+// EncodeJSON giving node and it's underline children as a json
+// data.
+func (n *Node) EncodeJSON(build *strings.Builder) error {
+	var err error
+	var encoder = njson.Object()
+	if err = n.EncodeObject(encoder); err != nil {
+		return err
+	}
+
+	if _, err = encoder.WriteTo(build); err != nil {
+		return err
+	}
+	return nil
+}
+
+// EncodeObject implements the npkg.EncodableObject interface.
+func (n *Node) EncodeObject(encoder npkg.ObjectEncoder) error {
+	var err error
+	switch n.nt {
+	case TextNode:
+		if err = encoder.String("type", "text"); err != nil {
+			return nerror.WrapOnly(err)
+		}
+	case CommentNode:
+		if err = encoder.String("type", "comment"); err != nil {
+			return nerror.WrapOnly(err)
+		}
+	case DocumentNode:
+		if err = encoder.String("type", "#doc"); err != nil {
+			return nerror.WrapOnly(err)
+		}
+	case ElementNode:
+		if err = encoder.String("type", "elem"); err != nil {
+			return nerror.WrapOnly(err)
+		}
+	}
+
+	if n.nodeName != "" {
+		if err = encoder.String("name", n.nodeName); err != nil {
+			return nerror.WrapOnly(err)
+		}
+	}
+	if n.content != nil {
+		if err = encoder.String("content", n.content.String()); err != nil {
+			return nerror.WrapOnly(err)
+		}
+	}
+	if err = encoder.String("id", n.nodeID); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	if err = encoder.String("tid", n.id); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	if err = encoder.List("attrs", n.Attrs); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	if err = encoder.List("events", n.Events); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	if err = encoder.List("children", n.kids); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	return nil
+}
+
+// EncodeList encodes list of all attributes.
+func (n *Node) EncodeList(encoder npkg.ListEncoder) error {
+	var err error
+	n.kids.Each(func(node *Node, _ int) bool {
+		if err = encoder.AddObject(node); err != nil {
+			return false
+		}
+		return true
+	})
+	return nil
+}
 
 func (n *Node) renderComment(build *strings.Builder, indented bool, indentCount int) error {
 	if n.content != nil {
@@ -1365,6 +1444,21 @@ func (al *slidingList) Each(fn func(*Node, int) bool) {
 		index++
 		next = item.next
 	}
+}
+
+// EncodeList encodes list of all attributes.
+func (al *slidingList) EncodeList(encoder npkg.ListEncoder) error {
+	var err error
+	al.Each(func(node *Node, i int) bool {
+		if err = encoder.AddObject(node); err != nil {
+			return false
+		}
+		return true
+	})
+	if err != nil {
+		return nerror.WrapOnly(err)
+	}
+	return nil
 }
 
 // EmptyIndex returns true/false if giving index is empty.
