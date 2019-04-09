@@ -603,3 +603,119 @@ func (l AttrList) Match(key string, value string) bool {
 	}
 	return false
 }
+
+//*****************************************************************
+// Base Attributes
+// Copied from Vecty (https://github.com/gopherjs/vecty/blob/master/prop/prop.go)
+//*****************************************************************
+
+const (
+	falseFlag = "false"
+	trueFlag  = "true"
+)
+
+// InputType defines a string type for different input types.
+type InputType string
+
+// Constants of input type in html.
+const (
+	TypeButton        InputType = "button"
+	TypeCheckbox      InputType = "checkbox"
+	TypeColor         InputType = "color"
+	TypeDate          InputType = "date"
+	TypeDatetime      InputType = "datetime"
+	TypeDatetimeLocal InputType = "datetime-local"
+	TypeEmail         InputType = "email"
+	TypeFile          InputType = "file"
+	TypeHidden        InputType = "hidden"
+	TypeImage         InputType = "image"
+	TypeMonth         InputType = "month"
+	TypeNumber        InputType = "number"
+	TypePassword      InputType = "password"
+	TypeRadio         InputType = "radio"
+	TypeRange         InputType = "range"
+	TypeMin           InputType = "min"
+	TypeMax           InputType = "max"
+	TypeValue         InputType = "value"
+	TypeStep          InputType = "step"
+	TypeReset         InputType = "reset"
+	TypeSearch        InputType = "search"
+	TypeSubmit        InputType = "submit"
+	TypeTel           InputType = "tel"
+	TypeText          InputType = "text"
+	TypeTime          InputType = "time"
+	TypeUrl           InputType = "url"
+	TypeWeek          InputType = "week"
+)
+
+// Autofocus sets the autofocus attribute.
+func Autofocus(autofocus bool) StringAttr {
+	var content = falseFlag
+	if autofocus {
+		content = trueFlag
+	}
+	return NewStringAttr("autofocus", content)
+}
+
+// Disabled sets the attribute on.
+func Disabled(disabled bool) StringAttr {
+	var content = falseFlag
+	if disabled {
+		content = trueFlag
+	}
+	return NewStringAttr("alt", content)
+}
+
+// Checked sets the attribute on.
+func Checked(checked bool) StringAttr {
+	var content = falseFlag
+	if checked {
+		content = trueFlag
+	}
+	return NewStringAttr("checked", content)
+}
+
+// For sets the for attribute value.
+func For(id string) StringAttr {
+	return NewStringAttr("htmlFor", id)
+}
+
+// Href sets the href attribute value.
+func Href(url string) StringAttr {
+	return NewStringAttr("href", url)
+}
+
+// ID sets the id attribute value.
+func ID(id string) StringAttr {
+	return NewStringAttr("id", id)
+}
+
+// Placeholder sets the placeholder attribute value.
+func Placeholder(text string) StringAttr {
+	return NewStringAttr("placeholder", text)
+}
+
+// Src sets the src attribute value.
+func Src(url string) StringAttr {
+	return NewStringAttr("src", url)
+}
+
+// Type sets the type attribute value.
+func Type(t InputType) StringAttr {
+	return NewStringAttr("type", string(t))
+}
+
+// Value sets the value attribute value.
+func Value(v string) StringAttr {
+	return NewStringAttr("value", v)
+}
+
+// Name sets the name attribute value.
+func Name(name string) StringAttr {
+	return NewStringAttr("name", name)
+}
+
+// Alt sets the atl attribute value.
+func Alt(text string) StringAttr {
+	return NewStringAttr("alt", text)
+}
