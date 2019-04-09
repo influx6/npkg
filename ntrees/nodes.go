@@ -252,21 +252,27 @@ func (n *Node) SwapAll(m *Node) error {
 
 // RenderNode renders giving Nodes using a html markup syntax format.
 //
-// It implements an efficient means of using HTML as the defactor means of
-// visualizing the produced output of a giving node and it's children.
-//
-// It runs depth-first collected all internal representation of a node, it's
-// attributes and children.
+// Underneath it calls Node.RenderNodeTo (See comments for method).
 func (n *Node) RenderNode(w io.Writer) error {
 	var content = stringPool.Get().(*strings.Builder)
 	defer stringPool.Put(content)
 
 	content.Reset()
+	return n.RenderNodeTo(content)
+}
 
+// RenderNodeTo renders giving Nodes using a html markup syntax format
+// to provided strings.Builder. This allows memory efficient rendering.
+//
+// It implements an efficient means of using HTML as the defactor means of
+// visualizing the produced output of a giving node and it's children.
+//
+// It runs depth-first collected all internal representation of a node, it's
+// attributes and children.
+func (n *Node) RenderNodeTo(content *strings.Builder) error {
 	if err := n.renderNode(content, false); err != nil {
 		return err
 	}
-
 	return nil
 }
 
