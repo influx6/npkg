@@ -57,65 +57,65 @@ func main() {
 The code above produces the underline html:
 
 ```html
-<section  id="767h" _tid="bima7q79glhupsnqjo90">
+<section  id="767h" atid="bj0v2kuaa78t7ijs5070" _tid="bj0v2kuaa78t7ijs5070" _ref="/767h">
 	<!-- 
 	Commentary
 	 -->
-	<div  id="0" _tid="bima7q79glhupsnqjoag" count-target="0" events="click-00 MouseOver-00">
+	<div  id="0" atid="bj0v2kuaa78t7ijs508g" _tid="bj0v2kuaa78t7ijs508g" _ref="/767h/0" count-target="0" events="click-00 MouseOver-00">
 		0
 	</div>
 	<!-- 
 	Commentary
 	 -->
-	<div  id="1" _tid="bima7q79glhupsnqjoc0" count-target="1" events="MouseOver-00 click-00">
+	<div  id="1" atid="bj0v2kuaa78t7ijs50a0" _tid="bj0v2kuaa78t7ijs50a0" _ref="/767h/1" count-target="1" events="click-00 MouseOver-00">
 		1
 	</div>
 	<!-- 
 	Commentary
 	 -->
-	<div  id="2" _tid="bima7q79glhupsnqjodg" count-target="2" events="click-00 MouseOver-00">
+	<div  id="2" atid="bj0v2kuaa78t7ijs50bg" _tid="bj0v2kuaa78t7ijs50bg" _ref="/767h/2" count-target="2" events="MouseOver-00 click-00">
 		2
 	</div>
 	<!-- 
 	Commentary
 	 -->
-	<div  id="3" _tid="bima7q79glhupsnqjof0" count-target="3" events="click-00 MouseOver-00">
+	<div  id="3" atid="bj0v2kuaa78t7ijs50d0" _tid="bj0v2kuaa78t7ijs50d0" _ref="/767h/3" count-target="3" events="click-00 MouseOver-00">
 		3
 	</div>
 	<!-- 
 	Commentary
 	 -->
-	<div  id="4" _tid="bima7q79glhupsnqjogg" count-target="4" events="click-00 MouseOver-00">
+	<div  id="4" atid="bj0v2kuaa78t7ijs50eg" _tid="bj0v2kuaa78t7ijs50eg" _ref="/767h/4" count-target="4" events="MouseOver-00 click-00">
 		4
 	</div>
 	<!-- 
 	Commentary
 	 -->
-	<div  id="5" _tid="bima7q79glhupsnqjoi0" count-target="5" events="click-00 MouseOver-00">
+	<div  id="5" atid="bj0v2kuaa78t7ijs50g0" _tid="bj0v2kuaa78t7ijs50g0" _ref="/767h/5" count-target="5" events="click-00 MouseOver-00">
 		5
 	</div>
 	<!-- 
 	Commentary
 	 -->
-	<div  id="6" _tid="bima7q79glhupsnqjojg" count-target="6" events="click-00 MouseOver-00">
+	<div  id="6" atid="bj0v2kuaa78t7ijs50hg" _tid="bj0v2kuaa78t7ijs50hg" _ref="/767h/6" count-target="6" events="click-00 MouseOver-00">
 		6
 	</div>
 	<!-- 
 	Commentary
 	 -->
-	<div  id="7" _tid="bima7q79glhupsnqjol0" count-target="7" events="click-00 MouseOver-00">
+	<div  id="7" atid="bj0v2kuaa78t7ijs50j0" _tid="bj0v2kuaa78t7ijs50j0" _ref="/767h/7" count-target="7" events="click-00 MouseOver-00">
 		7
 	</div>
 	<!-- 
 	Commentary
 	 -->
-	<div  id="8" _tid="bima7q79glhupsnqjomg" count-target="8" events="click-00 MouseOver-00">
+	<div  id="8" atid="bj0v2kuaa78t7ijs50kg" _tid="bj0v2kuaa78t7ijs50kg" _ref="/767h/8" count-target="8" events="click-00 MouseOver-00">
 		8
 	</div>
 	<!-- 
 	Commentary
 	 -->
-	<div  id="9" _tid="bima7q79glhupsnqjoo0" count-target="9" events="click-00 MouseOver-00">
+	<div  id="9" atid="bj0v2kuaa78t7ijs50m0" _tid="bj0v2kuaa78t7ijs50m0" _ref="/767h/9" count-target="9" events="click-00 MouseOver-00">
 		9
 	</div>
 </section>
@@ -125,13 +125,14 @@ More so, using the `Node.EncodeJSON` we can actually render a JSON format of giv
 events and children:
 
 ```json
-
-
 {
-  "type": "elem",
+  "type": 1,
+  "ref": "\/767h",
+  "typeName": "Element",
+  "atid": "bj0v36uaa78tecmm9sn0",
   "name": "section",
   "id": "767h",
-  "tid": "bimaunv9glholth2tcmg",
+  "tid": "bj0v36uaa78tecmm9sn0",
   "attrs": [
     
   ],
@@ -140,11 +141,14 @@ events and children:
   ],
   "children": [
     {
-      "type": "comment",
+      "type": 8,
+      "ref": "\/767h\/comment-2042p7w9cx",
+      "typeName": "Comment",
+      "atid": "bj0v36uaa78tecmm9sng",
       "name": "Comment",
       "content": "Commentary",
-      "id": "2042p",
-      "tid": "bimaunv9glholth2tcn0",
+      "id": "comment-2042p7w9cx",
+      "tid": "bj0v36uaa78tecmm9sng",
       "attrs": [
         
       ],
@@ -156,10 +160,13 @@ events and children:
       ]
     },
     {
-      "type": "elem",
+      "type": 1,
+      "ref": "\/767h\/0",
+      "typeName": "Element",
+      "atid": "bj0v36uaa78tecmm9sog",
       "name": "div",
       "id": "0",
-      "tid": "bimaunv9glholth2tco0",
+      "tid": "bj0v36uaa78tecmm9sog",
       "attrs": [
         {
           "name": "count-target",
@@ -180,11 +187,14 @@ events and children:
       ],
       "children": [
         {
-          "type": "text",
+          "type": 3,
+          "ref": "\/767h\/0\/text-204250vbsc",
+          "typeName": "Text",
+          "atid": "bj0v36uaa78tecmm9so0",
           "name": "Text",
           "content": "0",
-          "id": "20427",
-          "tid": "bimaunv9glholth2tcng",
+          "id": "text-204250vbsc",
+          "tid": "bj0v36uaa78tecmm9so0",
           "attrs": [
             
           ],
@@ -198,11 +208,14 @@ events and children:
       ]
     },
     {
-      "type": "comment",
+      "type": 8,
+      "ref": "\/767h\/comment-2042q98s1h",
+      "typeName": "Comment",
+      "atid": "bj0v36uaa78tecmm9sp0",
       "name": "Comment",
       "content": "Commentary",
-      "id": "2042w",
-      "tid": "bimaunv9glholth2tcog",
+      "id": "comment-2042q98s1h",
+      "tid": "bj0v36uaa78tecmm9sp0",
       "attrs": [
         
       ],
@@ -214,10 +227,13 @@ events and children:
       ]
     },
     {
-      "type": "elem",
+      "type": 1,
+      "ref": "\/767h\/1",
+      "typeName": "Element",
+      "atid": "bj0v36uaa78tecmm9sq0",
       "name": "div",
       "id": "1",
-      "tid": "bimaunv9glholth2tcpg",
+      "tid": "bj0v36uaa78tecmm9sq0",
       "attrs": [
         {
           "name": "count-target",
@@ -238,11 +254,14 @@ events and children:
       ],
       "children": [
         {
-          "type": "text",
+          "type": 3,
+          "ref": "\/767h\/1\/text-2042w6hjl8",
+          "typeName": "Text",
+          "atid": "bj0v36uaa78tecmm9spg",
           "name": "Text",
           "content": "1",
-          "id": "20429",
-          "tid": "bimaunv9glholth2tcp0",
+          "id": "text-2042w6hjl8",
+          "tid": "bj0v36uaa78tecmm9spg",
           "attrs": [
             
           ],
@@ -256,11 +275,14 @@ events and children:
       ]
     },
     {
-      "type": "comment",
+      "type": 8,
+      "ref": "\/767h\/comment-20427kk8bt",
+      "typeName": "Comment",
+      "atid": "bj0v36uaa78tecmm9sqg",
       "name": "Comment",
       "content": "Commentary",
-      "id": "2042c",
-      "tid": "bimaunv9glholth2tcq0",
+      "id": "comment-20427kk8bt",
+      "tid": "bj0v36uaa78tecmm9sqg",
       "attrs": [
         
       ],
@@ -272,10 +294,13 @@ events and children:
       ]
     },
     {
-      "type": "elem",
+      "type": 1,
+      "ref": "\/767h\/2",
+      "typeName": "Element",
+      "atid": "bj0v36uaa78tecmm9srg",
       "name": "div",
       "id": "2",
-      "tid": "bimaunv9glholth2tcr0",
+      "tid": "bj0v36uaa78tecmm9srg",
       "attrs": [
         {
           "name": "count-target",
@@ -284,23 +309,26 @@ events and children:
       ],
       "events": [
         {
-          "name": "click",
+          "name": "MouseOver",
           "preventDefault": false,
           "stopPropagation": false
         },
         {
-          "name": "MouseOver",
+          "name": "click",
           "preventDefault": false,
           "stopPropagation": false
         }
       ],
       "children": [
         {
-          "type": "text",
+          "type": 3,
+          "ref": "\/767h\/2\/text-2042cxwpm6",
+          "typeName": "Text",
+          "atid": "bj0v36uaa78tecmm9sr0",
           "name": "Text",
           "content": "2",
-          "id": "2042x",
-          "tid": "bimaunv9glholth2tcqg",
+          "id": "text-2042cxwpm6",
+          "tid": "bj0v36uaa78tecmm9sr0",
           "attrs": [
             
           ],
@@ -314,11 +342,14 @@ events and children:
       ]
     },
     {
-      "type": "comment",
+      "type": 8,
+      "ref": "\/767h\/comment-20427ctjrn",
+      "typeName": "Comment",
+      "atid": "bj0v36uaa78tecmm9ss0",
       "name": "Comment",
       "content": "Commentary",
-      "id": "20425",
-      "tid": "bimaunv9glholth2tcrg",
+      "id": "comment-20427ctjrn",
+      "tid": "bj0v36uaa78tecmm9ss0",
       "attrs": [
         
       ],
@@ -330,10 +361,13 @@ events and children:
       ]
     },
     {
-      "type": "elem",
+      "type": 1,
+      "ref": "\/767h\/3",
+      "typeName": "Element",
+      "atid": "bj0v36uaa78tecmm9st0",
       "name": "div",
       "id": "3",
-      "tid": "bimaunv9glholth2tcsg",
+      "tid": "bj0v36uaa78tecmm9st0",
       "attrs": [
         {
           "name": "count-target",
@@ -354,11 +388,14 @@ events and children:
       ],
       "children": [
         {
-          "type": "text",
+          "type": 3,
+          "ref": "\/767h\/3\/text-2042gfr78g",
+          "typeName": "Text",
+          "atid": "bj0v36uaa78tecmm9ssg",
           "name": "Text",
           "content": "3",
-          "id": "20420",
-          "tid": "bimaunv9glholth2tcs0",
+          "id": "text-2042gfr78g",
+          "tid": "bj0v36uaa78tecmm9ssg",
           "attrs": [
             
           ],
@@ -372,11 +409,14 @@ events and children:
       ]
     },
     {
-      "type": "comment",
+      "type": 8,
+      "ref": "\/767h\/comment-2042zf7cmm",
+      "typeName": "Comment",
+      "atid": "bj0v36uaa78tecmm9stg",
       "name": "Comment",
       "content": "Commentary",
-      "id": "2042v",
-      "tid": "bimaunv9glholth2tct0",
+      "id": "comment-2042zf7cmm",
+      "tid": "bj0v36uaa78tecmm9stg",
       "attrs": [
         
       ],
@@ -388,10 +428,13 @@ events and children:
       ]
     },
     {
-      "type": "elem",
+      "type": 1,
+      "ref": "\/767h\/4",
+      "typeName": "Element",
+      "atid": "bj0v36uaa78tecmm9sug",
       "name": "div",
       "id": "4",
-      "tid": "bimaunv9glholth2tcu0",
+      "tid": "bj0v36uaa78tecmm9sug",
       "attrs": [
         {
           "name": "count-target",
@@ -412,11 +455,14 @@ events and children:
       ],
       "children": [
         {
-          "type": "text",
+          "type": 3,
+          "ref": "\/767h\/4\/text-2042n5lxrh",
+          "typeName": "Text",
+          "atid": "bj0v36uaa78tecmm9su0",
           "name": "Text",
           "content": "4",
-          "id": "2042b",
-          "tid": "bimaunv9glholth2tctg",
+          "id": "text-2042n5lxrh",
+          "tid": "bj0v36uaa78tecmm9su0",
           "attrs": [
             
           ],
@@ -430,11 +476,14 @@ events and children:
       ]
     },
     {
-      "type": "comment",
+      "type": 8,
+      "ref": "\/767h\/comment-2042pbtjvl",
+      "typeName": "Comment",
+      "atid": "bj0v36uaa78tecmm9sv0",
       "name": "Comment",
       "content": "Commentary",
-      "id": "2042s",
-      "tid": "bimaunv9glholth2tcug",
+      "id": "comment-2042pbtjvl",
+      "tid": "bj0v36uaa78tecmm9sv0",
       "attrs": [
         
       ],
@@ -446,10 +495,13 @@ events and children:
       ]
     },
     {
-      "type": "elem",
+      "type": 1,
+      "ref": "\/767h\/5",
+      "typeName": "Element",
+      "atid": "bj0v36uaa78tecmm9t00",
       "name": "div",
       "id": "5",
-      "tid": "bimaunv9glholth2tcvg",
+      "tid": "bj0v36uaa78tecmm9t00",
       "attrs": [
         {
           "name": "count-target",
@@ -470,11 +522,14 @@ events and children:
       ],
       "children": [
         {
-          "type": "text",
+          "type": 3,
+          "ref": "\/767h\/5\/text-2042pd36rj",
+          "typeName": "Text",
+          "atid": "bj0v36uaa78tecmm9svg",
           "name": "Text",
           "content": "5",
-          "id": "2042c",
-          "tid": "bimaunv9glholth2tcv0",
+          "id": "text-2042pd36rj",
+          "tid": "bj0v36uaa78tecmm9svg",
           "attrs": [
             
           ],
@@ -488,11 +543,14 @@ events and children:
       ]
     },
     {
-      "type": "comment",
+      "type": 8,
+      "ref": "\/767h\/comment-2042dl74kr",
+      "typeName": "Comment",
+      "atid": "bj0v36uaa78tecmm9t0g",
       "name": "Comment",
       "content": "Commentary",
-      "id": "2042q",
-      "tid": "bimaunv9glholth2td00",
+      "id": "comment-2042dl74kr",
+      "tid": "bj0v36uaa78tecmm9t0g",
       "attrs": [
         
       ],
@@ -504,10 +562,13 @@ events and children:
       ]
     },
     {
-      "type": "elem",
+      "type": 1,
+      "ref": "\/767h\/6",
+      "typeName": "Element",
+      "atid": "bj0v36uaa78tecmm9t1g",
       "name": "div",
       "id": "6",
-      "tid": "bimaunv9glholth2td10",
+      "tid": "bj0v36uaa78tecmm9t1g",
       "attrs": [
         {
           "name": "count-target",
@@ -528,11 +589,14 @@ events and children:
       ],
       "children": [
         {
-          "type": "text",
+          "type": 3,
+          "ref": "\/767h\/6\/text-2042v0ffkr",
+          "typeName": "Text",
+          "atid": "bj0v36uaa78tecmm9t10",
           "name": "Text",
           "content": "6",
-          "id": "20429",
-          "tid": "bimaunv9glholth2td0g",
+          "id": "text-2042v0ffkr",
+          "tid": "bj0v36uaa78tecmm9t10",
           "attrs": [
             
           ],
@@ -546,11 +610,14 @@ events and children:
       ]
     },
     {
-      "type": "comment",
+      "type": 8,
+      "ref": "\/767h\/comment-2042pz33p2",
+      "typeName": "Comment",
+      "atid": "bj0v36uaa78tecmm9t20",
       "name": "Comment",
       "content": "Commentary",
-      "id": "20428",
-      "tid": "bimaunv9glholth2td1g",
+      "id": "comment-2042pz33p2",
+      "tid": "bj0v36uaa78tecmm9t20",
       "attrs": [
         
       ],
@@ -562,10 +629,13 @@ events and children:
       ]
     },
     {
-      "type": "elem",
+      "type": 1,
+      "ref": "\/767h\/7",
+      "typeName": "Element",
+      "atid": "bj0v36uaa78tecmm9t30",
       "name": "div",
       "id": "7",
-      "tid": "bimaunv9glholth2td2g",
+      "tid": "bj0v36uaa78tecmm9t30",
       "attrs": [
         {
           "name": "count-target",
@@ -586,11 +656,14 @@ events and children:
       ],
       "children": [
         {
-          "type": "text",
+          "type": 3,
+          "ref": "\/767h\/7\/text-2042lvjkbr",
+          "typeName": "Text",
+          "atid": "bj0v36uaa78tecmm9t2g",
           "name": "Text",
           "content": "7",
-          "id": "2042s",
-          "tid": "bimaunv9glholth2td20",
+          "id": "text-2042lvjkbr",
+          "tid": "bj0v36uaa78tecmm9t2g",
           "attrs": [
             
           ],
@@ -604,11 +677,14 @@ events and children:
       ]
     },
     {
-      "type": "comment",
+      "type": 8,
+      "ref": "\/767h\/comment-2042qf5ltc",
+      "typeName": "Comment",
+      "atid": "bj0v36uaa78tecmm9t3g",
       "name": "Comment",
       "content": "Commentary",
-      "id": "20421",
-      "tid": "bimaunv9glholth2td30",
+      "id": "comment-2042qf5ltc",
+      "tid": "bj0v36uaa78tecmm9t3g",
       "attrs": [
         
       ],
@@ -620,10 +696,13 @@ events and children:
       ]
     },
     {
-      "type": "elem",
+      "type": 1,
+      "ref": "\/767h\/8",
+      "typeName": "Element",
+      "atid": "bj0v36uaa78tecmm9t4g",
       "name": "div",
       "id": "8",
-      "tid": "bimaunv9glholth2td40",
+      "tid": "bj0v36uaa78tecmm9t4g",
       "attrs": [
         {
           "name": "count-target",
@@ -644,11 +723,14 @@ events and children:
       ],
       "children": [
         {
-          "type": "text",
+          "type": 3,
+          "ref": "\/767h\/8\/text-2042tww0n5",
+          "typeName": "Text",
+          "atid": "bj0v36uaa78tecmm9t40",
           "name": "Text",
           "content": "8",
-          "id": "2042h",
-          "tid": "bimaunv9glholth2td3g",
+          "id": "text-2042tww0n5",
+          "tid": "bj0v36uaa78tecmm9t40",
           "attrs": [
             
           ],
@@ -662,11 +744,14 @@ events and children:
       ]
     },
     {
-      "type": "comment",
+      "type": 8,
+      "ref": "\/767h\/comment-2042b2xrcd",
+      "typeName": "Comment",
+      "atid": "bj0v36uaa78tecmm9t50",
       "name": "Comment",
       "content": "Commentary",
-      "id": "2042w",
-      "tid": "bimaunv9glholth2td4g",
+      "id": "comment-2042b2xrcd",
+      "tid": "bj0v36uaa78tecmm9t50",
       "attrs": [
         
       ],
@@ -678,10 +763,13 @@ events and children:
       ]
     },
     {
-      "type": "elem",
+      "type": 1,
+      "ref": "\/767h\/9",
+      "typeName": "Element",
+      "atid": "bj0v36uaa78tecmm9t60",
       "name": "div",
       "id": "9",
-      "tid": "bimaunv9glholth2td5g",
+      "tid": "bj0v36uaa78tecmm9t60",
       "attrs": [
         {
           "name": "count-target",
@@ -690,23 +778,26 @@ events and children:
       ],
       "events": [
         {
-          "name": "MouseOver",
+          "name": "click",
           "preventDefault": false,
           "stopPropagation": false
         },
         {
-          "name": "click",
+          "name": "MouseOver",
           "preventDefault": false,
           "stopPropagation": false
         }
       ],
       "children": [
         {
-          "type": "text",
+          "type": 3,
+          "ref": "\/767h\/9\/text-20424kwk14",
+          "typeName": "Text",
+          "atid": "bj0v36uaa78tecmm9t5g",
           "name": "Text",
           "content": "9",
-          "id": "20426",
-          "tid": "bimaunv9glholth2td50",
+          "id": "text-20424kwk14",
+          "tid": "bj0v36uaa78tecmm9t5g",
           "attrs": [
             
           ],
