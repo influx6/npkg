@@ -17,6 +17,18 @@ func (c *counter) Respond(_ natomic.Signal) {
 	*c++
 }
 
+func TestTree(t *testing.T) {
+	base := NewNode(ElementNode, "red", "red-div")
+	require.NotNil(t, base)
+	
+	textNode := Text("free-bar")
+	span := HTMLSpan("content-span", textNode)
+	span2 := HTMLSpan("end-span", span)
+	
+	require.NoError(t, base.AppendChild(span2))
+	require.Equal(t, "/red-div/end-span/content-span",span.RefTree())
+}
+
 func TestNodeEvent(t *testing.T) {
 	var c = new(counter)
 	var parent = HTMLDiv("page-block", NewEventDescriptor("click", c))
@@ -146,6 +158,7 @@ func BenchmarkNode_Append_SwapAll(b *testing.B) {
 		newChild := NewNode(ElementNode, strconv.Itoa(i), "331")
 		if child == nil {
 			base.AppendChild(newChild)
+			child = newChild
 			continue
 		}
 
@@ -165,6 +178,7 @@ func BenchmarkNode_Append_SwapNode(b *testing.B) {
 		newChild := NewNode(ElementNode, strconv.Itoa(i), "132")
 		if child == nil {
 			base.AppendChild(newChild)
+			child = newChild
 			continue
 		}
 

@@ -2,7 +2,6 @@ package ntrees
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"math/rand"
 	"strconv"
@@ -17,17 +16,22 @@ import (
 	"github.com/gokit/npkg/nxid"
 )
 
-const emptyContent = ""
+const (
+	emptyContent  = ""
+	commentPrefix = "comment"
+	textPrefix    = "text"
+)
 
 // NodeType defines a giving type of node.
 type NodeType int
 
 // const of node types.
 const (
-	DocumentNode NodeType = iota
-	ElementNode
-	TextNode
-	CommentNode
+	DocumentNode         NodeType = 9
+	DocumentFragmentNode NodeType = 11
+	ElementNode          NodeType = 1
+	TextNode             NodeType = 3
+	CommentNode          NodeType = 8
 )
 
 // String returns a text representation of a NodeType.
@@ -35,6 +39,8 @@ func (n NodeType) String() string {
 	switch n {
 	case DocumentNode:
 		return "#DOCUMENT"
+	case DocumentFragmentNode:
+		return "#DOCUMENTFragment"
 	case ElementNode:
 		return "Element"
 	case TextNode:
@@ -135,30 +141,24 @@ func Element(name string, id string, renders ...Mounter) *Node {
 	return doc
 }
 
+// TextType returns a element node type which can be added into a parent
+// or use as a base for other nodes.
+func TextType(textType NodeType, name string, prefix string, content Stringer) *Node {
+	doc := NewNode(textType, name, prefixRandomString(prefix, 10))
+	doc.content = content
+	return doc
+}
+
 // Text returns a new Node of Text Type which has no children
 // or attributes.
-func Text(content Stringer, renders ...Mounter) *Node {
-	var doc = NewNode(TextNode, TextNode.String(), randomString(5))
-	doc.content = content
-	for _, mounter := range renders {
-		if err := mounter.Mount(doc); err != nil {
-			panic(err.Error())
-		}
-	}
-	return doc
+func Text(text string) *Node {
+	return TextType(TextNode, TextNode.String(), textPrefix, TextContent(text))
 }
 
 // Comment returns a new Node of Comment Type which has no children
 // or attributes.
-func Comment(comment Stringer, renders ...Mounter) *Node {
-	var doc = NewNode(CommentNode, CommentNode.String(), randomString(5))
-	doc.content = comment
-	for _, mounter := range renders {
-		if err := mounter.Mount(doc); err != nil {
-			panic(err.Error())
-		}
-	}
-	return doc
+func Comment(comment string) *Node {
+	return TextType(CommentNode, CommentNode.String(), commentPrefix, TextContent(comment))
 }
 
 // NodeList defines a type for slice of nodes, implementing the Mounter interface.
@@ -179,15 +179,14 @@ func (n NodeList) Mount(parent *Node) error {
 // the basis.
 type Node struct {
 	Attrs          AttrList
-	TextNodes      *NodeHashList
-	ExpiredNodes   *NodeAttrList
 	Events         *EventHashList
 	parent         *Node
-	id             string
-	nodeID         string
-	nodeName       string
+	tid            string
+	idAttr         string
+	tagName        string
 	content        Stringer
-	nt             NodeType
+	nodeType       NodeType
+	removed        bool
 	index          *natomic.IntSwitch
 	next           *natomic.IntSwitch
 	prev           *natomic.IntSwitch
@@ -199,35 +198,36 @@ type Node struct {
 type nodeHash map[*Node]struct{}
 
 // NewNode returns a new Node instance with the giving Node as
-// underline parent pointer. It uses the provided `nodeName` as
-// name of node (i.e div or section) and the provided `nodeID`
-// as id of giving node (i.e <div id={NodeID}>). This must be
+// underline parent pointer. It uses the provided `tagName` as
+// name of node (i.e div or section) and the provided `idAttr`
+// as id of giving node (i.e <div id={idAttr}>). This must be
 // unique across a node child list.
 //
 // To important things to note in creating a node:
 //
-// 1. The nodeName must be provided always as it tells the rendering
+// 1. The tagName must be provided always as it tells the rendering
 // system what the node represent.
 //
-// 2. The nodeID must both be provided an unique across all nodes, as
+// 2. The idAttr must both be provided an unique across all nodes, as
 // it is the unique identifier to be used for referencing, replacement
 // and swaps by the rendering system.
 //
-func NewNode(nt NodeType, nodeName string, nodeID string) *Node {
-	if nodeName == "" {
-		panic("nodeName can not be empty")
+func NewNode(nt NodeType, tagName string, idAttr string) *Node {
+	if tagName == "" {
+		panic("tagName can not be empty")
 	}
 
-	if nodeID == "" {
-		panic("nodeID can not be empty")
+	if idAttr == "" {
+		panic("idAttr can not be empty")
 	}
 
 	var child Node
-	child.nt = nt
-	child.nodeID = nodeID
-	child.nodeName = nodeName
+	child.nodeType = nt
+	child.idAttr = idAttr
+	child.tagName = tagName
 	child.kids = &slidingList{}
-	child.id = nxid.New().String()
+	child.tid = nxid.New().String()
+
 	child.Events = NewEventHashList()
 	child.next = &natomic.IntSwitch{}
 	child.prev = &natomic.IntSwitch{}
@@ -238,9 +238,6 @@ func NewNode(nt NodeType, nodeName string, nodeID string) *Node {
 	child.next.Flip(-1)
 	child.prev.Flip(-1)
 	child.index.Flip(-1)
-
-	child.TextNodes = &NodeHashList{}
-	child.ExpiredNodes = &NodeAttrList{}
 	return &child
 }
 
@@ -266,8 +263,8 @@ func (n *Node) SwapAll(m *Node) error {
 func (n *Node) RenderNode(w io.Writer, indented bool) error {
 	var content = stringPool.Get().(*strings.Builder)
 	defer stringPool.Put(content)
-
 	content.Reset()
+	
 	if err := n.renderNode(content, indented, 0); err != nil {
 		return nerror.WrapOnly(err)
 	}
@@ -292,7 +289,7 @@ func (n *Node) RenderNodeTo(content *strings.Builder, indented bool) error {
 func (n *Node) renderNode(build *strings.Builder, indented bool, indentCount int) error {
 	// create the current tag for giving type of node.
 	// Rules are:
-	switch n.nt {
+	switch n.nodeType {
 	case DocumentNode:
 		// 1. if Document node then skip and render children, except for
 		// html node.
@@ -327,17 +324,48 @@ const (
 	spacer        = " "
 	equalSign     = "="
 	quotation     = "\""
+	forwardSlash  = "/"
 	eventHeader   = "events"
 	blockEndBegin = "</"
-	blockSelfEnd  = "/>"
 	newline       = "\n"
-	dentation     = "\t"
+	tabulation    = "\t"
 	htmlTag       = "html"
+	//blockSelfEnd  = "/>"
 )
 
-// EncodeJSON giving node and it's underline children as a json
+// RenderChangesHTML runs the reconciliation process for this node node against
+// a provided old version. It produces a marsh up of html text where each individual
+// node block (opening tag, children and closed tag) is considered a separate, distinct
+// change block and has no relation in display or rendering order (i.e each complete block
+// of html text with it's children is a change that should be treated separated, as the html
+// will not have any enclosing parent.)
+//
+// It will will not produce nodes in proper order, but in partial order where a changed
+// node is rendered top-down till it's children but never it's parent. The node should contain
+// adequate information (mainly through it's ref retrieved by Node.RefTree()) of it's ancestry
+// and location.
+func (n *Node) RenderChangesHTML(old *Node, content *strings.Builder)  {
+	n.Reconcile(old, func(oldNode *Node, newNode *Node) {
+		//
+	})
+}
+
+// RenderChangesJSON runs the reconciliation process for this node against
+// a provided old version. It produces a JSON list containing
+// all changed nodes from removed nodes and nodes which have seen an update from
+// a previous version in the old node.
+//
+// It will will not produce nodes in proper order, but in partial order where a changed
+// node is rendered top-down till it's children but never it's parent. The node should contain
+// adequate information (mainly through it's ref retrieved by Node.RefTree()) of it's ancestry
+// and location.
+func (n *Node) RenderChangesJSON(old *Node, content *strings.Builder)  {
+
+}
+
+// RenderJSON giving node and it's underline children as a json
 // data.
-func (n *Node) EncodeJSON(build *strings.Builder) error {
+func (n *Node) RenderJSON(build *strings.Builder) error {
 	var err error
 	var encoder = njson.Object()
 	if err = n.EncodeObject(encoder); err != nil {
@@ -353,39 +381,39 @@ func (n *Node) EncodeJSON(build *strings.Builder) error {
 // EncodeObject implements the npkg.EncodableObject interface.
 func (n *Node) EncodeObject(encoder npkg.ObjectEncoder) error {
 	var err error
-	switch n.nt {
-	case TextNode:
-		if err = encoder.String("type", "text"); err != nil {
-			return nerror.WrapOnly(err)
-		}
-	case CommentNode:
-		if err = encoder.String("type", "comment"); err != nil {
-			return nerror.WrapOnly(err)
-		}
-	case DocumentNode:
-		if err = encoder.String("type", "#doc"); err != nil {
-			return nerror.WrapOnly(err)
-		}
-	case ElementNode:
-		if err = encoder.String("type", "elem"); err != nil {
-			return nerror.WrapOnly(err)
-		}
+	if err = encoder.Int("type", int(n.nodeType)); err != nil {
+		return nerror.WrapOnly(err)
 	}
 
-	if n.nodeName != "" {
-		if err = encoder.String("name", n.nodeName); err != nil {
+	if err = encoder.String("ref", n.RefTree()); err != nil {
+		return nerror.WrapOnly(err)
+	}
+
+	if err = encoder.String("typeName", n.nodeType.String()); err != nil {
+		return nerror.WrapOnly(err)
+	}
+
+	if n.tagName != "" {
+		if err = encoder.String("name", n.tagName); err != nil {
 			return nerror.WrapOnly(err)
 		}
 	}
+	
+	if n.removed {
+		if err = encoder.Bool("removed", n.removed); err != nil {
+			return nerror.WrapOnly(err)
+		}
+	}
+	
 	if n.content != nil {
 		if err = encoder.String("content", n.content.String()); err != nil {
 			return nerror.WrapOnly(err)
 		}
 	}
-	if err = encoder.String("id", n.nodeID); err != nil {
+	if err = encoder.String("id", n.idAttr); err != nil {
 		return nerror.WrapOnly(err)
 	}
-	if err = encoder.String("tid", n.id); err != nil {
+	if err = encoder.String("tid", n.tid); err != nil {
 		return nerror.WrapOnly(err)
 	}
 	if err = encoder.List("attrs", n.Attrs); err != nil {
@@ -417,7 +445,7 @@ func (n *Node) renderComment(build *strings.Builder, indented bool, indentCount 
 		if indented {
 			if indentCount > 0 {
 				for i := indentCount; i > 0; i-- {
-					if _, err := build.WriteString(dentation); err != nil {
+					if _, err := build.WriteString(tabulation); err != nil {
 						return err
 					}
 				}
@@ -432,7 +460,7 @@ func (n *Node) renderComment(build *strings.Builder, indented bool, indentCount 
 			}
 			if indentCount > 0 {
 				for i := indentCount; i > 0; i-- {
-					if _, err := build.WriteString(dentation); err != nil {
+					if _, err := build.WriteString(tabulation); err != nil {
 						return err
 					}
 				}
@@ -447,7 +475,7 @@ func (n *Node) renderComment(build *strings.Builder, indented bool, indentCount 
 			}
 			if indentCount > 0 {
 				for i := indentCount; i > 0; i-- {
-					if _, err := build.WriteString(dentation); err != nil {
+					if _, err := build.WriteString(tabulation); err != nil {
 						return err
 					}
 				}
@@ -470,7 +498,7 @@ func (n *Node) renderText(build *strings.Builder, indented bool, indentCount int
 		if indented {
 			if indentCount > 0 {
 				for i := indentCount; i > 0; i-- {
-					if _, err := build.WriteString(dentation); err != nil {
+					if _, err := build.WriteString(tabulation); err != nil {
 						return err
 					}
 				}
@@ -495,13 +523,23 @@ func (n *Node) renderAttributes(build *strings.Builder, indented bool) error {
 
 	var err error
 	var encoder = DOMAttrEncoderWith("", build)
-	if n.nodeID != "" {
-		if err = encoder.QuotedString("id", n.nodeID); err != nil {
+	if n.idAttr != "" {
+		if err = encoder.QuotedString("id", n.idAttr); err != nil {
 			return err
 		}
 	}
 
-	if err = encoder.QuotedString("_tid", n.id); err != nil {
+	if err = encoder.QuotedString("_tid", n.tid); err != nil {
+		return err
+	}
+	
+	if n.removed {
+		if err = encoder.QuotedString("_removed", "true"); err != nil {
+			return err
+		}
+	}
+
+	if err = encoder.QuotedString("_ref", n.RefTree()); err != nil {
 		return err
 	}
 
@@ -548,7 +586,7 @@ func (n *Node) renderElement(build *strings.Builder, indented bool, indentCount 
 	if indented {
 		if indentCount > 0 {
 			for i := indentCount; i > 0; i-- {
-				if _, err := build.WriteString(dentation); err != nil {
+				if _, err := build.WriteString(tabulation); err != nil {
 					return err
 				}
 			}
@@ -557,7 +595,7 @@ func (n *Node) renderElement(build *strings.Builder, indented bool, indentCount 
 	if _, err := build.WriteString(blockBegin); err != nil {
 		return err
 	}
-	if _, err := build.WriteString(n.nodeName); err != nil {
+	if _, err := build.WriteString(n.tagName); err != nil {
 		return err
 	}
 	if err := n.renderAttributes(build, indented); err != nil {
@@ -582,7 +620,7 @@ func (n *Node) renderElement(build *strings.Builder, indented bool, indentCount 
 	if indented {
 		if indentCount > 0 {
 			for i := indentCount; i > 0; i-- {
-				if _, err := build.WriteString(dentation); err != nil {
+				if _, err := build.WriteString(tabulation); err != nil {
 					return err
 				}
 			}
@@ -591,7 +629,7 @@ func (n *Node) renderElement(build *strings.Builder, indented bool, indentCount 
 	if _, err := build.WriteString(blockEndBegin); err != nil {
 		return err
 	}
-	if _, err := build.WriteString(n.nodeName); err != nil {
+	if _, err := build.WriteString(n.tagName); err != nil {
 		return err
 	}
 	if _, err := build.WriteString(blockEnd); err != nil {
@@ -601,6 +639,46 @@ func (n *Node) renderElement(build *strings.Builder, indented bool, indentCount 
 		if _, err := build.WriteString(newline); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// shallowRender renders only the tag of this node with it's attributes without rendering
+// the children.
+func (n *Node) shallowRender(build *strings.Builder, indented bool) error {
+	if _, err := build.WriteString(blockBegin); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(n.tagName); err != nil {
+		return err
+	}
+	if err := n.renderAttributes(build, indented); err != nil {
+		return err
+	}
+	if err := n.renderEvents(build, indented); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(blockEnd); err != nil {
+		return err
+	}
+	if indented {
+		if _, err := build.WriteString(newline); err != nil {
+			return err
+		}
+	}
+	if indented {
+		if _, err := build.WriteString(newline); err != nil {
+			return err
+		}
+	}
+	if _, err := build.WriteString(blockEndBegin); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(n.tagName); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(blockEnd); err != nil {
+		return err
 	}
 	return nil
 }
@@ -682,7 +760,29 @@ func (n *Node) Get(index int) (*Node, error) {
 
 // RefID returns the reference id of giving node.
 func (n *Node) RefID() string {
-	return n.id
+	return n.tid
+}
+
+// RefTree returns the tree path for giving node by collecting
+// the parents ID till this node.
+func (n Node) RefTree() string {
+	var content = stringPool.Get().(*strings.Builder)
+	defer stringPool.Put(content)
+	content.Reset()
+
+	// write out tree ref from root or ancestor parent.
+	n.writeRefTree(content)
+	return content.String()
+}
+
+// writeRefTree will walk up the node tree writing out
+// all parent paths into provided string builder.
+func (n Node) writeRefTree(b *strings.Builder) {
+	if n.parent != nil {
+		n.parent.writeRefTree(b)
+	}
+	b.WriteString(forwardSlash)
+	b.WriteString(n.idAttr)
 }
 
 // Respond implements the natomic.SignalResponder interface.
@@ -720,12 +820,12 @@ func (n *Node) RespondEvent(s natomic.Signal, desc EventDescriptor) {
 
 // ID returns user-provided id of giving node.
 func (n *Node) ID() string {
-	return n.nodeID
+	return n.idAttr
 }
 
 // Name returns the name of giving node (i.e the node name).
 func (n *Node) Name() string {
-	return n.nodeName
+	return n.tagName
 }
 
 // Text returns the underline text content of a node if it's a
@@ -739,7 +839,7 @@ func (n *Node) Text() string {
 
 // Type returns the underline type of giving node.
 func (n *Node) Type() NodeType {
-	return n.nt
+	return n.nodeType
 }
 
 // Parent returns the underline parent of giving Node.
@@ -763,7 +863,6 @@ func (n *Node) Remove() error {
 	}
 
 	n.parent = nil
-	parent.ExpiredNodes.Add(n)
 	return nil
 }
 
@@ -809,15 +908,8 @@ func (n *Node) AppendChild(kid *Node) error {
 		return ErrInvalidOp
 	}
 
-	switch n.Type() {
-	case TextNode:
-		if kid.Type() != TextNode {
-			return ErrInvalidOp
-		}
-	case CommentNode:
-		if kid.Type() != CommentNode {
-			return ErrInvalidOp
-		}
+	if n.Type() == CommentNode || n.Type() == TextNode {
+		return ErrInvalidOp
 	}
 
 	if _, err := n.kids.Add(kid); err != nil {
@@ -827,11 +919,6 @@ func (n *Node) AppendChild(kid *Node) error {
 	kid.parent = n
 	for event := range n.crossEvents {
 		n.addChildEventListener(event, kid)
-	}
-
-	// if it's a text node, we optimize by adding a reference to it.
-	if kid.nt == TextNode {
-		n.TextNodes.Add(kid)
 	}
 
 	return nil
@@ -883,6 +970,13 @@ func (n *Node) NextSibling() (*Node, error) {
 	return n.parent.Get(n.next.Read())
 }
 
+// ReconcileNotifier defines a function type which can be passed
+// into the Node.Reconcile method which will be notified for a giving
+// root node change with a new version, if no newNode is provided then
+// this means the oldNode is being removed entirely from the done as
+// the new version has changed drastically to not have it anymore.
+type ReconcileNotifier func(oldNode *Node, newNode *Node)
+
 // Reconcile attempts to reconcile old Node set with this node set
 // returning an error if such occurs, else updates this node with
 // information regarding changes such as removals of node children.
@@ -899,11 +993,22 @@ func (n *Node) NextSibling() (*Node, error) {
 //
 // 1. Update node with reconciliation will be run top-down where if parent shows
 //  show updated flag, then
-func (n *Node) Reconcile(old *Node) bool {
+func (n *Node) Reconcile(old *Node, notifier ReconcileNotifier) bool {
 	if !n.Match(old) {
-		if n.parent != nil {
-			n.parent.ExpiredNodes.Add(old)
+		// notify the notifier function if provided
+		// of a swapping change.
+		if notifier != nil {
+			notifier(old, n)
 		}
+
+		return true
+	}
+
+	// Set id of old node to our own ancestorID.
+	n.tid = old.tid
+
+	// if it's a text or comment, we don't expect children so stop here.
+	if n.nodeType == TextNode || n.nodeType == CommentNode {
 		return true
 	}
 
@@ -918,16 +1023,17 @@ func (n *Node) Reconcile(old *Node) bool {
 	old.kids.Each(func(node *Node, i int) bool {
 		var newChild, err = n.kids.Get(i)
 		if err != nil {
-			// if we failed to get the index, possibly we have reached
-			// a state of difference. Add this automatically into removal list
-			n.ExpiredNodes.Add(node)
+			// notify the notifier function if provided
+			// of a removal.
+			if notifier != nil {
+				notifier(node, nil)
+			}
+
 			return true
 		}
 
 		// if we do not match at all, add information into expired nodes.
-		if newChild.Reconcile(node) {
-			n.ExpiredNodes.Add(node)
-		}
+		newChild.Reconcile(node, notifier)
 		return true
 	})
 
@@ -937,10 +1043,10 @@ func (n *Node) Reconcile(old *Node) bool {
 // NodeAttr returns a Attr for giving node.
 func (n *Node) NodeAttr() NodeAttr {
 	return NodeAttr{
-		Type: n.nt,
-		Ref:  n.id,
-		ID:   n.nodeID,
-		Name: n.nodeName,
+		Type: n.nodeType,
+		Ref:  n.tid,
+		ID:   n.idAttr,
+		Name: n.tagName,
 	}
 }
 
@@ -975,9 +1081,7 @@ func (n *Node) rmChildEventListener(eventName string, child *Node) {
 func (n *Node) ResetNode() {
 	n.reset()
 	n.Events.Reset()
-	n.TextNodes.Reset()
 	n.Attrs = n.Attrs[:0]
-	n.ExpiredNodes.Reset()
 	n.crossEvents = map[string]bool{}
 	n.childListeners = map[string]nodeHash{}
 }
@@ -1024,7 +1128,7 @@ type IDList map[string]NodeHashList
 func (c IDList) Add(n *Node) {
 	set, ok := c[n.ID()]
 	if ok && set.Count() != 0 {
-		panic(fmt.Sprintf("Node with id %q already exists", n.ID()))
+		panic("Node with id '" + n.ID() + "' already exists")
 	}
 
 	set.Add(n)
@@ -1133,10 +1237,6 @@ func (na *NodeAttrList) Remove(n *Node) {
 // of said size increment calculation for growth rate.
 const increasingFactor = 5
 
-const (
-	outOfMemory = "Unable to expand list, ran out of memory"
-)
-
 // errors
 var (
 	// ErrInvalidIndex is returned when giving index is out of range or below 0.
@@ -1153,9 +1253,6 @@ var (
 
 	// ErrEmptyIndex is returned when index has no element.
 	ErrEmptyIndex = errors.New("index has no element")
-
-	// ErrValueCanNotBeNil is returned when giving element is nil.
-	ErrValueCanNotBeNil = errors.New("element can not be nil")
 )
 
 // slidingList implements a efficient random access compact list
@@ -1493,7 +1590,9 @@ func (al *slidingList) RemoveAndSwap(index int) (*Node, error) {
 		return nil, err
 	}
 
-	al.SwapIndex(index)
+	if err = al.SwapIndex(index); err != nil && err != ErrEmptyList {
+		return node, err
+	}
 	return node, nil
 }
 
@@ -1580,8 +1679,14 @@ func (al *slidingList) RemoveIndex(index int) (*Node, error) {
 // It returns an error if giving index is wrong
 func (al *slidingList) SwapNode(index int, m *Node, swapKids bool) error {
 	var count = len(al.items)
-	if count == 0 || al.Empty() || index >= count {
+	if count == 0 {
+		return ErrEmptyList
+	}
+	if index < 0 || index > count {
 		return ErrInvalidOp
+	}
+	if index == count {
+		return nil
 	}
 
 	var oldNode = al.items[index]
@@ -1613,8 +1718,14 @@ func (al *slidingList) SwapNode(index int, m *Node, swapKids bool) error {
 // in the list is 1 or if list is empty.
 func (al *slidingList) SwapIndex(index int) error {
 	var count = len(al.items)
-	if count == 0 || al.Empty() || index < 0 || index >= count {
+	if count == 0 {
+		return ErrEmptyList
+	}
+	if index < 0 || index > count {
 		return ErrInvalidOp
+	}
+	if index == count {
+		return nil
 	}
 
 	if al.items[index] != nil {
@@ -1734,4 +1845,30 @@ func randomString(length int) string {
 	}
 
 	return parts + string(b)
+}
+
+func prefixRandomString(prefix string, length int) string {
+	var nowTime = time.Now()
+	var total = len(alphanums)
+	var parts = strconv.Itoa(nowTime.Year())[:2] + strconv.Itoa(nowTime.Minute())
+	var alloc = length - len(parts)
+	var space = len(prefix) + len(parts) + alloc + 1
+
+	var contents = make([]byte, 0, space)
+	contents = append(contents, prefix...)
+	contents = append(contents, '-')
+	contents = append(contents, parts...)
+
+	var next int
+	var b = make([]byte, alloc)
+	for i := range b {
+		next = rand.Intn(total)
+		if next == total {
+			next--
+		}
+		b[i] = byte(alphanums[next])
+	}
+
+	contents = append(contents, b...)
+	return string(contents)
 }

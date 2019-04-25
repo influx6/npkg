@@ -13,7 +13,7 @@ func main() {
 
 	for i := 0; i < 10; i++ {
 		var digit = fmt.Sprintf("%d", i)
-		if err := base.AppendChild(ntrees.Comment(ntrees.TextContent("Commentary"))); err != nil {
+		if err := base.AppendChild(ntrees.Comment("Commentary")); err != nil {
 			log.Fatalf("bad things occured: %+s\n", err)
 		}
 		if err := base.AppendChild(
@@ -23,9 +23,7 @@ func main() {
 				ntrees.ClickEvent(nil),
 				ntrees.MouseOverEvent(nil),
 				ntrees.NewStringAttr("count-target", digit),
-				ntrees.Text(
-					ntrees.TextContent(digit),
-				),
+				ntrees.Text(digit),
 			),
 		); err != nil {
 			log.Fatalf("bad things occured: %+s\n", err)
