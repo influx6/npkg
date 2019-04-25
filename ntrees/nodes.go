@@ -603,7 +603,7 @@ func (n *Node) EncodeObject(encoder npkg.ObjectEncoder) error {
 		return nerror.WrapOnly(err)
 	}
 	
-	if n.atid != "" {
+	if n.atid != n.tid {
 		if err = encoder.String("atid", n.atid); err != nil {
 			return nerror.WrapOnly(err)
 		}
@@ -659,7 +659,7 @@ func (n *Node) EncodeShallowObject(encoder npkg.ObjectEncoder) error {
 		return nerror.WrapOnly(err)
 	}
 	
-	if n.atid != "" {
+	if n.atid != n.tid {
 		if err = encoder.String("atid", n.atid); err != nil {
 			return nerror.WrapOnly(err)
 		}
@@ -787,7 +787,7 @@ func (n *Node) renderAttributes(build *strings.Builder, indented bool) error {
 		}
 	}
 	
-	if n.atid != "" {
+	if n.atid != n.tid {
 		if err = encoder.QuotedString("atid", n.atid); err != nil {
 			return err
 		}
