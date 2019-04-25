@@ -182,6 +182,7 @@ type Node struct {
 	Events         *EventHashList
 	parent         *Node
 	tid            string
+	atid string
 	idAttr         string
 	tagName        string
 	content        Stringer
@@ -227,6 +228,7 @@ func NewNode(nt NodeType, tagName string, idAttr string) *Node {
 	child.tagName = tagName
 	child.kids = &slidingList{}
 	child.tid = nxid.New().String()
+	child.atid = child.tid
 
 	child.Events = NewEventHashList()
 	child.next = &natomic.IntSwitch{}
@@ -239,6 +241,38 @@ func NewNode(nt NodeType, tagName string, idAttr string) *Node {
 	child.prev.Flip(-1)
 	child.index.Flip(-1)
 	return &child
+}
+
+// Clone returns a clone of a giving node depending on the deepClone flag
+// where if false then only the node and it's properties are cloned without the
+// children, else all children are also cloned.
+func (n *Node) Clone(deepClone bool) *Node {
+	var newNode = NewNode(n.nodeType, n.tagName, n.idAttr)
+	newNode.tid = n.tid
+	newNode.atid = n.atid
+	newNode.content = n.content
+	
+	for key, content := range n.crossEvents {
+		newNode.crossEvents[key] = content
+	}
+	
+	for key, content := range n.Events.nodes {
+		var events = make([]EventDescriptor, len(content))
+		var copied = copy(events, content)
+		newNode.Events.nodes[key] = events[:copied]
+	}
+	
+	if deepClone {
+		n.kids.Each(func(node *Node, _ int) bool {
+			var newChildNode = node.Clone(deepClone)
+			if err := newNode.AppendChild(newChildNode); err != nil {
+				return false
+			}
+			return true
+		})
+	}
+	
+	return newNode
 }
 
 // SwapAll swaps provided node with myself within
@@ -257,10 +291,10 @@ func (n *Node) SwapAll(m *Node) error {
 	return nil
 }
 
-// RenderNode renders giving Nodes using a html markup syntax format.
+// RenderHTML renders giving Nodes using a html markup syntax format.
 //
-// Underneath it calls Node.RenderNodeTo (See comments for method).
-func (n *Node) RenderNode(w io.Writer, indented bool) error {
+// Underneath it calls Node.RenderHTMLTo (See comments for method).
+func (n *Node) RenderHTML(w io.Writer, indented bool) error {
 	var content = stringPool.Get().(*strings.Builder)
 	defer stringPool.Put(content)
 	content.Reset()
@@ -271,7 +305,7 @@ func (n *Node) RenderNode(w io.Writer, indented bool) error {
 	return nil
 }
 
-// RenderNodeTo renders giving Nodes using a html markup syntax format
+// RenderHTMLTo renders giving Nodes using a html markup syntax format
 // to provided strings.Builder. This allows memory efficient rendering.
 //
 // It implements an efficient means of using HTML as the defactor means of
@@ -279,7 +313,7 @@ func (n *Node) RenderNode(w io.Writer, indented bool) error {
 //
 // It runs depth-first collected all internal representation of a node, it's
 // attributes and children.
-func (n *Node) RenderNodeTo(content *strings.Builder, indented bool) error {
+func (n *Node) RenderHTMLTo(content *strings.Builder, indented bool) error {
 	if err := n.renderNode(content, indented, 0); err != nil {
 		return nerror.WrapOnly(err)
 	}
@@ -330,25 +364,10 @@ const (
 	newline       = "\n"
 	tabulation    = "\t"
 	htmlTag       = "html"
-	//blockSelfEnd  = "/>"
+	comma = ","
+	arrayBegin = "["
+	arrayEnd = "]"
 )
-
-// RenderChangesHTML runs the reconciliation process for this node node against
-// a provided old version. It produces a marsh up of html text where each individual
-// node block (opening tag, children and closed tag) is considered a separate, distinct
-// change block and has no relation in display or rendering order (i.e each complete block
-// of html text with it's children is a change that should be treated separated, as the html
-// will not have any enclosing parent.)
-//
-// It will will not produce nodes in proper order, but in partial order where a changed
-// node is rendered top-down till it's children but never it's parent. The node should contain
-// adequate information (mainly through it's ref retrieved by Node.RefTree()) of it's ancestry
-// and location.
-func (n *Node) RenderChangesHTML(old *Node, content *strings.Builder)  {
-	n.Reconcile(old, func(oldNode *Node, newNode *Node) {
-		//
-	})
-}
 
 // RenderChangesJSON runs the reconciliation process for this node against
 // a provided old version. It produces a JSON list containing
@@ -359,8 +378,144 @@ func (n *Node) RenderChangesHTML(old *Node, content *strings.Builder)  {
 // node is rendered top-down till it's children but never it's parent. The node should contain
 // adequate information (mainly through it's ref retrieved by Node.RefTree()) of it's ancestry
 // and location.
-func (n *Node) RenderChangesJSON(old *Node, content *strings.Builder)  {
+func (n *Node) RenderChangesJSON(old *Node, content *strings.Builder) error {
+	var err error
+	
+	content.WriteString(arrayBegin)
+	n.Reconcile(old, func(changed *Node)  {
+		if changed.removed {
+			_ = changed.RenderShallowJSON(content)
+			return
+		}
+		
+		if content.String() != arrayBegin{
+			content.WriteString(comma)
+		}
+		_ = changed.RenderJSON(content)
+	})
+	content.WriteString(arrayEnd)
+	return err
+}
 
+// ReconcileNotifier defines a function type which can be passed
+// into the Node.Reconcile method which will be notified for changes
+// be they a new node, removal of old node or swapping of changed nodes.
+//
+// The function is expected to return a boolean value which indicates
+// if due to some internal error wants to force an immediate stop
+// reconciliation operations to allow return.
+type ReconcileNotifier func(changed *Node)
+
+// Reconcile attempts to reconcile old Node set with this node set
+// returning an error if such occurs, else updates this node with
+// information regarding changes such as removals of node children.
+//
+// Reconcile will return true if this node should be swapped with
+// old node in it's tree, as both the root it self has changed.
+//
+//  Reconciliation is done breath first, where the node is checked first
+// against it's counter part and if there is matching state then all it's
+// child nodes are checked and will be accordingly set for swapping or
+// updating if not matching.
+//
+// When reconciliation is done, then rendering should follow this giving rule
+//
+// 1. Update node with reconciliation will be run top-down where if parent shows
+//  show updated flag, then
+func (n *Node) Reconcile(old *Node, notifier ReconcileNotifier) bool {
+	if n.Name() != old.Name() {
+		if notifier != nil {
+			old.removed = true
+			notifier(old)
+			old.removed = false
+			
+			notifier(n)
+		}
+		return true
+	}
+	
+	if n.Type() != old.Type() {
+		if notifier != nil {
+			old.removed = true
+			notifier(old)
+			old.removed = false
+			
+			notifier(n)
+		}
+		return true
+	}
+	
+	// Set id of old node to our own ancestorID.
+	n.atid = old.tid
+	
+	if n.Type() == CommentNode || n.Type() == TextNode {
+		if n.Text() == old.Text() {
+			n.tid = old.tid
+			return false
+		}
+		
+		// if a text change and it has a parent then pass parent
+		// to notifier.
+		if notifier != nil {
+			notifier(n)
+		}
+		
+		return true
+	}
+	
+	if !n.Attrs.MatchAttrs(old.Attrs) {
+		if notifier != nil {
+			notifier(n)
+		}
+		return true
+	}
+	
+	// if total kids are different, more or less (does not matter)
+	// we know new node has changed either way.
+	if old.kids.Length() != n.kids.Length() {
+		if notifier != nil {
+			notifier(n)
+		}
+		return true
+	}
+	
+	// if we matched, then swap our ids to ensure we can locate old node
+	// in rendering.
+	// ensure our list is also sorted.
+	n.kids.SortList()
+	
+	// ensure child list of old node is sorted.
+	old.kids.SortList()
+	
+	var changed bool
+	
+	// if we reached here, definitely the parent has not changed
+	// in anyway, so check the kids and do a check if there is
+	// a change, if we've maxed out kids in new then set others
+	// as removed.
+	old.kids.Each(func(node *Node, i int) bool {
+		newChild, err := n.kids.Get(i)
+		if err != nil {
+			if notifier != nil {
+				node.removed = true
+				notifier(n)
+				node.removed = false
+			}
+			return true
+		}
+		
+		// if we do not match at all, add information into expired nodes.
+		if newChild.Reconcile(node, notifier){
+			changed = true
+		}
+		return true
+	})
+	
+	if !changed{
+		n.tid = old.tid
+	}
+	
+	return changed
 }
 
 // RenderJSON giving node and it's underline children as a json
@@ -373,6 +528,61 @@ func (n *Node) RenderJSON(build *strings.Builder) error {
 	}
 
 	if _, err = encoder.WriteTo(build); err != nil {
+		return err
+	}
+	return nil
+}
+
+// RenderShallowJSON giving node and it's underline children as a json
+// data.
+func (n *Node) RenderShallowJSON(build *strings.Builder) error {
+	var err error
+	var encoder = njson.Object()
+	if err = n.EncodeShallowObject(encoder); err != nil {
+		return err
+	}
+	
+	if _, err = encoder.WriteTo(build); err != nil {
+		return err
+	}
+	return nil
+}
+
+// RenderShallowHTML renders only the tag of this node with it's attributes without rendering
+// the children.
+func (n *Node) RenderShallowHTML(build *strings.Builder, indented bool) error {
+	if _, err := build.WriteString(blockBegin); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(n.tagName); err != nil {
+		return err
+	}
+	if err := n.renderAttributes(build, indented); err != nil {
+		return err
+	}
+	if err := n.renderEvents(build, indented); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(blockEnd); err != nil {
+		return err
+	}
+	if indented {
+		if _, err := build.WriteString(newline); err != nil {
+			return err
+		}
+	}
+	if indented {
+		if _, err := build.WriteString(newline); err != nil {
+			return err
+		}
+	}
+	if _, err := build.WriteString(blockEndBegin); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(n.tagName); err != nil {
+		return err
+	}
+	if _, err := build.WriteString(blockEnd); err != nil {
 		return err
 	}
 	return nil
@@ -391,6 +601,12 @@ func (n *Node) EncodeObject(encoder npkg.ObjectEncoder) error {
 
 	if err = encoder.String("typeName", n.nodeType.String()); err != nil {
 		return nerror.WrapOnly(err)
+	}
+	
+	if n.atid != "" {
+		if err = encoder.String("atid", n.atid); err != nil {
+			return nerror.WrapOnly(err)
+		}
 	}
 
 	if n.tagName != "" {
@@ -423,6 +639,48 @@ func (n *Node) EncodeObject(encoder npkg.ObjectEncoder) error {
 		return nerror.WrapOnly(err)
 	}
 	if err = encoder.List("children", n.kids); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	return nil
+}
+
+// EncodeShallowObject implements the npkg.EncodableObject interface.
+func (n *Node) EncodeShallowObject(encoder npkg.ObjectEncoder) error {
+	var err error
+	if err = encoder.Int("type", int(n.nodeType)); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	
+	if err = encoder.String("ref", n.RefTree()); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	
+	if err = encoder.String("typeName", n.nodeType.String()); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	
+	if n.atid != "" {
+		if err = encoder.String("atid", n.atid); err != nil {
+			return nerror.WrapOnly(err)
+		}
+	}
+	
+	if n.tagName != "" {
+		if err = encoder.String("name", n.tagName); err != nil {
+			return nerror.WrapOnly(err)
+		}
+	}
+	
+	if n.removed {
+		if err = encoder.Bool("removed", n.removed); err != nil {
+			return nerror.WrapOnly(err)
+		}
+	}
+	
+	if err = encoder.String("id", n.idAttr); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	if err = encoder.String("tid", n.tid); err != nil {
 		return nerror.WrapOnly(err)
 	}
 	return nil
@@ -525,6 +783,12 @@ func (n *Node) renderAttributes(build *strings.Builder, indented bool) error {
 	var encoder = DOMAttrEncoderWith("", build)
 	if n.idAttr != "" {
 		if err = encoder.QuotedString("id", n.idAttr); err != nil {
+			return err
+		}
+	}
+	
+	if n.atid != "" {
+		if err = encoder.QuotedString("atid", n.atid); err != nil {
 			return err
 		}
 	}
@@ -643,45 +907,6 @@ func (n *Node) renderElement(build *strings.Builder, indented bool, indentCount 
 	return nil
 }
 
-// shallowRender renders only the tag of this node with it's attributes without rendering
-// the children.
-func (n *Node) shallowRender(build *strings.Builder, indented bool) error {
-	if _, err := build.WriteString(blockBegin); err != nil {
-		return err
-	}
-	if _, err := build.WriteString(n.tagName); err != nil {
-		return err
-	}
-	if err := n.renderAttributes(build, indented); err != nil {
-		return err
-	}
-	if err := n.renderEvents(build, indented); err != nil {
-		return err
-	}
-	if _, err := build.WriteString(blockEnd); err != nil {
-		return err
-	}
-	if indented {
-		if _, err := build.WriteString(newline); err != nil {
-			return err
-		}
-	}
-	if indented {
-		if _, err := build.WriteString(newline); err != nil {
-			return err
-		}
-	}
-	if _, err := build.WriteString(blockEndBegin); err != nil {
-		return err
-	}
-	if _, err := build.WriteString(n.tagName); err != nil {
-		return err
-	}
-	if _, err := build.WriteString(blockEnd); err != nil {
-		return err
-	}
-	return nil
-}
 
 func (n *Node) renderRoot(build *strings.Builder, indented bool, indentCount int) error {
 	if _, err := build.WriteString(blockBegin); err != nil {
@@ -970,75 +1195,6 @@ func (n *Node) NextSibling() (*Node, error) {
 	return n.parent.Get(n.next.Read())
 }
 
-// ReconcileNotifier defines a function type which can be passed
-// into the Node.Reconcile method which will be notified for a giving
-// root node change with a new version, if no newNode is provided then
-// this means the oldNode is being removed entirely from the done as
-// the new version has changed drastically to not have it anymore.
-type ReconcileNotifier func(oldNode *Node, newNode *Node)
-
-// Reconcile attempts to reconcile old Node set with this node set
-// returning an error if such occurs, else updates this node with
-// information regarding changes such as removals of node children.
-//
-// Reconcile will return true if this node should be swapped with
-// old node in it's tree, as both the root it self has changed.
-//
-//  Reconciliation is done breath first, where the node is checked first
-// against it's counter part and if there is matching state then all it's
-// child nodes are checked and will be accordingly set for swapping or
-// updating if not matching.
-//
-// When reconciliation is done, then rendering should follow this giving rule
-//
-// 1. Update node with reconciliation will be run top-down where if parent shows
-//  show updated flag, then
-func (n *Node) Reconcile(old *Node, notifier ReconcileNotifier) bool {
-	if !n.Match(old) {
-		// notify the notifier function if provided
-		// of a swapping change.
-		if notifier != nil {
-			notifier(old, n)
-		}
-
-		return true
-	}
-
-	// Set id of old node to our own ancestorID.
-	n.tid = old.tid
-
-	// if it's a text or comment, we don't expect children so stop here.
-	if n.nodeType == TextNode || n.nodeType == CommentNode {
-		return true
-	}
-
-	// if we matched, then swap our ids to ensure we can locate old node
-	// in rendering.
-	// ensure our list is also sorted.
-	n.kids.SortList()
-
-	// ensure child list of old node is sorted.
-	old.kids.SortList()
-
-	old.kids.Each(func(node *Node, i int) bool {
-		var newChild, err = n.kids.Get(i)
-		if err != nil {
-			// notify the notifier function if provided
-			// of a removal.
-			if notifier != nil {
-				notifier(node, nil)
-			}
-
-			return true
-		}
-
-		// if we do not match at all, add information into expired nodes.
-		newChild.Reconcile(node, notifier)
-		return true
-	})
-
-	return false
-}
 
 // NodeAttr returns a Attr for giving node.
 func (n *Node) NodeAttr() NodeAttr {

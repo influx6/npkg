@@ -32,7 +32,7 @@ func main() {
 
 	// Render html into giving builder.
 	var content strings.Builder
-	if err := base.RenderNodeTo(&content, true); err != nil {
+	if err := base.RenderHTMLTo(&content, true); err != nil {
 		log.Fatalf("failed to render: %+s\n", err)
 	}
 
