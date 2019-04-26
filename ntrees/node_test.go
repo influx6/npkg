@@ -102,6 +102,17 @@ func TestDeeperChangedJSON(t *testing.T) {
 	require.Contains(t, baseContent.String(), "/red-div/end-section/content-span/red-bag")
 }
 
+func TestShallowRender(t *testing.T) {
+	base := NewNode(ElementNode, "red", "red-div")
+	require.NotNil(t, base)
+	require.NoError(t, base.AppendChild(HTMLSpan("end-span", HTMLSpan("content-span", Text("free-bar")))))
+	
+	var baseContent strings.Builder
+	require.NoError(t, base.RenderShallowHTML(&baseContent, true))
+	
+	var expected = `<red  id="red-div" _tid="`+base.tid+`" _ref="/red-div">`+"\n\n"+`</red>`
+	require.Equal(t, expected, baseContent.String())
+}
 
 func TestChangedJSON(t *testing.T) {
 	base := NewNode(ElementNode, "red", "red-div")
