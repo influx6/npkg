@@ -14,7 +14,7 @@ func main() {
 	for i := 0; i < 10; i++ {
 		var digit = fmt.Sprintf("%d", i)
 		if err := base.AppendChild(ntrees.Comment("Commentary")); err != nil {
-			log.Fatalf("bad things occured: %+s\n", err)
+			log.Fatalf("bad things occured: %s\n", err)
 		}
 		if err := base.AppendChild(
 			ntrees.Element(
@@ -33,7 +33,7 @@ func main() {
 	// Render html into giving builder.
 	var content strings.Builder
 	if err := base.RenderHTMLTo(&content, true); err != nil {
-		log.Fatalf("failed to render: %+s\n", err)
+		log.Fatalf("failed to render: %s\n", err)
 	}
 
 	fmt.Println(content.String())
