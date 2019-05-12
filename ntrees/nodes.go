@@ -514,7 +514,6 @@ func (n *Node) Reconcile(old *Node, notifier ReconcileNotifier) bool {
 	if !changed{
 		n.tid = old.tid
 	}
-	
 	return changed
 }
 

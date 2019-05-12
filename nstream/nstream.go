@@ -17,6 +17,17 @@ type Publisher interface {
 	Subscribe(Subscriber) error
 }
 
+// BytePublisher represents a giving byte stream producer, which has giving
+// elements it can produce to all giving subscribers. Usually
+// it is advised to have a Publisher only accept a single subscriber
+// to avoid management details, but this will not be the case for
+// Producers who may fan-out elements to multiple subscribers.
+//
+// Producers can also be called Publishers.
+type BytePublisher interface {
+	Subscribe(ByteSubscriber) error
+}
+
 // Subscriber defines a process interested within a giving stream,
 // it receives a subscription once and then continuously calls
 // for elements until completion based on it's pace.
@@ -33,9 +44,34 @@ type Subscriber interface {
 	OnCompletion(interface{})
 
 	// OnNext is called with the next received element requested  by
-	// subscribers call to Subscribe.Next(n).
+	// subscriber arrives.
 	OnNext(interface{}) error
 
+	// OnSubscription is only ever called once with provided subscription.
+	// The subscriber will use said subscription for reading nstream to completion
+	// or error.
+	OnSubscription(Subscription)
+}
+
+// ByteSubscriber defines a process interested within a giving stream,
+// it receives a subscription once and then continuously calls
+// for elements until completion based on it's pace.
+type ByteSubscriber interface {
+	// OnError is called when a an unrecoverable error occurs during
+	// the delivery of giving stream, this can usually mean the tear
+	// down of giving subscription by either the subscriber or producer.
+	// Usually such a choice depends on implementation details.
+	OnError(error)
+	
+	// OnCompletion is called when Publisher has completed sending
+	// all data elements to subscriber.
+	// It may optionally take a giving completion value.
+	OnCompletion([]byte)
+	
+	// OnNext is called with the next received element requested  by
+	// subscriber arrives.
+	OnNext([]byte)
+	
 	// OnSubscription is only ever called once with provided subscription.
 	// The subscriber will use said subscription for reading nstream to completion
 	// or error.
@@ -54,16 +90,18 @@ type Subscription interface {
 	Next(int) error
 
 	// Stop ends giving Subscription, restoring all resources used up by it's
-	// implementation.
-	// Note: This call may not absolutely stop the reception of more elements by
-	// a subscriber immediately as there might be a delay or time taking during tear
-	// down where elements may arrive. The idea is to not block in anyway.
-	Stop() error
+	// implementation. An optional error can be supplied to indicate why.
+	Stop(error)
 }
 
-// Processors are the both subscribers to a giving stream and also producers of
-// another. They provide a simple and elegant means of mutating incoming nstream.
-type Processor interface {
+// Duplexer are the both subscribers and publishers of streams.
+type Duplexer interface {
 	Publisher
 	Subscriber
+}
+
+// ByteDuplexer are the both subscribers and publishers of byte streams.
+type ByteDuplexer interface {
+	BytePublisher
+	ByteSubscriber
 }
