@@ -40,6 +40,7 @@ func ZipBool(b bool, c []byte) ([]byte, error) {
 	return append(c, off), nil
 }
 
+// UnzipFloat32 converts a byte slice into an float32.
 func UnzipFloat32(val []byte) (float32, error) {
 	dl, n := DecodeVarInt32(val)
 	if n == 0 {
@@ -49,6 +50,7 @@ func UnzipFloat32(val []byte) (float32, error) {
 	return DecodeFloat32(dl), nil
 }
 
+// UnzipFloat64 converts a byte slice into an float64.
 func UnzipFloat64(val []byte) (float64, error) {
 	dl, n := DecodeVarInt64(val)
 	if n == 0 {
@@ -58,16 +60,19 @@ func UnzipFloat64(val []byte) (float64, error) {
 	return DecodeFloat64(dl), nil
 }
 
+// ZipFloat32 converts a float64 into a byte slice.
 func ZipFloat32(val float32, c []byte) ([]byte, error) {
 	enc := EncodeVarInt32(EncodeFloat32(val))
 	return append(c, enc...), nil
 }
 
+// ZipFloat64 converts a float64 into a byte slice.
 func ZipFloat64(val float64, c []byte) ([]byte, error) {
 	enc := EncodeVarInt64(EncodeFloat64(val))
 	return append(c, enc...), nil
 }
 
+// UnzipUint converts a byte slice into an int.
 func UnzipUint(val []byte) (uint, error) {
 	var dl, n = DecodeVarInt64(val)
 	if n == 0 {
@@ -76,6 +81,7 @@ func UnzipUint(val []byte) (uint, error) {
 	return uint(dl), nil
 }
 
+// UnzipInt converts a byte slice into an int.
 func UnzipInt(val []byte) (int, error) {
 	var dl, n = DecodeVarInt64(val)
 	if n == 0 {
@@ -84,6 +90,7 @@ func UnzipInt(val []byte) (int, error) {
 	return int(dl), nil
 }
 
+// UnzipInt converts a byte slice into an uint32.
 func UnzipUint32(val []byte) (uint32, error) {
 	dl, n := DecodeVarInt32(val)
 	if n == 0 {
@@ -92,6 +99,7 @@ func UnzipUint32(val []byte) (uint32, error) {
 	return uint32(dl), nil
 }
 
+// UnzipInt converts a byte slice into an int32.
 func UnzipInt32(val []byte) (int32, error) {
 	dl, n := DecodeVarInt32(val)
 	if n == 0 {
@@ -100,6 +108,7 @@ func UnzipInt32(val []byte) (int32, error) {
 	return int32(dl), nil
 }
 
+// UnzipInt converts a byte slice into an int64.
 func UnzipInt64(val []byte) (int64, error) {
 	dl, n := DecodeVarInt64(val)
 	if n == 0 {
@@ -108,6 +117,7 @@ func UnzipInt64(val []byte) (int64, error) {
 	return int64(dl), nil
 }
 
+// UnzipUint64 converts a byte slice into an uint64.
 func UnzipUint64(val []byte) (uint64, error) {
 	dl, n := DecodeVarInt64(val)
 	if n == 0 {
@@ -116,6 +126,7 @@ func UnzipUint64(val []byte) (uint64, error) {
 	return uint64(dl), nil
 }
 
+// UnzipUint16 converts a byte slice into an uint64.
 func UnzipUint16(val []byte) (uint16, error) {
 	dl, err := DecodeUint16FromBytes(val)
 	if err != nil {
@@ -125,6 +136,7 @@ func UnzipUint16(val []byte) (uint16, error) {
 	return dl, nil
 }
 
+// UnzipInt16 converts a byte slice into an uint64.
 func UnzipInt16(val []byte) (int16, error) {
 	dl, err := DecodeUint16FromBytes(val)
 	if err != nil {
@@ -134,6 +146,8 @@ func UnzipInt16(val []byte) (int16, error) {
 	return int16(dl), nil
 }
 
+// ZipInt converts provided value in the range of {int, uint} types 
+// in all supported arch of 8,16,32,64 into a byte slice.
 func ZipInt(b interface{}, c []byte) ([]byte, error) {
 	switch val := b.(type) {
 	case uint:
@@ -165,15 +179,27 @@ func ZipInt(b interface{}, c []byte) ([]byte, error) {
 	case int64:
 		return append(c, EncodeVarInt64(uint64(val))...), nil
 	}
-	return nil, nerror.New("type is not a int/uint")
+	return nil, nerror.New("type is not a range of int/uint types")
 }
 
-func UnzipTime(val []byte) (interface{}, error) {
-	return time.Parse(time.RFC3339, string(val))
+// UnzipTime converts byte slice into a time.Time object using time.RFC3339 as format.
+func UnzipTime(val []byte) (time.Time, error) {
+	return UnzipTimeWithFormat(val, time.RFC3339)
 }
 
+// UnzipTimeWithFormat converts byte slice into a time.Time object using provided format string.
+func UnzipTimeWithFormat(val []byte, format string) (time.Time, error) {
+	return time.Parse(format, string(val))
+}
+
+// ZipTime converts giving time.Time object into a string using time.RFC3339 format.
 func ZipTime(b time.Time, c []byte) ([]byte, error) {
-	formatted := b.Format(time.RFC3339)
+	return ZipTimeWithFormat(time.RFC3339, b, c)
+}
+
+// ZipTimeWithFormat converts giving time.Time object into a string using a giving format.
+func ZipTimeWithFormat(format string, b time.Time, c []byte) ([]byte, error) {
+	formatted := b.Format(format)
 	return append(c, formatted...), nil
 }
 

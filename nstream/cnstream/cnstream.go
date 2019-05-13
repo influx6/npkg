@@ -22,7 +22,7 @@ var (
 // TimedConn implements a wrapper around a net.Conn which guards giving connection
 // with appropriate read/write timeout.
 type TimedConn struct {
-	conn         net.Conn
+	net.Conn
 	readTimeout  time.Duration
 	writeTimeout time.Duration
 }
@@ -30,7 +30,7 @@ type TimedConn struct {
 // NewTimedConn returns a new instance of a TimedConn.
 func NewTimedConn(conn net.Conn, rd time.Duration, wd time.Duration) *TimedConn {
 	return &TimedConn{
-		conn:         conn,
+		Conn:         conn,
 		readTimeout:  rd,
 		writeTimeout: wd,
 	}
@@ -76,11 +76,11 @@ func (c *TimedConn) Read(b []byte) (int, error) {
 	return readCount, nil
 }
 
-/**********************************************************************************************
-
-MessageRetrieval Message: NX {MAX_64_INT}
-
-**********************************************************************************************/
+//*********************************************************************************************
+// Next Message Format: NX {MAX_64_INT}\r\n\r\n
+// Data Message Format: DX {HEADER} {DATA_BYTES}\r\n\r\n
+// Delimiter Format: \r\n
+//**********************************************************************************************
 
 type ReadConnection struct{
 	addr net.Addr
