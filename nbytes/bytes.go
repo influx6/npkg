@@ -530,7 +530,7 @@ func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
 			}
 
 			if bytes.Equal(dr.Delimiter[1:], next) {
-				dr.buffer.Discard(len(next))
+				_, _ = dr.buffer.Discard(len(next))
 				dr.unit = true
 				return true, nil
 			}

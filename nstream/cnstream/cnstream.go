@@ -5,87 +5,10 @@ import (
 	"net"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/gokit/npkg/nerror"
 	"github.com/gokit/npkg/nstream"
 )
-
-var (
-	noTime = time.Time{}
-)
-
-//*********************************************************************************************
-// TimedConn
-//*********************************************************************************************
-
-// TimedConn implements a wrapper around a net.Conn which guards giving connection
-// with appropriate read/write timeout.
-type TimedConn struct {
-	net.Conn
-	readTimeout  time.Duration
-	writeTimeout time.Duration
-}
-
-// NewTimedConn returns a new instance of a TimedConn.
-func NewTimedConn(conn net.Conn, rd time.Duration, wd time.Duration) *TimedConn {
-	return &TimedConn{
-		Conn:         conn,
-		readTimeout:  rd,
-		writeTimeout: wd,
-	}
-}
-
-// Write calls the underline connection read with provided timeout.
-func (c *TimedConn) Write(b []byte) (int, error) {
-	var writeErr = c.conn.SetWriteDeadline(time.Now().Add(c.writeTimeout))
-	if writeErr != nil {
-		return 0, writeErr
-	}
-
-	var writeCount, err = c.conn.Write(b)
-	if err != nil {
-		return writeCount, err
-	}
-
-	var resetErr = c.conn.SetWriteDeadline(noTime)
-	if resetErr != nil {
-		return writeCount, resetErr
-	}
-
-	return writeCount, nil
-}
-
-// Read calls the underline connection read with provided timeout.
-func (c *TimedConn) Read(b []byte) (int, error) {
-	var readErr = c.conn.SetReadDeadline(time.Now().Add(c.readTimeout))
-	if readErr != nil {
-		return 0, readErr
-	}
-
-	var readCount, err = c.conn.Read(b)
-	if err != nil {
-		return readCount, err
-	}
-
-	var resetErr = c.conn.SetReadDeadline(noTime)
-	if resetErr != nil {
-		return readCount, resetErr
-	}
-
-	return readCount, nil
-}
-
-//*********************************************************************************************
-// Next Message Format: NX {MAX_64_INT}\r\n\r\n
-// Data Message Format: DX {HEADER} {DATA_BYTES}\r\n\r\n
-// Delimiter Format: \r\n
-//**********************************************************************************************
-
-type ReadConnection struct{
-	addr net.Addr
-	conn net.Conn
-}
 
 //*********************************************************************************************
 // ReadSubscription
