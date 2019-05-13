@@ -116,7 +116,7 @@ func ListenTCP(ctx context.Context, addr string, errChan chan<- error, connChan 
 		for {
 			conn, err := ln.Accept()
 			if err != nil {
-				errChan <- fmt.Errorf("Failed to accept TCP connection %s", err.Error())
+				errChan <- fmt.Errorf("failed to accept TCP connection %s", err.Error())
 				return
 			}
 
@@ -258,7 +258,10 @@ func ZConnWriteRequests(stream ZPayloadStream) ZApply {
 var (
 	zPayloads = sync.Pool{
 		New: func() interface{} {
-			return new(ZPayload)
+			var payload = new(ZPayload)
+			payload.Err = make(chan error, 1)
+			payload.Done = make(chan struct{}, 1)
+			return payload
 		},
 	}
 )
@@ -281,6 +284,7 @@ func ReleaseZPayload(zp *ZPayload) {
 // ZPayload defines an underline structure for writing data
 // into an underline ZConn.
 type ZPayload struct {
+	Done   chan struct{}
 	Err    chan error
 	Addr   chan net.Addr
 	Stream io.ReadWriteCloser
@@ -291,6 +295,7 @@ func (z *ZPayload) Reset() {
 	z.Err = nil
 	z.Addr = nil
 	z.Stream = nil
+	z.Done = nil
 }
 
 // ZPayloadStream defines an underline channel type which represent
@@ -407,12 +412,12 @@ func NewZConn(conn net.Conn, fns ...ZApply) *ZConn {
 }
 
 // Reads returns the underline channel used for receiving new incoming reads.
-func (zc *ZConn) Reads() <-chan *ZPayload {
+func (zc *ZConn) Reads() chan *ZPayload {
 	return zc.readRequests
 }
 
 // Writes returns the underline channel used for receiving write requests.
-func (zc *ZConn) Writes() chan<- *ZPayload {
+func (zc *ZConn) Writes() chan *ZPayload {
 	return zc.writeRequests
 }
 
@@ -476,6 +481,16 @@ func (zc *ZConn) writeLoop() {
 	}()
 }
 
+func (zc *ZConn) writeToUDP(src io.Writer, zp *ZPayload) error {
+
+	return nil
+}
+
+func (zc *ZConn) readUDPFrom(src io.Reader, zp *ZPayload) error {
+
+	return nil
+}
+
 // readLoop lunches underline read loop.
 func (zc *ZConn) readLoop() {
 	zc.waiter.Add(1)
@@ -502,9 +517,12 @@ func (zc *ZConn) readLoop() {
 				if err := zc.readWorker(zc.streamReader, req); err != nil {
 					log.Printf("[ZConn] | Failed connection reading process: %s", err)
 
+					if req.Err != nil {
+						req.Err <- err
+					}
+
 					if err == ErrKillConnection {
 						zc.ctxCanceler()
-						ReleaseZPayload(req)
 						return
 					}
 
@@ -518,16 +536,6 @@ func (zc *ZConn) readLoop() {
 			}
 		}
 	}()
-}
-
-func (zc *ZConn) writeToUDP(src io.Writer, zp *ZPayload) error {
-
-	return nil
-}
-
-func (zc *ZConn) readUDPFrom(src io.Reader, zp *ZPayload) error {
-
-	return nil
 }
 
 func (zc *ZConn) writeToTCP(dest io.Writer, zp *ZPayload) error {
