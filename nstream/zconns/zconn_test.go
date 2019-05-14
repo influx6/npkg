@@ -3,58 +3,98 @@ package zconns
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net"
-	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestZConn(t *testing.T) {
-	var ctx, cancel = context.WithCancel(context.Background())
-	var conns = make(chan net.Conn)
-	var errs = make(chan error, 1)
 
-	var listener, err = ListenTCP(ctx, ":4050", errs, conns)
+	var listener, err = net.Listen("tcp", ":4050")
 	require.NoError(t, err)
 	require.NotNil(t, listener)
 
-	defer cancel()
+	var handler connHandler
+	var ctx, cancel = context.WithCancel(context.Background())
+	var server = NewServer(ctx, handler, listener)
+	server.Serve()
 
-	var waiter sync.WaitGroup
-	waiter.Add(1)
+	var writeMessage = []byte("wondering through the ancient seas of the better world")
 
-	go func() {
-		defer waiter.Done()
+	var clientConn, clientErr = net.DialTimeout("tcp", ":4050", time.Second*5)
+	require.NoError(t, clientErr)
+	require.NotNil(t, clientConn)
 
-		for conns := range conns {
-			zc = NewZConn(conns)
-			go func() {
-				handleConnection(ctx, zc)
-			}()
-		}
-	}()
+	var zclient = NewZConn(clientConn)
 
-	waiter.Wait()
+	payload := AcquireZPayload()
+	var content = bytes.NewBuffer(writeMessage)
+	payload.Stream = &nopWriter{content}
+
+	zclient.Writes() <- payload
+
+	select {
+	case err := <-payload.Err:
+		require.Fail(t, "Failed with write: %s", err)
+	case <-payload.Done:
+		fmt.Println("Finished writing....")
+	}
+
+	var readPayload = AcquireZPayload()
+	var readContent = bytes.NewBuffer(make([]byte, 0, 512))
+	readPayload.Stream = &nopWriter{readContent}
+
+	zclient.Reads() <- readPayload
+
+	select {
+	case err := <-readPayload.Err:
+		require.Fail(t, "Failed with read: %s", err)
+	case <-readPayload.Done:
+		fmt.Println("Finished reading....")
+	}
+
+	require.Equal(t, writeMessage, readContent.Bytes())
+	require.NoError(t, zclient.Close())
+
+	cancel()
+	require.NoError(t, server.Wait())
 }
 
-func handleConnection(ctx context.Context, conn *ZConn) {
-	reads := conn.Reads()
-	writes := conn.Writes()
+type connHandler struct{}
+
+func (connHandler) ServeConn(ctx context.Context, conn net.Conn) error {
+	var zc = NewZConn(conn)
+	reads := zc.Reads()
+	writes := zc.Writes()
 
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return nil
 		default:
 		}
 
-		var content = bytes.NewBuffer(make([]byte, 512))
+		var content = bytes.NewBuffer(make([]byte, 0, 512))
 		payload := AcquireZPayload()
 		payload.Stream = &nopWriter{content}
 
 		reads <- payload
+
+		<-payload.Done
+
+		writePayload := AcquireZPayload()
+		writePayload.Stream = payload.Stream
+
+		writes <- writePayload
+
+		<-writePayload.Done
+
+		ReleaseZPayload(payload)
+		ReleaseZPayload(writePayload)
 	}
 }
 

@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/gokit/npkg/nbytes"
 )
 
@@ -95,36 +97,79 @@ func (c *ZTimedConn) Read(b []byte) (int, error) {
 }
 
 //**********************************************************************
-// ListenTCP
+// Server
 //**********************************************************************
 
-// ListenTCP starts a tcp server listening on the specified address (default 127.0.0.1:1445)
-// and then continually reads from the server handling any incoming connections
-func ListenTCP(ctx context.Context, addr string, errChan chan<- error, connChan chan net.Conn) (net.Listener, error) {
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		return nil, err
+// ServerHandler defines an interface type for handling connection
+// in isolated goroutines.
+type ServerHandler interface {
+	ServeConn(context.Context, net.Conn) error
+}
+
+// Server implements a basic, structured wrapper around a net.Listener
+// to handle and process incoming connections.
+type Server struct {
+	Handler  ServerHandler
+	Listener net.Listener
+	ctx      context.Context
+	waiter   *errgroup.Group
+}
+
+// NewServer returns a new instance of a Server.
+func NewServer(ctx context.Context, handler ServerHandler, listener net.Listener) *Server {
+	var gp *errgroup.Group
+	gp, ctx = errgroup.WithContext(ctx)
+
+	return &Server{
+		ctx:      ctx,
+		waiter:   gp,
+		Handler:  handler,
+		Listener: listener,
 	}
+}
 
-	go func() {
-		<-ctx.Done()
-		_ = ln.Close()
-		close(connChan)
-	}()
+// Serve initializes the connection handling and reading goroutine.
+// It returns immediately without block. It depends on you to use the
+// Server.Wait to block as needed till server is closed.
+func (s *Server) Serve() {
+	s.waiter.Go(s.serviceListener)
+}
 
-	go func() {
-		for {
-			conn, err := ln.Accept()
-			if err != nil {
-				errChan <- fmt.Errorf("failed to accept TCP connection %s", err.Error())
-				return
+// Wait blocks underline server till connection
+// has returned. It returns any possible error that
+// occurred.
+func (s *Server) Wait() error {
+	return s.waiter.Wait()
+}
+
+// serviceListener blocks and handles incoming connections
+// by server. It will only ever stop working if accepts
+// failed or the Handler.ServerConn returns a ErrKillConnection
+// error.
+func (s *Server) serviceListener() error {
+	for {
+		select {
+		case <-s.ctx.Done():
+			return s.ctx.Err()
+		default:
+		}
+
+		conn, err := s.Listener.Accept()
+		if err != nil {
+			if tmpErr, ok := err.(net.Error); ok && tmpErr.Temporary() {
+				continue
+			}
+			return err
+		}
+
+		if err := s.Handler.ServeConn(s.ctx, conn); err != nil {
+			if err == ErrKillConnection {
+				return err
 			}
 
-			connChan <- conn
+			continue
 		}
-	}()
-
-	return ln, nil
+	}
 }
 
 //*********************************************************************************************
@@ -207,30 +252,6 @@ func ZConnMaxWrite(max int64) ZApply {
 	}
 }
 
-// ZConnWriter defines the underline function to be used for
-// handling write operation for a ZPayload.
-type ZConnWriter func(io.Writer, *ZPayload) error
-
-// ZConnReader defines the underline function to be used for
-// handling read operation for a ZPayload.
-type ZConnReader func(io.Reader, *ZPayload) error
-
-// ZConnWriteWorker sets the worker function to be used for write
-// calls for a ZConn.
-func ZConnWriteWorker(worker ZConnWriter) ZApply {
-	return func(conn *ZConn) {
-		conn.writeWorker = worker
-	}
-}
-
-// ZConnReadWorker sets the worker function to be used for read
-// calls for a ZConn.
-func ZConnReadWorker(worker ZConnReader) ZApply {
-	return func(conn *ZConn) {
-		conn.readWorker = worker
-	}
-}
-
 // ZConnParentContext sets the parent context for giving
 // ZConn to respect cancellation.
 func ZConnParentContext(ctx context.Context) ZApply {
@@ -260,6 +281,7 @@ var (
 		New: func() interface{} {
 			var payload = new(ZPayload)
 			payload.Err = make(chan error, 1)
+			payload.Addr = make(chan net.Addr, 1)
 			payload.Done = make(chan struct{}, 1)
 			return payload
 		},
@@ -269,16 +291,30 @@ var (
 // AcquireZPayload returns a new ZPayload for use.
 func AcquireZPayload() *ZPayload {
 	if nzp, ok := zPayloads.Get().(*ZPayload); ok {
+		nzp.Reset()
 		return nzp
 	}
-	return new(ZPayload)
+
+	var payload ZPayload
+	payload.Err = make(chan error, 1)
+	payload.Addr = make(chan net.Addr, 1)
+	payload.Done = make(chan struct{}, 1)
+	return &payload
 }
 
 // ReleaseZPayload returns giving ZPayload into underline object pool
 // for reuse.
 // Never re-use a ZPayload reference you've previously released.
 func ReleaseZPayload(zp *ZPayload) {
+	zp.Clear()
 	zPayloads.Put(zp)
+}
+
+// ZConnWorker defines a interface type for the servicing of
+// an underline read and write requests.
+type ZConnWorker interface {
+	ServeRead(context.Context, io.Reader, *ZPayload) error
+	ServeWrite(context.Context, io.Writer, *ZPayload) error
 }
 
 // ZPayload defines an underline structure for writing data
@@ -290,12 +326,31 @@ type ZPayload struct {
 	Stream io.ReadWriteCloser
 }
 
-// Reset giving ZPayload fields.
-func (z *ZPayload) Reset() {
+// Clear clears ZPayload fields.
+func (z *ZPayload) Clear() {
 	z.Err = nil
+	z.Done = nil
 	z.Addr = nil
 	z.Stream = nil
-	z.Done = nil
+}
+
+// Reset giving ZPayload fields.
+func (z *ZPayload) Reset() {
+	z.Err = make(chan error, 1)
+	z.Addr = make(chan net.Addr, 1)
+	z.Done = make(chan struct{}, 1)
+}
+
+func (z *ZPayload) verify() {
+	if z.Stream == nil {
+		panic("ZPayload.Stream can not be nil")
+	}
+	if z.Done == nil {
+		panic("ZPayload.Done can not be nil")
+	}
+	if z.Err == nil {
+		panic("ZPayload.Err can not be nil")
+	}
 }
 
 // ZPayloadStream defines an underline channel type which represent
@@ -314,8 +369,7 @@ type ZConn struct {
 	readTimeouts        ZTimeout
 	writeTimeouts       ZTimeout
 	conn                net.Conn
-	readWorker          ZConnReader
-	writeWorker         ZConnWriter
+	worker              ZConnWorker
 	readRequests        ZPayloadStream
 	writeRequests       ZPayloadStream
 	waiter              sync.WaitGroup
@@ -336,9 +390,10 @@ const (
 )
 
 // NewZConn returns a new instance of a ZConn.
-func NewZConn(conn net.Conn, fns ...ZApply) *ZConn {
+func NewZConn(conn net.Conn, worker ZConnWorker, fns ...ZApply) *ZConn {
 	var zc = new(ZConn)
 	zc.conn = conn
+	zc.worker = worker
 	zc.addr = conn.RemoteAddr()
 	zc.laddr = conn.LocalAddr()
 	zc.readBuffer = defaultReadBuffer
@@ -354,7 +409,6 @@ func NewZConn(conn net.Conn, fns ...ZApply) *ZConn {
 		fn(zc)
 	}
 
-	// create a default context provider.
 	if zc.ctx == nil {
 		zc.ctx, zc.ctxCanceler = context.WithCancel(context.Background())
 	}
@@ -367,31 +421,13 @@ func NewZConn(conn net.Conn, fns ...ZApply) *ZConn {
 		zc.writeRequests = make(ZPayloadStream)
 	}
 
-	switch zc.conn.(type) {
-	case *net.UDPConn:
-		if zc.readWorker == nil {
-			zc.readWorker = zc.readTCPFrom
-		}
-
-		if zc.writeWorker == nil {
-			zc.writeWorker = zc.writeToTCP
-		}
+	switch conn.(type) {
 	case *net.TCPConn:
-		if zc.readWorker == nil {
-			zc.readWorker = zc.readUDPFrom
-		}
-
-		if zc.writeWorker == nil {
-			zc.writeWorker = zc.writeToUDP
-		}
+		zc.worker = &TCPWorker{}
+	case *net.UDPConn:
+		zc.worker = &UDPWorker{}
 	default:
-		if zc.readWorker == nil {
-			zc.readWorker = zc.readUDPFrom
-		}
-
-		if zc.writeWorker == nil {
-			zc.writeWorker = zc.writeToUDP
-		}
+		panic("ZConn.Worker must be provided as it's a hard requirement")
 	}
 
 	zc.streamReader = &nbytes.DelimitedStreamReader{
@@ -407,6 +443,12 @@ func NewZConn(conn net.Conn, fns ...ZApply) *ZConn {
 		Escape:      []byte(defaultEscape),
 		Delimiter:   []byte(defaultDelimiter),
 	}
+
+	// boot up read loop.
+	zc.readLoop()
+
+	// boot up write loop.
+	zc.writeLoop()
 
 	return zc
 }
@@ -435,6 +477,68 @@ func (zc *ZConn) Close() error {
 	if zc.ctxCanceler != nil {
 		zc.ctxCanceler()
 	}
+
+	zc.waiter.Wait()
+	return nil
+}
+
+type TCPWorker struct{}
+
+// ServeRead handles servicing a read request against provided io.Reader which is
+// read into the underline connection.
+func (zc TCPWorker) ServeRead(ctx context.Context, src io.Reader, zp *ZPayload) error {
+	fmt.Printf("Will Read \n\n")
+	if zp.Addr != nil {
+		zp.Addr <- zc.addr
+	}
+
+	var read, err = io.Copy(zp.Stream, src)
+	fmt.Printf("Read : %#v -> %s\n\n\n", read, err)
+	if err != nil {
+		log.Printf("[ZConn] | Failed to finish readFor: %s", err)
+
+		if err == nbytes.ErrEOS {
+			log.Printf("[ZConn] | Read %d bytes from connection", read)
+			return nil
+		}
+
+		return err
+	}
+
+	log.Printf("[ZConn.readTCPFrom] | Read %d bytes from connection", read)
+	return nil
+}
+
+// ServeRead handles servicing a read request against provided io.Reader which is
+// read into the underline connection.
+func (zc TCPWorker) ServeWrite(ctx context.Context, src io.Writer, zp *ZPayload) error {
+	var written, err = io.Copy(dest, zp.Stream)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("[ZConn] | Written %d bytes into connection", written)
+
+	if err := zp.Stream.Close(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type UDPWorker struct{}
+
+// ServeRead handles servicing a read request against provided io.Reader which is
+// read into the underline connection.
+func (zc UDPWorker) ServeRead(ctx context.Context, src io.Reader, zp *ZPayload) error {
+
+	return nil
+}
+
+// ServeRead handles servicing a read request against provided io.Reader which is
+// read into the underline connection.
+func (zc UDPWorker) ServeWrite(ctx context.Context, src io.Writer, zp *ZPayload) error {
+
 	return nil
 }
 
@@ -450,45 +554,34 @@ func (zc *ZConn) writeLoop() {
 			case <-done:
 				// we are being asked to stop and close.
 				return
-			case req := <-zc.writeRequests:
-				if req == nil {
-					select {
-					case <-done:
-						return
-					default:
-						continue
-					}
+			case req, ok := <-zc.writeRequests:
+				if !ok {
+					return
 				}
 
-				if err := zc.writeWorker(zc.streamWriter, req); err != nil {
+				// verify giving request object is valid.
+				req.verify()
+
+				if err := zc.worker.ServeWrite(zc.ctx, zc.streamWriter, req); err != nil {
 					log.Printf("[ZConn] | Failed connection writing process: %s", err)
+
+					if req.Err != nil {
+						req.Err <- err
+					}
 
 					if err == ErrKillConnection {
 						zc.ctxCanceler()
-						ReleaseZPayload(req)
+						close(req.Done)
 						return
 					}
 
-					select {
-					case <-done:
-						return
-					default:
-						continue
-					}
+					continue
 				}
+
+				close(req.Done)
 			}
 		}
 	}()
-}
-
-func (zc *ZConn) writeToUDP(src io.Writer, zp *ZPayload) error {
-
-	return nil
-}
-
-func (zc *ZConn) readUDPFrom(src io.Reader, zp *ZPayload) error {
-
-	return nil
 }
 
 // readLoop lunches underline read loop.
@@ -504,17 +597,15 @@ func (zc *ZConn) readLoop() {
 			case <-done:
 				// we are being asked to stop and close.
 				return
-			case req := <-zc.readRequests:
-				if req == nil {
-					select {
-					case <-done:
-						return
-					default:
-						continue
-					}
+			case req, ok := <-zc.readRequests:
+				if !ok {
+					return
 				}
 
-				if err := zc.readWorker(zc.streamReader, req); err != nil {
+				// verify giving request object is valid.
+				req.verify()
+
+				if err := zc.worker.ServeRead(zc.ctx, zc.streamReader, req); err != nil {
 					log.Printf("[ZConn] | Failed connection reading process: %s", err)
 
 					if req.Err != nil {
@@ -523,60 +614,17 @@ func (zc *ZConn) readLoop() {
 
 					if err == ErrKillConnection {
 						zc.ctxCanceler()
+						close(req.Done)
 						return
 					}
 
-					select {
-					case <-done:
-						return
-					default:
-						continue
-					}
+					continue
 				}
+
+				close(req.Done)
 			}
 		}
 	}()
-}
-
-func (zc *ZConn) writeToTCP(dest io.Writer, zp *ZPayload) error {
-	if _, err := io.Copy(dest, zp.Stream); err != nil {
-		if zp.Err != nil {
-			zp.Err <- err
-		}
-		return err
-	}
-
-	if err := zp.Stream.Close(); err != nil {
-		if zp.Err != nil {
-			zp.Err <- err
-		}
-		return err
-	}
-
-	if zp.Err != nil {
-		close(zp.Err)
-	}
-	return nil
-}
-
-func (zc *ZConn) readTCPFrom(src io.Reader, zp *ZPayload) error {
-	if zp.Addr != nil {
-		zp.Addr <- zc.addr
-	}
-
-	var err error
-	for {
-		_, err = io.Copy(zp.Stream, src)
-		if err != nil {
-			if err == nbytes.ErrEOS {
-				break
-			}
-
-			log.Printf("[ZConn] | Failed to finish readFor: %s", err)
-			return err
-		}
-	}
-	return nil
 }
 
 func sameTimeout(t time.Duration) ZTimeout {
