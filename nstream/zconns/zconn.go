@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gokit/npkg/nerror"
+
 	"golang.org/x/sync/errgroup"
 
 	"github.com/gokit/npkg/nbytes"
@@ -317,6 +319,14 @@ type ZConnWorker interface {
 	ServeWrite(context.Context, io.Writer, *ZPayload) error
 }
 
+// UseZConnWorker sets the underline worker to be used for handling
+// read/write requests for a ZConn.
+func UseZConnWorker(worker ZConnWorker) ZApply {
+	return func(conn *ZConn) {
+		conn.worker = worker
+	}
+}
+
 // ZPayload defines an underline structure for writing data
 // into an underline ZConn.
 type ZPayload struct {
@@ -390,10 +400,9 @@ const (
 )
 
 // NewZConn returns a new instance of a ZConn.
-func NewZConn(conn net.Conn, worker ZConnWorker, fns ...ZApply) *ZConn {
+func NewZConn(conn net.Conn, fns ...ZApply) *ZConn {
 	var zc = new(ZConn)
 	zc.conn = conn
-	zc.worker = worker
 	zc.addr = conn.RemoteAddr()
 	zc.laddr = conn.LocalAddr()
 	zc.readBuffer = defaultReadBuffer
@@ -494,7 +503,7 @@ func (zc TCPWorker) ServeRead(ctx context.Context, src io.Reader, zp *ZPayload) 
 	if err != nil {
 		log.Printf("[ZConn] | Failed to finish readFor: %s", err)
 
-		if err == nbytes.ErrEOS {
+		if nerror.IsAny(err, nbytes.ErrEOS) {
 			log.Printf("[ZConn] | Read %d bytes from connection", read)
 			return nil
 		}
@@ -508,7 +517,7 @@ func (zc TCPWorker) ServeRead(ctx context.Context, src io.Reader, zp *ZPayload) 
 
 // ServeRead handles servicing a read request against provided io.Reader which is
 // read into the underline connection.
-func (zc TCPWorker) ServeWrite(ctx context.Context, src io.Writer, zp *ZPayload) error {
+func (zc TCPWorker) ServeWrite(ctx context.Context, dest io.Writer, zp *ZPayload) error {
 	log.Printf("[ZConn] | Written new stream into connection")
 
 	var written, err = io.Copy(dest, zp.Stream)
@@ -576,6 +585,19 @@ func (zc *ZConn) writeLoop() {
 
 					continue
 				}
+
+				var flushed, err = zc.streamWriter.End()
+				if err != nil {
+					log.Printf("[ZConn] | Failed connection write flushing: %s", err)
+
+					if req.Err != nil {
+						req.Err <- err
+					}
+
+					continue
+				}
+
+				log.Printf("[ZConn] | Flushed %d bytes into raw connection", flushed)
 
 				close(req.Done)
 			}
