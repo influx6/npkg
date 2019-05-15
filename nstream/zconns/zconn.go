@@ -619,6 +619,9 @@ func (zc *ZConn) writeLoop() {
 					if req.Err != nil {
 						req.Err <- err
 					}
+
+					zc.ctxCanceler()
+					log.Printf("[Zconn] | %s | Closing write loop", zc.id)
 					return
 				}
 
@@ -628,6 +631,10 @@ func (zc *ZConn) writeLoop() {
 						select {
 						case <-zc.ctx.Done():
 							log.Printf("[Zconn] | %s | Failed to set write timeout: %s", zc.id, err)
+							select {
+							case req.Err <- err:
+							default:
+							}
 							return
 						default:
 						}
@@ -649,7 +656,7 @@ func (zc *ZConn) writeLoop() {
 					}
 
 					zc.ctxCanceler()
-					log.Printf("[Zconn] | %s | Closing read loop", zc.id)
+					log.Printf("[Zconn] | %s | Closing write loop", zc.id)
 					return
 				}
 
@@ -712,6 +719,9 @@ func (zc *ZConn) readLoop() {
 					if req.Err != nil {
 						req.Err <- err
 					}
+
+					zc.ctxCanceler()
+					log.Printf("[Zconn] | %s | Closing read loop", zc.id)
 					return
 				}
 
@@ -721,6 +731,10 @@ func (zc *ZConn) readLoop() {
 						log.Printf("[Zconn] | %s | Read Call error: %s", zc.id, err)
 						select {
 						case <-zc.ctx.Done():
+							select {
+							case req.Err <- err:
+							default:
+							}
 							log.Printf("[Zconn] | %s | Exiting read loop: %s", zc.id, err)
 							return
 						default:

@@ -11,8 +11,65 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestZConn(t *testing.T) {
+var (
+	writeMessage = []byte("wondering through the ancient seas of the better world")
+)
 
+func BenchmarkZConn(b *testing.B) {
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	var listener, err = net.Listen("tcp", ":5050")
+	if err != nil {
+		panic(err)
+	}
+
+	var handler connHandler
+	var ctx, cancel = context.WithCancel(context.Background())
+	var server = NewServer(ctx, handler, listener)
+	server.Serve()
+
+	b.SetBytes(int64(len(writeMessage)))
+
+	var clientConn, clientErr = net.DialTimeout("tcp", ":5050", time.Second*5)
+	if clientErr != nil {
+		panic(clientErr)
+	}
+
+	var zclient = NewZConn(clientConn)
+	writes := zclient.Writes()
+	reads := zclient.Reads()
+
+	var readPayload = AcquireZPayload()
+	var readContent = bytes.NewBuffer(make([]byte, 0, 512))
+	readPayload.Stream = &nopWriter{readContent}
+
+	zclient.Reads() <- readPayload
+
+	for i := 0; i < b.N; i++ {
+		readContent.Reset()
+
+		var buffer = bytes.NewBuffer(writeMessage)
+		var nopbuffer = &nopWriter{buffer}
+		var payload = AcquireZPayload()
+		payload.Stream = nopbuffer
+
+		writes <- payload
+		<-payload.Done
+		ReleaseZPayload(payload)
+
+		reads <- readPayload
+		<-readPayload.Done
+	}
+
+	zclient.Close()
+	b.StopTimer()
+
+	cancel()
+	_ = server.Wait()
+}
+
+func TestZConn(t *testing.T) {
 	var listener, err = net.Listen("tcp", ":4050")
 	require.NoError(t, err)
 	require.NotNil(t, listener)
@@ -21,8 +78,6 @@ func TestZConn(t *testing.T) {
 	var ctx, cancel = context.WithCancel(context.Background())
 	var server = NewServer(ctx, handler, listener)
 	server.Serve()
-
-	var writeMessage = []byte("wondering through the ancient seas of the better world")
 
 	var clientConn, clientErr = net.DialTimeout("tcp", ":4050", time.Second*5)
 	require.NoError(t, clientErr)
@@ -82,21 +137,30 @@ func (connHandler) ServeConn(ctx context.Context, conn net.Conn) error {
 
 		reads <- payload
 
-		<-payload.Done
+		select {
+		case <-payload.Done:
+		case err := <-payload.Err:
+			ReleaseZPayload(payload)
+			return err
+		}
 
 		writePayload := AcquireZPayload()
 		writePayload.Stream = payload.Stream
 
 		writes <- writePayload
 
-		<-writePayload.Done
+		select {
+		case <-writePayload.Done:
+			continue
+		case err := <-writePayload.Err:
+			ReleaseZPayload(payload)
+			ReleaseZPayload(writePayload)
+			return err
+		}
 
 		ReleaseZPayload(payload)
 		ReleaseZPayload(writePayload)
-		break
 	}
-
-	return nil
 }
 
 type nopWriter struct {
