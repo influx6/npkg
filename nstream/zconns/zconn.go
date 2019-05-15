@@ -488,9 +488,6 @@ type TCPWorker struct{}
 // read into the underline connection.
 func (zc TCPWorker) ServeRead(ctx context.Context, src io.Reader, zp *ZPayload) error {
 	fmt.Printf("Will Read \n\n")
-	if zp.Addr != nil {
-		zp.Addr <- zc.addr
-	}
 
 	var read, err = io.Copy(zp.Stream, src)
 	fmt.Printf("Read : %#v -> %s\n\n\n", read, err)
@@ -512,6 +509,8 @@ func (zc TCPWorker) ServeRead(ctx context.Context, src io.Reader, zp *ZPayload) 
 // ServeRead handles servicing a read request against provided io.Reader which is
 // read into the underline connection.
 func (zc TCPWorker) ServeWrite(ctx context.Context, src io.Writer, zp *ZPayload) error {
+	log.Printf("[ZConn] | Written new stream into connection")
+
 	var written, err = io.Copy(dest, zp.Stream)
 	if err != nil {
 		return err
@@ -604,6 +603,10 @@ func (zc *ZConn) readLoop() {
 
 				// verify giving request object is valid.
 				req.verify()
+
+				if req.Addr != nil {
+					req.Addr <- zc.addr
+				}
 
 				if err := zc.worker.ServeRead(zc.ctx, zc.streamReader, req); err != nil {
 					log.Printf("[ZConn] | Failed connection reading process: %s", err)
