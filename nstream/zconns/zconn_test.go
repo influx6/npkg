@@ -3,7 +3,6 @@ package zconns
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"net"
 	"testing"
@@ -41,7 +40,6 @@ func TestZConn(t *testing.T) {
 	case err := <-payload.Err:
 		require.Fail(t, "Failed with write: %s", err)
 	case <-payload.Done:
-		fmt.Println("Finished writing....")
 	}
 
 	var readPayload = AcquireZPayload()
@@ -54,20 +52,20 @@ func TestZConn(t *testing.T) {
 	case err := <-readPayload.Err:
 		require.Fail(t, "Failed with read: %s", err)
 	case <-readPayload.Done:
-		fmt.Println("Finished reading....")
 	}
 
 	require.Equal(t, writeMessage, readContent.Bytes())
+
 	require.NoError(t, zclient.Close())
 
 	cancel()
-	require.NoError(t, server.Wait())
+	require.Error(t, server.Wait())
 }
 
 type connHandler struct{}
 
 func (connHandler) ServeConn(ctx context.Context, conn net.Conn) error {
-	var zc = NewZConn(conn)
+	var zc = NewZConn(conn, ZConnParentContext(ctx))
 	reads := zc.Reads()
 	writes := zc.Writes()
 
@@ -95,7 +93,10 @@ func (connHandler) ServeConn(ctx context.Context, conn net.Conn) error {
 
 		ReleaseZPayload(payload)
 		ReleaseZPayload(writePayload)
+		break
 	}
+
+	return nil
 }
 
 type nopWriter struct {
