@@ -9,13 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gokit/npkg/nxid"
-
-	"github.com/gokit/npkg/nerror"
-
-	"golang.org/x/sync/errgroup"
-
 	"github.com/gokit/npkg/nbytes"
+	"github.com/gokit/npkg/nerror"
+	"github.com/gokit/npkg/nxid"
+	"golang.org/x/sync/errgroup"
 )
 
 //*********************************************************************************************
@@ -109,15 +106,38 @@ func (c *ZTimedConn) Read(b []byte) (int, error) {
 
 // TCPWorker implements the ZConnWorker interface for handling TCP
 // payload read/write handling.
-type TCPWorker struct{}
+type TCPWorker struct {
+	Debug bool
 
-// ServeRead handles servicing a read request against provided io.Reader which is
-// read into the underline connection.
-func (zc TCPWorker) ServeRead(ctx context.Context, src io.Reader, zp *ZPayload) error {
-	var read, err = io.Copy(zp.Stream, src)
+	// Buffer represents the underline maximum allowed space reading
+	// from reader to writer, it will be used as a constant read space
+	// till all bytes have being read from underline reader to writer.
+	Buffer []byte
+}
+
+// ServeRead handles reading data from underline connection into payload writer.
+func (zc *TCPWorker) ServeRead(ctx context.Context, src io.Reader, zp *ZPayload) error {
+	// If the reader has a WriteTo method, use it to do the copy.
+	// Avoids an allocation and a copy.
+	if wt, ok := src.(io.WriterTo); ok {
+		var n, err = wt.WriteTo(zp.Writer)
+		if err != nil && err != io.EOF {
+			log.Printf("[TCPWorker.ServeRead] | Failed to finish readFor: %s", err)
+			return err
+		}
+
+		if zc.Debug {
+			log.Printf("[TCPWorker.ServeRead] | Read %d bytes from connection", n)
+		}
+		return nil
+	}
+
+	var read, err = copyBuffer(zp.Writer, src, zc.Buffer)
 	if err != nil {
 		if nerror.IsAny(err, nbytes.ErrEOS) {
-			log.Printf("[TCPWorker.ServeRead] | Read %d bytes from connection", read)
+			if zc.Debug {
+				log.Printf("[TCPWorker.ServeRead] | Read %d bytes from connection", read)
+			}
 			return nil
 		}
 
@@ -125,21 +145,37 @@ func (zc TCPWorker) ServeRead(ctx context.Context, src io.Reader, zp *ZPayload) 
 		return err
 	}
 
-	log.Printf("[TCPWorker.ServeRead] | Read %d bytes from connection", read)
+	if zc.Debug {
+		log.Printf("[TCPWorker.ServeRead] | Read %d bytes from connection", read)
+	}
 	return nil
 }
 
-// ServeRead handles servicing a read request against provided io.Reader which is
-// read into the underline connection.
-func (zc TCPWorker) ServeWrite(ctx context.Context, dest io.Writer, zp *ZPayload) error {
-	var written, err = io.Copy(dest, zp.Stream)
+// ServeRead handles reading data from Reader from payload into the underline connection.
+func (zc *TCPWorker) ServeWrite(ctx context.Context, dest io.Writer, zp *ZPayload) error {
+	// Similarly, if the writer has a ReadFrom method, use it to do the copy.
+	if rt, ok := dest.(io.ReaderFrom); ok {
+		var n, err = rt.ReadFrom(zp.Reader)
+		if err != nil && err != io.EOF {
+			log.Printf("[TCPWorker.ServeWrite] | Failed copy new data into connection: %s", err)
+			return err
+		}
+
+		log.Printf("[TCPWorker.ServeWrite] | Written %d bytes into connection", n)
+		return nil
+	}
+
+	var written, err = copyBuffer(dest, zp.Reader, zc.Buffer)
 	if err != nil {
 		log.Printf("[TCPWorker.ServeWrite] | Failed copy new data into connection: %s", err)
 		return err
 	}
 
-	log.Printf("[TCPWorker.ServeWrite] | Written %d bytes into connection", written)
-	if err := zp.Stream.Close(); err != nil {
+	if zc.Debug {
+		log.Printf("[TCPWorker.ServeWrite] | Written %d bytes into connection", written)
+	}
+
+	if err := zp.Reader.Close(); err != nil {
 		log.Printf("[TCPWorker.ServeWrite] | Failed flushing new data into connection: %s", err)
 		return err
 	}
@@ -148,18 +184,22 @@ func (zc TCPWorker) ServeWrite(ctx context.Context, dest io.Writer, zp *ZPayload
 
 // UDPWorker implements the ZConnWorker interface for handling UDP
 // payload read/write handling.
-type UDPWorker struct{}
+type UDPWorker struct {
+	Debug bool
+	// Buffer represents the underline maximum allowed space reading
+	// from reader to writer, it will be used as a constant read space
+	// till all bytes have being read from underline reader to writer.
+	Buffer []byte
+}
 
-// ServeRead handles servicing a read request against provided io.Reader which is
-// read into the underline connection.
-func (zc UDPWorker) ServeRead(ctx context.Context, src io.Reader, zp *ZPayload) error {
+// ServeRead handles reading data from underline connection into payload writer.
+func (zc *UDPWorker) ServeRead(ctx context.Context, src io.Reader, zp *ZPayload) error {
 
 	return nil
 }
 
-// ServeRead handles servicing a read request against provided io.Reader which is
-// read into the underline connection.
-func (zc UDPWorker) ServeWrite(ctx context.Context, src io.Writer, zp *ZPayload) error {
+// ServeRead handles reading data from Reader from payload into the underline connection.
+func (zc *UDPWorker) ServeWrite(ctx context.Context, src io.Writer, zp *ZPayload) error {
 
 	return nil
 }
@@ -177,6 +217,7 @@ type ServerHandler interface {
 // Server implements a basic, structured wrapper around a net.Listener
 // to handle and process incoming connections.
 type Server struct {
+	Debug    bool
 	Handler  ServerHandler
 	Listener net.Listener
 	ctx      context.Context
@@ -184,11 +225,12 @@ type Server struct {
 }
 
 // NewServer returns a new instance of a Server.
-func NewServer(ctx context.Context, handler ServerHandler, listener net.Listener) *Server {
+func NewServer(ctx context.Context, handler ServerHandler, listener net.Listener, debug bool) *Server {
 	var gp *errgroup.Group
 	gp, ctx = errgroup.WithContext(ctx)
 
 	return &Server{
+		Debug:    debug,
 		ctx:      ctx,
 		waiter:   gp,
 		Handler:  handler,
@@ -213,12 +255,18 @@ func (s *Server) Wait() error {
 
 func (s *Server) handleClosure() {
 	<-s.ctx.Done()
-	log.Println("[Server] | Closing net.Listener")
+	if s.Debug {
+		log.Println("[Server.handleClosure] | Closing net.Listener")
+	}
 	if err := s.Listener.Close(); err != nil {
-		log.Printf("[Server] | Closing net.Listener with error: %s", err)
+		if s.Debug {
+			log.Printf("[Server] | Closing net.Listener with error: %s", err)
+		}
 		return
 	}
-	log.Println("[Server] | Closed net.Listener")
+	if s.Debug {
+		log.Println("[Server.handleClosure] | Closed net.Listener")
+	}
 }
 
 // serviceListener blocks and handles incoming connections
@@ -230,11 +278,15 @@ func (s *Server) serviceListener() error {
 		conn, err := s.Listener.Accept()
 		if err != nil {
 			if tmpErr, ok := err.(net.Error); ok && tmpErr.Temporary() {
-				log.Printf("[Server.serviceListener] | net.Listener received temporary error: %s", tmpErr)
+				if s.Debug {
+					log.Printf("[Server.serviceListener] | net.Listener received temporary error: %s", tmpErr)
+				}
 				continue
 			}
 
-			log.Printf("[Server.serviceListener] | Closing net.Listener: %s", err)
+			if s.Debug {
+				log.Printf("[Server.serviceListener] | Closed net.Listener Accept loop: %s", err)
+			}
 			return err
 		}
 
@@ -246,12 +298,16 @@ func (s *Server) spawnConnectionRoutine(conn net.Conn) {
 	s.waiter.Go(func() error {
 		var remoteAddr = conn.RemoteAddr()
 		if err := s.Handler.ServeConn(s.ctx, conn); err != nil {
-			log.Printf("[Server.serviceListener] | Closing connection for %s with error: %s", remoteAddr, err)
+			if s.Debug {
+				log.Printf("[Server.spawnConnectionRoutine] | Closing connection for %s with error: %s", remoteAddr, err)
+			}
 			if err == ErrKillConnection {
 				return err
 			}
 		}
-		log.Printf("[Server.serviceListener] | Closing connection for addr: %s", remoteAddr)
+		if s.Debug {
+			log.Printf("[Server.spawnConnectionRoutine] | Closed connection for addr: %s", remoteAddr)
+		}
 		return nil
 	})
 }
@@ -272,22 +328,6 @@ var (
 // ZApply defines a function type to apply a change to the ZConn instance.
 type ZApply func(*ZConn)
 
-// ZConnDefaultWriteTimeout sets the default timeout duration to be used for write
-// calls for a ZConn.
-func ZConnDefaultWriteTimeout(d time.Duration) ZApply {
-	return func(conn *ZConn) {
-		conn.defaultWriteTimeout = d
-	}
-}
-
-// ZConnDefaultReadTimeout sets the default timeout duration to be used for read
-// calls for a ZConn.
-func ZConnDefaultReadTimeout(d time.Duration) ZApply {
-	return func(conn *ZConn) {
-		conn.defaultReadTimeout = d
-	}
-}
-
 // ZConnNowTime sets a giving function to be used to provide
 // timing.
 func ZConnNowTime(fn NowTime) ZApply {
@@ -296,19 +336,39 @@ func ZConnNowTime(fn NowTime) ZApply {
 	}
 }
 
+// Timer exposes a interface which provides methods to reset
+// a duration producing object.
+type Timer interface {
+	Reset()
+	Next() time.Duration
+}
+
+// ConstantTimer implements the Timer interface.
+type ConstantTimer struct {
+	Duration time.Duration
+}
+
+// Reset resets duration from ConstantTimer.
+func (c ConstantTimer) Reset() {}
+
+// Next returns a new duration for giving constant timer.
+func (c ConstantTimer) Next() time.Duration {
+	return c.Duration
+}
+
 // ZConnWriteTimeout sets the ZTimeout function type to be used for write
 // calls for a ZConn.
-func ZConnWriteTimeout(fn ZTimeout) ZApply {
+func ZConnWriteTimeout(t Timer) ZApply {
 	return func(conn *ZConn) {
-		conn.writeTimeouts = fn
+		conn.writeTimer = t
 	}
 }
 
 // ZConnReadTimeout sets the ZTimeout function type to be used for read
 // calls for a ZConn.
-func ZConnReadTimeout(fn ZTimeout) ZApply {
+func ZConnReadTimeout(t Timer) ZApply {
 	return func(conn *ZConn) {
-		conn.readTimeouts = fn
+		conn.readTimer = t
 	}
 }
 
@@ -344,6 +404,13 @@ func ZConnMaxWrite(max int64) ZApply {
 	}
 }
 
+// ZConnDebugMode enables the debug mode.
+func ZConnDebugMode() ZApply {
+	return func(conn *ZConn) {
+		conn.debug = true
+	}
+}
+
 // ZConnParentContext sets the parent context for giving
 // ZConn to respect cancellation.
 func ZConnParentContext(ctx context.Context) ZApply {
@@ -368,40 +435,6 @@ func ZConnWriteRequests(stream ZPayloadStream) ZApply {
 	}
 }
 
-var (
-	zPayloads = sync.Pool{
-		New: func() interface{} {
-			var payload = new(ZPayload)
-			payload.Err = make(chan error, 1)
-			payload.Addr = make(chan net.Addr, 1)
-			payload.Done = make(chan struct{}, 1)
-			return payload
-		},
-	}
-)
-
-// AcquireZPayload returns a new ZPayload for use.
-func AcquireZPayload() *ZPayload {
-	if nzp, ok := zPayloads.Get().(*ZPayload); ok {
-		nzp.Reset()
-		return nzp
-	}
-
-	var payload ZPayload
-	payload.Err = make(chan error, 1)
-	payload.Addr = make(chan net.Addr, 1)
-	payload.Done = make(chan struct{}, 1)
-	return &payload
-}
-
-// ReleaseZPayload returns giving ZPayload into underline object pool
-// for reuse.
-// Never re-use a ZPayload reference you've previously released.
-func ReleaseZPayload(zp *ZPayload) {
-	zp.Clear()
-	zPayloads.Put(zp)
-}
-
 // ZConnWorker defines a interface type for the servicing of
 // an underline read and write requests.
 type ZConnWorker interface {
@@ -417,21 +450,54 @@ func UseZConnWorker(worker ZConnWorker) ZApply {
 	}
 }
 
+var (
+	zPayloads = sync.Pool{
+		New: func() interface{} {
+			var payload ZPayload
+			payload.Reset()
+			return payload
+		},
+	}
+)
+
 // ZPayload defines an underline structure for writing data
 // into an underline ZConn.
 type ZPayload struct {
-	Done   chan struct{}
+	Flush  bool
 	Err    chan error
+	Done   chan struct{}
 	Addr   chan net.Addr
-	Stream io.ReadWriteCloser
+	Reader io.ReadCloser
+	Writer io.WriteCloser
+}
+
+// AcquireZPayload returns a new ZPayload for use.
+func AcquireZPayload() *ZPayload {
+	if nzp, ok := zPayloads.Get().(*ZPayload); ok {
+		return nzp
+	}
+
+	var payload ZPayload
+	payload.Reset()
+	return &payload
+}
+
+// ReleaseZPayload returns giving ZPayload into underline object pool
+// for reuse.
+// Never re-use a ZPayload reference you've previously released.
+func ReleaseZPayload(zp *ZPayload) {
+	zp.Clear()
+	zPayloads.Put(zp)
 }
 
 // Clear clears ZPayload fields.
 func (z *ZPayload) Clear() {
-	z.Err = nil
-	z.Done = nil
-	z.Addr = nil
-	z.Stream = nil
+	z.Writer = nil
+	z.Reader = nil
+
+	if len(z.Addr) == 1 {
+		<-z.Addr
+	}
 }
 
 // Reset giving ZPayload fields.
@@ -442,14 +508,14 @@ func (z *ZPayload) Reset() {
 }
 
 func (z *ZPayload) verify() {
-	if z.Stream == nil {
-		panic("ZPayload.Stream can not be nil")
-	}
 	if z.Done == nil {
 		panic("ZPayload.Done can not be nil")
 	}
 	if z.Err == nil {
 		panic("ZPayload.Err can not be nil")
+	}
+	if z.Reader == nil && z.Writer == nil {
+		panic("ZPayload.Reader & ZPayload.Writer can not be nil")
 	}
 }
 
@@ -460,27 +526,26 @@ type ZPayloadStream chan *ZPayload
 // ZConn implements a simple connection wrapper around a
 // net.Conn.
 type ZConn struct {
-	id                  nxid.ID
-	laddr               net.Addr
-	addr                net.Addr
-	maxRead             int64
-	maxWrite            int64
-	readBuffer          int64
-	writeBuffer         int64
-	nowTime             NowTime
-	readTimeouts        ZTimeout
-	writeTimeouts       ZTimeout
-	conn                net.Conn
-	worker              ZConnWorker
-	readRequests        ZPayloadStream
-	writeRequests       ZPayloadStream
-	waiter              sync.WaitGroup
-	ctx                 context.Context
-	ctxCanceler         context.CancelFunc
-	defaultWriteTimeout time.Duration
-	defaultReadTimeout  time.Duration
-	streamWriter        *nbytes.DelimitedStreamWriter
-	streamReader        *nbytes.DelimitedStreamReader
+	id            nxid.ID
+	laddr         net.Addr
+	addr          net.Addr
+	maxRead       int64
+	maxWrite      int64
+	readBuffer    int64
+	writeBuffer   int64
+	nowTime       NowTime
+	readTimer     Timer
+	writeTimer    Timer
+	debug         bool
+	conn          net.Conn
+	worker        ZConnWorker
+	readRequests  ZPayloadStream
+	writeRequests ZPayloadStream
+	waiter        sync.WaitGroup
+	ctx           context.Context
+	ctxCanceler   context.CancelFunc
+	streamWriter  *nbytes.DelimitedStreamWriter
+	streamReader  *nbytes.DelimitedStreamReader
 }
 
 const (
@@ -500,12 +565,6 @@ func NewZConn(conn net.Conn, fns ...ZApply) *ZConn {
 	zc.laddr = conn.LocalAddr()
 	zc.readBuffer = defaultReadBuffer
 	zc.writeBuffer = defaultWriteBuffer
-	zc.defaultWriteTimeout = defaultTimeout
-	zc.defaultWriteTimeout = defaultTimeout
-
-	var defaultTimer = sameTimeout(defaultTimeout)
-	zc.readTimeouts = defaultTimer
-	zc.writeTimeouts = defaultTimer
 
 	for _, fn := range fns {
 		fn(zc)
@@ -527,13 +586,29 @@ func NewZConn(conn net.Conn, fns ...ZApply) *ZConn {
 		zc.nowTime = time.Now
 	}
 
+	var ct ConstantTimer
+	ct.Duration = defaultTimeout
+	if zc.writeTimer == nil {
+		zc.writeTimer = &ct
+	}
+
+	if zc.readTimer == nil {
+		zc.readTimer = &ct
+	}
+
 	switch conn.(type) {
 	case *net.TCPConn:
-		zc.worker = &TCPWorker{}
+		zc.worker = &TCPWorker{
+			Debug:  zc.debug,
+			Buffer: make([]byte, 1024),
+		}
 	case *net.UDPConn:
-		zc.worker = &UDPWorker{}
+		zc.worker = &UDPWorker{
+			Debug:  zc.debug,
+			Buffer: make([]byte, 1024),
+		}
 	default:
-		panic("ZConn.Worker must be provided as it's a hard requirement")
+		panic("ZConn.Worker must be provided")
 	}
 
 	zc.streamReader = &nbytes.DelimitedStreamReader{
@@ -557,6 +632,50 @@ func NewZConn(conn net.Conn, fns ...ZApply) *ZConn {
 	zc.writeLoop()
 
 	return zc
+}
+
+// Write delivers giving data into underline ZConn as a stream.
+func (zc *ZConn) Write(w io.ReadCloser, flush bool) error {
+	var req = AcquireZPayload()
+	req.Reader = w
+	req.Flush = flush
+
+	defer ReleaseZPayload(req)
+
+	select {
+	case zc.writeRequests <- req:
+	case <-zc.ctx.Done():
+		return zc.ctx.Err()
+	}
+
+	select {
+	case <-req.Done:
+		return nil
+	case err := <-req.Err:
+		return err
+	}
+}
+
+// Read attempts reading from underline connection into provided Writer.
+func (zc *ZConn) Read(w io.WriteCloser, flush bool) error {
+	var req = AcquireZPayload()
+	req.Writer = w
+	req.Flush = flush
+
+	defer ReleaseZPayload(req)
+
+	select {
+	case zc.readRequests <- req:
+	case <-zc.ctx.Done():
+		return zc.ctx.Err()
+	}
+
+	select {
+	case <-req.Done:
+		return nil
+	case err := <-req.Err:
+		return err
+	}
 }
 
 // Reads returns the underline channel used for receiving new incoming reads.
@@ -584,9 +703,13 @@ func (zc *ZConn) Close() error {
 		zc.ctxCanceler()
 	}
 
-	log.Printf("[Zconn] | %s | Awaiting gorotines closure", zc.id)
+	if zc.debug {
+		log.Printf("[Zconn] | %s | Awaiting gorotines closure", zc.id)
+	}
 	zc.waiter.Wait()
-	log.Printf("[Zconn] | %s | Closed gorotines", zc.id)
+	if zc.debug {
+		log.Printf("[Zconn] | %s | Closed gorotines", zc.id)
+	}
 	return nil
 }
 
@@ -596,13 +719,13 @@ func (zc *ZConn) writeLoop() {
 		defer zc.waiter.Done()
 
 		var err error
-		var lastTimeout = zc.defaultWriteTimeout
-
 		for {
 			select {
 			case <-zc.ctx.Done():
-				log.Printf("[Zconn] | %s | Closing write loop through context", zc.id)
 				// we are being asked to stop and close.
+				if zc.debug {
+					log.Printf("[Zconn] | %s | Closing write loop through context", zc.id)
+				}
 				return
 			case req, ok := <-zc.writeRequests:
 				if !ok {
@@ -612,72 +735,27 @@ func (zc *ZConn) writeLoop() {
 				// verify giving request object is valid.
 				req.verify()
 
-				lastTimeout = zc.writeTimeouts(lastTimeout)
-				if err = zc.conn.SetWriteDeadline(zc.nowTime().Add(lastTimeout)); err != nil {
-					log.Printf("[Zconn] | %s | Failed to set write timeout: %s", zc.id, err)
-
-					if req.Err != nil {
-						req.Err <- err
-					}
-
-					zc.ctxCanceler()
-					log.Printf("[Zconn] | %s | Closing write loop", zc.id)
-					return
-				}
-
-			writeLoop:
-				for {
-					if err = zc.worker.ServeWrite(zc.ctx, zc.streamWriter, req); err != nil {
-						select {
-						case <-zc.ctx.Done():
-							log.Printf("[Zconn] | %s | Failed to set write timeout: %s", zc.id, err)
-							select {
-							case req.Err <- err:
-							default:
-							}
-							return
-						default:
-						}
-
-						if tmpErr, ok := err.(net.Error); ok {
-							if tmpErr.Timeout() {
-								continue writeLoop
-							}
-						}
-					}
-					break writeLoop
-				}
-
+				err = zc.writeUntil(req)
 				if err != nil {
-					log.Printf("[Zconn] | %s | Failed connection writing process: %s", zc.id, err)
+					if zc.debug {
+						log.Printf("[Zconn] | %s | Failed connection writing process: %s", zc.id, err)
+					}
 
 					if req.Err != nil {
 						req.Err <- err
 					}
 
-					zc.ctxCanceler()
-					log.Printf("[Zconn] | %s | Closing write loop", zc.id)
-					return
-				}
-
-				// reset timeout to default.
-				lastTimeout = zc.defaultWriteTimeout
-				_ = zc.conn.SetWriteDeadline(noTime)
-
-				var flushed, err = zc.streamWriter.End()
-				if err != nil {
-					log.Printf("[Zconn] | %s | Failed connection flushing process: %s", zc.id, err)
-
-					if req.Err != nil {
-						req.Err <- err
+					if err == ErrKillConnection {
+						if zc.debug {
+							log.Printf("[Zconn] | %s | Closing write loop", zc.id)
+						}
+						zc.ctxCanceler()
+						return
 					}
 
-					zc.ctxCanceler()
-					log.Printf("[Zconn] | %s | Closing read loop", zc.id)
-					return
+					continue
 				}
 
-				log.Printf("[Zconn] | %s | Flushed %d bytes into raw connection", zc.id, flushed)
 				req.Done <- struct{}{}
 			}
 		}
@@ -691,13 +769,14 @@ func (zc *ZConn) readLoop() {
 		defer zc.waiter.Done()
 
 		var err error
-		var lastTimeout = zc.defaultReadTimeout
 
 		for {
 			select {
 			case <-zc.ctx.Done():
-				log.Printf("[Zconn] | %s | Closing read loop through context", zc.id)
 				// we are being asked to stop and close.
+				if zc.debug {
+					log.Printf("[Zconn] | %s | Closing read loop through context", zc.id)
+				}
 				return
 			case req, ok := <-zc.readRequests:
 				if !ok {
@@ -711,74 +790,141 @@ func (zc *ZConn) readLoop() {
 					req.Addr <- zc.addr
 				}
 
-				lastTimeout = zc.readTimeouts(lastTimeout)
-				if err = zc.conn.SetReadDeadline(zc.nowTime().Add(lastTimeout)); err != nil {
-					log.Printf("[Zconn] | %s | Failed to set read timeout: %s", zc.id, err)
-
-					_ = zc.conn.SetReadDeadline(noTime)
-					if req.Err != nil {
-						req.Err <- err
-					}
-
-					zc.ctxCanceler()
-					log.Printf("[Zconn] | %s | Closing read loop", zc.id)
-					return
-				}
-
-			readLoop:
-				for {
-					if err = zc.worker.ServeRead(zc.ctx, zc.streamReader, req); err != nil {
-						log.Printf("[Zconn] | %s | Read Call error: %s", zc.id, err)
-						select {
-						case <-zc.ctx.Done():
-							select {
-							case req.Err <- err:
-							default:
-							}
-							log.Printf("[Zconn] | %s | Exiting read loop: %s", zc.id, err)
-							return
-						default:
-						}
-
-						if tmpErr, ok := err.(net.Error); ok {
-							log.Printf("[Zconn] | %s | TmpError: %t : %t", zc.id, tmpErr.Timeout(), tmpErr.Temporary())
-
-							if tmpErr.Timeout() {
-								continue readLoop
-							}
-						}
-					}
-
-					break readLoop
-				}
-
-				// reset timeout to default.
-				lastTimeout = zc.defaultReadTimeout
-				_ = zc.conn.SetReadDeadline(noTime)
-
+				err = zc.readUntil(req)
 				if err != nil {
-					log.Printf("[Zconn] | %s | Failed connection reading process: %s", zc.id, err)
+					if zc.debug {
+						log.Printf("[Zconn] | %s | Failed connection writing process: %s", zc.id, err)
+					}
 
 					if req.Err != nil {
 						req.Err <- err
 					}
 
-					zc.ctxCanceler()
-					log.Printf("[Zconn] | %s | Closing read loop", zc.id)
-					return
+					if err == ErrKillConnection {
+						if zc.debug {
+							log.Printf("[Zconn] | %s | Closing write loop", zc.id)
+						}
+						zc.ctxCanceler()
+						return
+					}
+
+					continue
 				}
 
-				log.Printf("[Zconn] | %s | Closing read request done channel", zc.id)
 				req.Done <- struct{}{}
-				log.Printf("[Zconn] | %s | Finished read call", zc.id)
 			}
 		}
 	}()
 }
 
-func sameTimeout(t time.Duration) ZTimeout {
-	return func(_ time.Duration) time.Duration {
-		return t
+func (zc *ZConn) writeUntil(req *ZPayload) error {
+	var err error
+	if err = zc.conn.SetWriteDeadline(zc.nowTime().Add(zc.writeTimer.Next())); err != nil {
+		if zc.debug {
+			log.Printf("[Zconn] | %s | Failed to set read timeout: %s", zc.id, err)
+		}
+		return err
+	}
+
+	// Reset write timeout for connection.
+	defer zc.conn.SetWriteDeadline(noTime)
+	defer zc.writeTimer.Reset()
+
+	for {
+		select {
+		case <-zc.ctx.Done():
+			return ErrKillConnection
+		default:
+		}
+
+		if err = zc.worker.ServeWrite(zc.ctx, zc.streamWriter, req); err != nil {
+			if zc.debug {
+				log.Printf("[Zconn] | %s | Read Call error: %s", zc.id, err)
+			}
+
+			if tmpErr, ok := err.(net.Error); ok {
+				if zc.debug {
+					log.Printf("[Zconn] | %s | TmpError: %t : %t", zc.id, tmpErr.Timeout(), tmpErr.Temporary())
+				}
+				if tmpErr.Timeout() {
+					continue
+				}
+			}
+		}
+		break
+	}
+
+	var written int
+	written, err = zc.streamWriter.End()
+	if err != nil {
+		if zc.debug {
+			log.Printf("[Zconn] | %s | Failed connection flushing process: %s", zc.id, err)
+		}
+		return err
+	}
+
+	if zc.debug {
+		log.Printf("[Zconn] | %s | Written %d to underline buffered writer", zc.id, written)
+	}
+
+	var available = zc.streamWriter.Available()
+	if req.Flush {
+		if err := zc.streamWriter.HardFlush(); err != nil {
+			if zc.debug {
+				log.Printf("[Zconn] | %s | Failed hard flushing as requested: %s", zc.id, err)
+			}
+			return err
+		}
+	}
+
+	var nowAvailable = zc.streamWriter.Available()
+	if nowAvailable < available {
+		if err := zc.streamWriter.HardFlush(); err != nil {
+			if zc.debug {
+				log.Printf("[Zconn] | %s | Failed hard flushing as requested: %s", zc.id, err)
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (zc *ZConn) readUntil(req *ZPayload) error {
+	var err error
+	if err = zc.conn.SetReadDeadline(zc.nowTime().Add(zc.readTimer.Next())); err != nil {
+		if zc.debug {
+			log.Printf("[Zconn] | %s | Failed to set read timeout: %s", zc.id, err)
+		}
+		return err
+	}
+
+	// Reset read timeout for connection.
+	defer zc.conn.SetReadDeadline(noTime)
+	defer zc.readTimer.Reset()
+
+	for {
+		select {
+		case <-zc.ctx.Done():
+			return ErrKillConnection
+		default:
+		}
+
+		if err = zc.worker.ServeRead(zc.ctx, zc.streamReader, req); err != nil {
+			if zc.debug {
+				log.Printf("[Zconn] | %s | Read Call error: %s", zc.id, err)
+			}
+
+			if tmpErr, ok := err.(net.Error); ok {
+				if zc.debug {
+					log.Printf("[Zconn] | %s | TmpError: %t : %t", zc.id, tmpErr.Timeout(), tmpErr.Temporary())
+				}
+				if tmpErr.Timeout() {
+					continue
+				}
+			}
+		}
+		return nil
 	}
 }
 
@@ -796,4 +942,41 @@ func gradualExpansion(capacity int, last int, factor int) int {
 	var pb = capacity * factor
 	var inc = (pb / capacity) + factor
 	return inc + (capacity / last)
+}
+
+// copyBuffer is the actual implementation of Copy and CopyBuffer.
+// if buf is nil, one is allocated.
+func copyBuffer(dst io.Writer, src io.Reader, buf []byte) (written int64, err error) {
+	if buf == nil {
+		panic("can not use nil buffer")
+	}
+
+	for {
+		nr, er := src.Read(buf)
+		//log.Printf("Read %d bytes from reader: %q -> %q\n", nr, err, buf[:nr])
+		if nr > 0 {
+			nw, ew := dst.Write(buf[0:nr])
+			if nw > 0 {
+				written += int64(nw)
+			}
+
+			if ew != nil {
+				err = ew
+				break
+			}
+
+			if nr != nw {
+				err = io.ErrShortWrite
+				break
+			}
+		}
+
+		if er != nil {
+			if er != io.EOF {
+				err = er
+			}
+			break
+		}
+	}
+	return written, err
 }

@@ -73,30 +73,60 @@ type DelimitedStreamWriter struct {
 	cache  *bufio.Writer
 }
 
+// Available returns available bytes buffered in underline bufio.Writer.
+func (dw *DelimitedStreamWriter) Available() int {
+	return dw.cache.Available()
+}
+
+// Buffered returns total bytes buffered in underline bufio.Writer.
+func (dw *DelimitedStreamWriter) Buffered() int {
+	return dw.cache.Buffered()
+}
+
+// HardFlush flushes giving underline data to destination writer.
+func (dw *DelimitedStreamWriter) HardFlush() error {
+	return dw.cache.Flush()
+}
+
 // End adds delimiter to underline writer to indicate end of byte stream section.
 // This allows us indicate to giving stream as ending as any other occurrence of giving
 // stream is closed.
 func (dw *DelimitedStreamWriter) End() (int, error) {
+	if err := dw.init(); err != nil {
+		return -1, err
+	}
+
+	var available = dw.cache.Available()
 	if err := dw.flush(); err != nil {
 		written := int(atomic.LoadInt64(&dw.count))
 		return written, err
 	}
 
-	written := int(atomic.LoadInt64(&dw.count))
-
-	// flush buffer if we have something left as well into writer.
-	if left := dw.cache.Buffered(); left > 0 {
-		if err := dw.cache.Flush(); err != nil {
-			return written, nerror.WrapOnly(err)
-		}
+	var hasFlushed bool
+	var nowAvailable = dw.cache.Available()
+	if nowAvailable < available {
+		hasFlushed = true
 	}
 
-	n, err := dw.Dest.Write(dw.Delimiter)
+	written := int(atomic.LoadInt64(&dw.count))
+	var buffered = dw.cache.Buffered()
+
+	// we know we will be writing
+	if buffered+len(dw.Delimiter) >= nowAvailable {
+		hasFlushed = true
+	}
+
+	n, err := dw.cache.Write(dw.Delimiter)
 	if err != nil {
 		return written, nerror.WrapOnly(err)
 	}
 
 	written += n
+	if hasFlushed {
+		if err := dw.cache.Flush(); err != nil {
+			return written, nerror.WrapOnly(err)
+		}
+	}
 
 	dw.index = 0
 	dw.buffer.Reset()
@@ -118,10 +148,7 @@ func (dw *DelimitedStreamWriter) Write(bs []byte) (int, error) {
 	return count, nil
 }
 
-// writeByte writes individual byte element into underline stream,
-// ensuring to adequately escape all appearing delimiter within
-// writing stream.
-func (dw *DelimitedStreamWriter) writeByte(b byte) error {
+func (dw *DelimitedStreamWriter) init() error {
 	escapeLen := len(dw.Escape)
 	delimLen := len(dw.Delimiter)
 	if dw.buffer == nil && dw.cache == nil {
@@ -146,6 +173,18 @@ func (dw *DelimitedStreamWriter) writeByte(b byte) error {
 		dw.escape = bytes.NewBuffer(make([]byte, 0, escapeLen))
 		dw.buffer = bytes.NewBuffer(make([]byte, 0, delimLen))
 		dw.cache = bufio.NewWriterSize(dw.Dest, writeBuffer)
+	}
+
+	return nil
+}
+
+// writeByte writes individual byte element into underline stream,
+// ensuring to adequately escape all appearing delimiter within
+// writing stream.
+func (dw *DelimitedStreamWriter) writeByte(b byte) error {
+	escapeLen := len(dw.Escape)
+	if err := dw.init(); err != nil {
+		return err
 	}
 
 	// if we have not started buffering normally and we found escape character

@@ -69,6 +69,8 @@ func TestMultiStreamReadingAndwriting(t *testing.T) {
 		require.True(t, streamWritten >= written)
 	}
 
+	require.NoError(t, writer.HardFlush())
+
 	reader := &mb.DelimitedStreamReader{
 		Src:       bytes.NewReader(dest.Bytes()),
 		Escape:    []byte(":/"),
@@ -100,6 +102,8 @@ func TestDelimitedStreamWriterWithDelimiterAndEscape(t *testing.T) {
 
 	processed, err := writer.End()
 	require.NoError(t, err)
+
+	require.NoError(t, writer.HardFlush())
 	require.Equal(t, processed, dest.Len())
 
 	expected := []byte("Wondering out the :/:///clouds of endless :///streams beyond the shore//")
@@ -121,6 +125,8 @@ func TestDelimitedStreamWriterWithAllDelimiter(t *testing.T) {
 
 	processed, err := writer.End()
 	require.NoError(t, err)
+
+	require.NoError(t, writer.HardFlush())
 	require.Equal(t, processed, dest.Len())
 
 	expected := []byte("Wondering out the :/:///:///:///:///:///:///:///:///:///:///:///:///:///:///:///:///:///:///:/&//")
@@ -142,6 +148,8 @@ func TestDelimitedStreamWriterWithMoreEscapeWithDelimiter(t *testing.T) {
 
 	processed, err := writer.End()
 	require.NoError(t, err)
+
+	require.NoError(t, writer.HardFlush())
 	require.Equal(t, processed, dest.Len())
 
 	expected := []byte("Wondering out the :/:///clouds of endless :///streams beyond the shore//")
@@ -163,6 +171,8 @@ func TestDelimitedStreamWriterWithDelimiter(t *testing.T) {
 
 	processed, err := writer.End()
 	require.NoError(t, err)
+
+	require.NoError(t, writer.HardFlush())
 	require.Equal(t, processed, dest.Len())
 
 	expected := []byte("Wondering out the :///clouds of endless :///streams beyond the shore//")
@@ -184,6 +194,8 @@ func TestDelimitedStreamWriter(t *testing.T) {
 
 	processed, err := writer.End()
 	require.NoError(t, err)
+
+	require.NoError(t, writer.HardFlush())
 	require.Equal(t, processed, dest.Len())
 
 	expected := []byte("Wondering out the clouds of endless streams beyond the shore//")
@@ -230,6 +242,7 @@ func TestDelimitedStreamWriterWithSet(t *testing.T) {
 
 		_, err := writer.End()
 		require.NoError(t, err)
+		require.NoError(t, writer.HardFlush())
 		require.Equal(t, spec.In, string(dest.Bytes()), "Index %d\n Data: %q\nEncoded: %q", ind, spec.Out, dest.Bytes())
 	}
 }
