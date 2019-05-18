@@ -36,7 +36,8 @@ func BenchmarkZConn(b *testing.B) {
 		panic(clientErr)
 	}
 
-	var zclient = NewZConn(clientConn, ZConnParentContext(ctx))
+	var readBufferSize = len(message) * 8
+	var zclient = NewZConn(clientConn, ZConnParentContext(ctx), ZConnReadBuffer(readBufferSize), ZConnMaxWrite(readBufferSize))
 
 	var readBuffer = bytes.NewReader(message)
 	var readContent = ioutil.NopCloser(readBuffer)
@@ -50,7 +51,7 @@ func BenchmarkZConn(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		readBuffer.Reset(message)
-		if err := zclient.Write(readContent, true); err != nil {
+		if err := zclient.Write(readContent, false); err != nil {
 			panic(err)
 		}
 	}

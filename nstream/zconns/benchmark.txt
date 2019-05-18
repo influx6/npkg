@@ -1,0 +1,28 @@
+goos: linux
+goarch: amd64
+pkg: github.com/gokit/npkg/nstream/zconns
+BenchmarkZConn-8   	  200000	      8533 ns/op	   6.33 MB/s	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/gokit/npkg/nstream/zconns	1.911s
+2019/05/18 12:13:18 [TCPWorker.ServeRead] | Failed to finish readFor: : read tcp 127.0.0.1:5050->127.0.0.1:38420: i/o timeout
+-------------------------------------------
+goos: linux
+goarch: amd64
+pkg: github.com/gokit/npkg/nstream/zconns
+BenchmarkZConn-8   	  300000	      9722 ns/op	   5.55 MB/s	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/gokit/npkg/nstream/zconns	8.121s
+2019/05/18 12:15:41 [TCPWorker.ServeRead] | Failed to finish readFor: : read tcp 127.0.0.1:5050->127.0.0.1:38432: i/o timeout
+-------------------------------------------
+goos: linux
+goarch: amd64
+pkg: github.com/gokit/npkg/nstream/zconns
+BenchmarkZConn-8   	  500000	      9726 ns/op	   5.55 MB/s	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/gokit/npkg/nstream/zconns	10.021s
+goos: linux
+goarch: amd64
+pkg: github.com/gokit/npkg/nstream/zconns
+BenchmarkZConn-8   	  500000	      9616 ns/op	   5.62 MB/s	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/gokit/npkg/nstream/zconns	5.013s

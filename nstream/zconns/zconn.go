@@ -374,7 +374,7 @@ func ZConnReadTimeout(t Timer) ZApply {
 
 // ZConnWriteBuffer sets the buffer space to be used for write
 // calls for a ZConn.
-func ZConnWriteBuffer(buffer int64) ZApply {
+func ZConnWriteBuffer(buffer int) ZApply {
 	return func(conn *ZConn) {
 		conn.writeBuffer = buffer
 	}
@@ -382,7 +382,7 @@ func ZConnWriteBuffer(buffer int64) ZApply {
 
 // ZConnReadBuffer sets the buffer space to be used for read
 // calls for a ZConn.
-func ZConnReadBuffer(buffer int64) ZApply {
+func ZConnReadBuffer(buffer int) ZApply {
 	return func(conn *ZConn) {
 		conn.readBuffer = buffer
 	}
@@ -390,7 +390,7 @@ func ZConnReadBuffer(buffer int64) ZApply {
 
 // ZConnMaxWrite sets the maximum allowed read size for each data stream.
 // The maximum allowed size for each unique message.
-func ZConnMaxRead(max int64) ZApply {
+func ZConnMaxRead(max int) ZApply {
 	return func(conn *ZConn) {
 		conn.maxRead = max
 	}
@@ -398,7 +398,7 @@ func ZConnMaxRead(max int64) ZApply {
 
 // ZConnMaxWrite sets the maximum allowed data size for collected data stream.
 // The maximum allowed size for each unique message.
-func ZConnMaxWrite(max int64) ZApply {
+func ZConnMaxWrite(max int) ZApply {
 	return func(conn *ZConn) {
 		conn.maxWrite = max
 	}
@@ -442,9 +442,9 @@ type ZConnWorker interface {
 	ServeWrite(context.Context, io.Writer, *ZPayload) error
 }
 
-// UseZConnWorker sets the underline worker to be used for handling
+// SetZConnWorker sets the underline worker to be used for handling
 // read/write requests for a ZConn.
-func UseZConnWorker(worker ZConnWorker) ZApply {
+func SetZConnWorker(worker ZConnWorker) ZApply {
 	return func(conn *ZConn) {
 		conn.worker = worker
 	}
@@ -529,10 +529,10 @@ type ZConn struct {
 	id            nxid.ID
 	laddr         net.Addr
 	addr          net.Addr
-	maxRead       int64
-	maxWrite      int64
-	readBuffer    int64
-	writeBuffer   int64
+	maxRead       int
+	maxWrite      int
+	readBuffer    int
+	writeBuffer   int
 	nowTime       NowTime
 	readTimer     Timer
 	writeTimer    Timer
@@ -596,19 +596,21 @@ func NewZConn(conn net.Conn, fns ...ZApply) *ZConn {
 		zc.readTimer = &ct
 	}
 
-	switch conn.(type) {
-	case *net.TCPConn:
-		zc.worker = &TCPWorker{
-			Debug:  zc.debug,
-			Buffer: make([]byte, 1024),
+	if zc.worker == nil {
+		switch conn.(type) {
+		case *net.TCPConn:
+			zc.worker = &TCPWorker{
+				Debug:  zc.debug,
+				Buffer: make([]byte, 1024),
+			}
+		case *net.UDPConn:
+			zc.worker = &UDPWorker{
+				Debug:  zc.debug,
+				Buffer: make([]byte, 1024),
+			}
+		default:
+			panic("ZConn.Worker must be provided")
 		}
-	case *net.UDPConn:
-		zc.worker = &UDPWorker{
-			Debug:  zc.debug,
-			Buffer: make([]byte, 1024),
-		}
-	default:
-		panic("ZConn.Worker must be provided")
 	}
 
 	zc.streamReader = &nbytes.DelimitedStreamReader{
@@ -875,6 +877,8 @@ func (zc *ZConn) writeUntil(req *ZPayload) error {
 			}
 			return err
 		}
+
+		return nil
 	}
 
 	var nowAvailable = zc.streamWriter.Available()
