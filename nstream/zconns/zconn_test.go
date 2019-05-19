@@ -27,7 +27,7 @@ func BenchmarkZConn(b *testing.B) {
 		panic(err)
 	}
 
-	var handler connHandler
+	var handler readHandler
 	var ctx, cancel = context.WithCancel(context.Background())
 	var server = NewServer(ctx, handler, listener, false)
 	server.Serve()
@@ -52,7 +52,7 @@ func BenchmarkZConn(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		readBuffer.Reset(message)
-		if err := zclient.Write(readContent, false); err != nil {
+		if err := zclient.WriteTo(readContent, false); err != nil {
 			panic(err)
 		}
 	}
@@ -62,11 +62,8 @@ func BenchmarkZConn(b *testing.B) {
 	b.StopTimer()
 	cancel()
 
-	log.Println("Closing....")
 	_ = zclient.Close()
-	log.Println("Waiting....")
 	_ = server.Wait()
-	log.Println("Finished Waiting....")
 }
 
 func TestZConn(t *testing.T) {
@@ -74,7 +71,7 @@ func TestZConn(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, listener)
 
-	var handler connHandler
+	var handler readHandler
 	var ctx, cancel = context.WithCancel(context.Background())
 	var server = NewServer(ctx, handler, listener, true)
 	server.Serve()
@@ -86,11 +83,11 @@ func TestZConn(t *testing.T) {
 	var zclient = NewZConn(clientConn, ZConnDebugMode())
 
 	var writeContent = noCloser(bytes.NewBuffer(message))
-	require.NoError(t, zclient.Write(writeContent, true))
+	require.NoError(t, zclient.WriteTo(writeContent, true))
 
 	var readBuffer = bytes.NewBuffer(make([]byte, 0, 512))
 	var readContent = noCloser(readBuffer)
-	require.NoError(t, zclient.Read(readContent, true))
+	require.NoError(t, zclient.ReadFrom(readContent))
 	require.Equal(t, message, readBuffer.Bytes())
 	require.NoError(t, zclient.Close())
 
@@ -98,11 +95,9 @@ func TestZConn(t *testing.T) {
 	require.Error(t, server.Wait())
 }
 
-type connHandler struct{}
+type readHandler struct{}
 
-func (connHandler) ServeConn(ctx context.Context, conn net.Conn) error {
-	defer log.Printf("[ConnHandler] | Closing serverConn")
-
+func (readHandler) ServeConn(ctx context.Context, conn net.Conn) error {
 	var zc = NewZConn(conn, ZConnParentContext(ctx))
 	var buffer = bytes.NewBuffer(make([]byte, 0, 512))
 	var writeContent = noCloser(buffer)
@@ -110,58 +105,42 @@ func (connHandler) ServeConn(ctx context.Context, conn net.Conn) error {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("Closing connHandler client....")
 			_ = zc.Close()
-			log.Println("Closing connHandler....")
 			return nil
 		default:
 		}
 
 		buffer.Reset()
 
-		if err := zc.Read(writeContent, true); err != nil {
+		if err := zc.ReadFrom(writeContent); err != nil {
 			log.Printf("[ConnHandler] | %s | Closing serverConn due to read error", zc.id)
 			return err
 		}
-
-		//if err := zc.Write(writeContent, true); err != nil {
-		//	log.Printf("[ConnHandler] | %s | Closing serverConn due to write error", zc.id)
-		//	return err
-		//}
 	}
 }
 
-type writeConnHandler struct{}
+type writeHandler struct{}
 
-func (writeConnHandler) ServeConn(ctx context.Context, conn net.Conn) error {
+func (writeHandler) ServeConn(ctx context.Context, conn net.Conn) error {
 	var zc = NewZConn(conn, ZConnParentContext(ctx))
 
-	var writeBuffer = bytes.NewBuffer(message)
-	var writeContent = noCloser(writeBuffer)
-	var readBuffer = bytes.NewBuffer(make([]byte, 0, 512))
-	var readContent = noCloser(readBuffer)
+	var writeBuffer = bytes.NewReader(message)
+	var writeContent = ioutil.NopCloser(writeBuffer)
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("[ConnHandler] | %s | Closing serverConn", zc.id)
 			_ = zc.Close()
 			return nil
 		default:
 		}
 
-		readBuffer.Reset()
+		writeBuffer.Reset(message)
 
-		if err := zc.Write(writeContent, true); err != nil {
+		if err := zc.WriteTo(writeContent, true); err != nil {
 			log.Printf("[ConnHandler] | %s | Closing serverConn due to write error", zc.id)
 			return err
 		}
-
-		if err := zc.Read(readContent, true); err != nil {
-			log.Printf("[ConnHandler] | %s | Closing serverConn due to read error", zc.id)
-			return err
-		}
-
 	}
 }
 

@@ -1,7 +1,6 @@
 package zconns
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"io"
@@ -538,8 +537,6 @@ type ZConn struct {
 	ctxCanceler   context.CancelFunc
 	streamWriter  *nbytes.DelimitedStreamWriter
 	streamReader  *nbytes.DelimitedStreamReader
-	bufferReader  *bufio.Reader
-	bufferWriter  *bufio.Writer
 	readers       *sync.Cond
 	rLock         sync.Mutex
 	writers       *sync.Cond
@@ -609,12 +606,9 @@ func NewZConn(conn net.Conn, fns ...ZApply) *ZConn {
 		}
 	}
 
-	//if zc.debug {
-	log.Printf("[Zconn] | %s | Using %d bytes for read buffer and %d bytes for writer buffer", zc.id, zc.writeBuffer, zc.readBuffer)
-	//}
-
-	zc.bufferWriter = bufio.NewWriterSize(zc.conn, zc.writeBuffer)
-	zc.bufferReader = bufio.NewReaderSize(zc.conn, zc.readBuffer)
+	if zc.debug {
+		log.Printf("[Zconn] | %s | Using %d bytes for read buffer and %d bytes for writer buffer", zc.id, zc.writeBuffer, zc.readBuffer)
+	}
 
 	zc.streamReader = &nbytes.DelimitedStreamReader{
 		Src:        zc.conn,
@@ -672,13 +666,13 @@ func (zc *ZConn) Close() error {
 	return nil
 }
 
+// Flush flushes underline ZConn write buffer.
 func (zc *ZConn) Flush() error {
-	//return zc.streamWriter.HardFlush()
-	return zc.bufferWriter.Flush()
+	return zc.streamWriter.HardFlush()
 }
 
-// Write delivers giving data into underline ZConn as a stream.
-func (zc *ZConn) Write(w io.ReadCloser, flush bool) error {
+// WriteTo delivers giving data into underline ZConn as a stream.
+func (zc *ZConn) WriteTo(w io.ReadCloser, flush bool) error {
 	var req = AcquireZPayload()
 	req.Reader = w
 	req.Flush = flush
@@ -702,11 +696,10 @@ func (zc *ZConn) Write(w io.ReadCloser, flush bool) error {
 	return zc.handleWriteRequest(req)
 }
 
-// Read attempts reading from underline connection into provided Writer.
-func (zc *ZConn) Read(w io.WriteCloser, flush bool) error {
+// ReadFrom attempts reading from underline connection into provided Writer.
+func (zc *ZConn) ReadFrom(w io.WriteCloser) error {
 	var req = AcquireZPayload()
 	req.Writer = w
-	req.Flush = flush
 
 	defer ReleaseZPayload(req)
 
@@ -874,13 +867,14 @@ func (zc *ZConn) writeUntil(req *ZPayload) error {
 		if zc.isClosed() {
 			return ErrKillConnection
 		}
+
 		//select {
 		//case <-zc.ctx.Done():
 		//	return ErrKillConnection
 		//default:
 		//}
 
-		if err = zc.worker.ServeWrite(zc.ctx, zc.bufferWriter, req); err != nil {
+		if err = zc.worker.ServeWrite(zc.ctx, zc.streamWriter, req); err != nil {
 			if zc.debug {
 				log.Printf("[Zconn] | %s | Read Call error: %s", zc.id, err)
 			}
@@ -899,57 +893,41 @@ func (zc *ZConn) writeUntil(req *ZPayload) error {
 	}
 
 	var written int
-	//written, err = zc.streamWriter.End()
-	//if err != nil {
-	//	if zc.debug {
-	//		log.Printf("[Zconn] | %s | Failed connection flushing process: %s", zc.id, err)
-	//	}
-	//	return err
-	//}
+	written, err = zc.streamWriter.End()
+	if err != nil {
+		if zc.debug {
+			log.Printf("[Zconn] | %s | Failed connection flushing process: %s", zc.id, err)
+		}
+		return err
+	}
 
 	if zc.debug {
 		log.Printf("[Zconn] | %s | Written %d to underline buffered writer", zc.id, written)
 	}
 
-	//var available = zc.streamWriter.Available()
-	var available = zc.bufferWriter.Available()
+	var available = zc.streamWriter.Available()
 	if req.Flush {
-		if err := zc.bufferWriter.Flush(); err != nil {
+		if err := zc.streamWriter.HardFlush(); err != nil {
 			if zc.debug {
 				log.Printf("[Zconn] | %s | Failed hard flushing as requested: %s", zc.id, err)
 			}
 			return err
 		}
-
-		//if err := zc.streamWriter.HardFlush(); err != nil {
-		//	if zc.debug {
-		//		log.Printf("[Zconn] | %s | Failed hard flushing as requested: %s", zc.id, err)
-		//	}
-		//	return err
-		//}
 		return nil
 	}
 
-	//var nowAvailable = zc.streamWriter.Available()
-	var nowAvailable = zc.bufferWriter.Available()
+	var nowAvailable = zc.streamWriter.Available()
 	if nowAvailable < available {
 		if zc.debug {
 			log.Printf("[Zconn] | %s | Flushing remnant %d bytes of data for writer", zc.id, written)
 		}
 
-		if err := zc.bufferWriter.Flush(); err != nil {
+		if err := zc.streamWriter.HardFlush(); err != nil {
 			if zc.debug {
 				log.Printf("[Zconn] | %s | Failed hard flushing as requested: %s", zc.id, err)
 			}
 			return err
 		}
-
-		//if err := zc.streamWriter.HardFlush(); err != nil {
-		//	if zc.debug {
-		//		log.Printf("[Zconn] | %s | Failed hard flushing as requested: %s", zc.id, err)
-		//	}
-		//	return err
-		//}
 	}
 
 	return nil
@@ -972,13 +950,14 @@ func (zc *ZConn) readUntil(req *ZPayload) error {
 		if zc.isClosed() {
 			return ErrKillConnection
 		}
+
 		//select {
 		//case <-zc.ctx.Done():
 		//	return ErrKillConnection
 		//default:
 		//}
 
-		if err = zc.worker.ServeRead(zc.ctx, zc.bufferReader, req); err != nil {
+		if err = zc.worker.ServeRead(zc.ctx, zc.streamReader, req); err != nil {
 			if zc.debug {
 				log.Printf("[Zconn] | %s | Read Call error: %s", zc.id, err)
 			}
