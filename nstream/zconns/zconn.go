@@ -902,6 +902,7 @@ func (zc *ZConn) writeUntil(req *ZPayload) error {
 		break
 	}
 
+	// Get current total buffered content.
 	var written int
 	written, err = zc.streamWriter.End()
 	if err != nil {
@@ -915,7 +916,6 @@ func (zc *ZConn) writeUntil(req *ZPayload) error {
 		log.Printf("[Zconn] | %s | Written %d to underline buffered writer", zc.id, written)
 	}
 
-	var available = zc.streamWriter.Available()
 	if req.Flush {
 		if err := zc.streamWriter.HardFlush(); err != nil {
 			if zc.debug {
@@ -924,20 +924,6 @@ func (zc *ZConn) writeUntil(req *ZPayload) error {
 			return err
 		}
 		return nil
-	}
-
-	var nowAvailable = zc.streamWriter.Available()
-	if nowAvailable < available {
-		if zc.debug {
-			log.Printf("[Zconn] | %s | Flushing remnant %d bytes of data for writer", zc.id, written)
-		}
-
-		if err := zc.streamWriter.HardFlush(); err != nil {
-			if zc.debug {
-				log.Printf("[Zconn] | %s | Failed hard flushing as requested: %s", zc.id, err)
-			}
-			return err
-		}
 	}
 
 	return nil

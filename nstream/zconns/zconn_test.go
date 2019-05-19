@@ -35,6 +35,7 @@ func TestZConn(t *testing.T) {
 
 	var writeContent = noCloser(bytes.NewBuffer(message))
 	require.NoError(t, zclient.ReadFrom(writeContent, true))
+	require.NoError(t, zclient.Flush())
 
 	var readBuffer = bytes.NewBuffer(make([]byte, 0, 512))
 	var readContent = noCloser(readBuffer)
