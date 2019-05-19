@@ -54,3 +54,24 @@ pkg: github.com/gokit/npkg/nstream/zconns
 BenchmarkZConn-8   	 1000000	      2333 ns/op	  35.14 MB/s	       0 B/op	       0 allocs/op
 PASS
 ok  	github.com/gokit/npkg/nstream/zconns	2.362s
+
+
+goos: linux
+goarch: amd64
+pkg: github.com/gokit/npkg/nstream/zconns
+BenchmarkZConnMessages/0_Bytes-8         	 2000000	      1039 ns/op	   3.85 MB/s	       0 B/op	       0 allocs/op
+BenchmarkZConnMessages/2_Bytes-8         	 2000000	       887 ns/op	   6.76 MB/s	       0 B/op	       0 allocs/op
+BenchmarkZConnMessages/4_Bytes-8         	 2000000	       869 ns/op	   9.20 MB/s	       0 B/op	       0 allocs/op
+BenchmarkZConnMessages/8_Bytes-8         	 1000000	      1005 ns/op	  11.93 MB/s	       0 B/op	       0 allocs/op
+BenchmarkZConnMessages/16_Bytes-8        	 1000000	      1183 ns/op	  16.91 MB/s	       0 B/op	       0 allocs/op
+BenchmarkZConnMessages/32_Bytes-8        	 1000000	      1515 ns/op	  23.75 MB/s	       0 B/op	       0 allocs/op
+BenchmarkZConnMessages/64_Bytes-8        	 1000000	      2277 ns/op	  29.86 MB/s	       0 B/op	       0 allocs/op
+BenchmarkZConnMessages/128_Bytes-8       	  500000	      3328 ns/op	  39.66 MB/s	       0 B/op	       0 allocs/op
+BenchmarkZConnMessages/256_Bytes-8       	  300000	      5933 ns/op	  43.82 MB/s	       0 B/op	       0 allocs/op
+BenchmarkZConnMessages/1K_Bytes-8        	  100000	     20901 ns/op	  49.18 MB/s	       0 B/op	       0 allocs/op
+BenchmarkZConnMessages/2K_Bytes-8        	   30000	     41329 ns/op	  49.65 MB/s	       1 B/op	       0 allocs/op
+BenchmarkZConnMessages/4K_Bytes-8        	   20000	     75727 ns/op	  54.14 MB/s	       1 B/op	       0 allocs/op
+BenchmarkZConnMessages/8K_Bytes-8        	   10000	    152228 ns/op	  53.84 MB/s	       4 B/op	       0 allocs/op
+BenchmarkZConnMessages/16K_Bytes-8       	    5000	    307194 ns/op	  53.35 MB/s	      14 B/op	       0 allocs/op
+PASS
+ok  	github.com/gokit/npkg/nstream/zconns	33.361s

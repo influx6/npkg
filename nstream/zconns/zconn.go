@@ -123,7 +123,9 @@ func (zc *TCPWorker) ServeRead(ctx context.Context, src io.Reader, zp *ZPayload)
 	if wt, ok := src.(io.WriterTo); ok {
 		var n, err = wt.WriteTo(zp.Writer)
 		if err != nil && err != io.EOF {
-			log.Printf("[TCPWorker.ServeRead] | Failed to finish read copy: %s", err)
+			if zc.Debug {
+				log.Printf("[TCPWorker.ServeRead] | Failed to finish read copy: %s", err)
+			}
 			return err
 		}
 
@@ -142,7 +144,9 @@ func (zc *TCPWorker) ServeRead(ctx context.Context, src io.Reader, zp *ZPayload)
 			return nil
 		}
 
-		log.Printf("[TCPWorker.ServeRead] | Failed to finish read copy: %s", err)
+		if zc.Debug {
+			log.Printf("[TCPWorker.ServeRead] | Failed to finish read copy: %s", err)
+		}
 		return err
 	}
 
@@ -162,13 +166,17 @@ func (zc *TCPWorker) ServeWrite(ctx context.Context, dest io.Writer, zp *ZPayloa
 			return err
 		}
 
-		log.Printf("[TCPWorker.ServeWrite] | Written %d bytes into connection", n)
+		if zc.Debug {
+			log.Printf("[TCPWorker.ServeWrite] | Written %d bytes into connection", n)
+		}
 		return nil
 	}
 
 	var written, err = copyBuffer(dest, zp.Reader, zc.Buffer)
 	if err != nil {
-		log.Printf("[TCPWorker.ServeWrite] | Failed copy new data into connection: %s", err)
+		if zc.Debug {
+			log.Printf("[TCPWorker.ServeWrite] | Failed copy new data into connection: %s", err)
+		}
 		return err
 	}
 
@@ -177,7 +185,9 @@ func (zc *TCPWorker) ServeWrite(ctx context.Context, dest io.Writer, zp *ZPayloa
 	}
 
 	if err := zp.Reader.Close(); err != nil {
-		log.Printf("[TCPWorker.ServeWrite] | Failed flushing new data into connection: %s", err)
+		if zc.Debug {
+			log.Printf("[TCPWorker.ServeWrite] | Failed flushing new data into connection: %s", err)
+		}
 		return err
 	}
 	return nil

@@ -64,7 +64,7 @@ func (readHandler) ServeConn(ctx context.Context, conn net.Conn) error {
 		buffer.Reset()
 
 		if err := zc.WriteTo(writeContent); err != nil {
-			log.Printf("[readHandler] | %s | Closing serverConn due to read error", zc.id)
+			//log.Printf("[readHandler] | %s | Closing serverConn due to read error", zc.id)
 			return err
 		}
 	}
