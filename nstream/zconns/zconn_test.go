@@ -113,7 +113,7 @@ func (readHandler) ServeConn(ctx context.Context, conn net.Conn) error {
 		buffer.Reset()
 
 		if err := zc.ReadFrom(writeContent); err != nil {
-			log.Printf("[ConnHandler] | %s | Closing serverConn due to read error", zc.id)
+			log.Printf("[readHandler] | %s | Closing serverConn due to read error", zc.id)
 			return err
 		}
 	}
@@ -138,7 +138,35 @@ func (writeHandler) ServeConn(ctx context.Context, conn net.Conn) error {
 		writeBuffer.Reset(message)
 
 		if err := zc.WriteTo(writeContent, true); err != nil {
-			log.Printf("[ConnHandler] | %s | Closing serverConn due to write error", zc.id)
+			log.Printf("[writeHandler] | %s | Closing serverConn due to write error", zc.id)
+			return err
+		}
+	}
+}
+
+type readWriteHandler struct{}
+
+func (readWriteHandler) ServeConn(ctx context.Context, conn net.Conn) error {
+	var zc = NewZConn(conn, ZConnParentContext(ctx))
+	var buffer = bytes.NewBuffer(make([]byte, 0, 512))
+	var writeContent = noCloser(buffer)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+		}
+
+		buffer.Reset()
+
+		if err := zc.Read(writeContent, true); err != nil {
+			log.Printf("[readWriteHandler] | %s | Closing serverConn due to read error", zc.id)
+			return err
+		}
+
+		if err := zc.Write(writeContent, true); err != nil {
+			log.Printf("[readWriteHandler] | %s | Closing serverConn due to write error", zc.id)
 			return err
 		}
 	}
