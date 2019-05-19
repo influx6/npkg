@@ -671,8 +671,8 @@ func (zc *ZConn) Flush() error {
 	return zc.streamWriter.HardFlush()
 }
 
-// WriteTo delivers giving data into underline ZConn as a stream.
-func (zc *ZConn) WriteTo(w io.ReadCloser, flush bool) error {
+// ReadFrom reads data from provided Reader into connection.
+func (zc *ZConn) ReadFrom(w io.ReadCloser, flush bool) error {
 	var req = AcquireZPayload()
 	req.Reader = w
 	req.Flush = flush
@@ -696,8 +696,8 @@ func (zc *ZConn) WriteTo(w io.ReadCloser, flush bool) error {
 	return zc.handleWriteRequest(req)
 }
 
-// ReadFrom attempts reading from underline connection into provided Writer.
-func (zc *ZConn) ReadFrom(w io.WriteCloser) error {
+// WriteTo writes data from connection into provided WriteCloser.
+func (zc *ZConn) WriteTo(w io.WriteCloser) error {
 	var req = AcquireZPayload()
 	req.Writer = w
 

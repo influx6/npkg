@@ -52,7 +52,7 @@ func BenchmarkZConn(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		readBuffer.Reset(message)
-		if err := zclient.WriteTo(readContent, false); err != nil {
+		if err := zclient.ReadFrom(readContent, false); err != nil {
 			panic(err)
 		}
 	}
@@ -83,11 +83,11 @@ func TestZConn(t *testing.T) {
 	var zclient = NewZConn(clientConn, ZConnDebugMode())
 
 	var writeContent = noCloser(bytes.NewBuffer(message))
-	require.NoError(t, zclient.WriteTo(writeContent, true))
+	require.NoError(t, zclient.ReadFrom(writeContent, true))
 
 	var readBuffer = bytes.NewBuffer(make([]byte, 0, 512))
 	var readContent = noCloser(readBuffer)
-	require.NoError(t, zclient.ReadFrom(readContent))
+	require.NoError(t, zclient.WriteTo(readContent))
 	require.Equal(t, message, readBuffer.Bytes())
 	require.NoError(t, zclient.Close())
 
@@ -112,7 +112,7 @@ func (readHandler) ServeConn(ctx context.Context, conn net.Conn) error {
 
 		buffer.Reset()
 
-		if err := zc.ReadFrom(writeContent); err != nil {
+		if err := zc.WriteTo(writeContent); err != nil {
 			log.Printf("[readHandler] | %s | Closing serverConn due to read error", zc.id)
 			return err
 		}
@@ -137,7 +137,7 @@ func (writeHandler) ServeConn(ctx context.Context, conn net.Conn) error {
 
 		writeBuffer.Reset(message)
 
-		if err := zc.WriteTo(writeContent, true); err != nil {
+		if err := zc.ReadFrom(writeContent, true); err != nil {
 			log.Printf("[writeHandler] | %s | Closing serverConn due to write error", zc.id)
 			return err
 		}
@@ -150,6 +150,7 @@ func (readWriteHandler) ServeConn(ctx context.Context, conn net.Conn) error {
 	var zc = NewZConn(conn, ZConnParentContext(ctx))
 	var buffer = bytes.NewBuffer(make([]byte, 0, 512))
 	var writeContent = noCloser(buffer)
+	var readCloser = ioutil.NopCloser(buffer)
 
 	for {
 		select {
@@ -160,12 +161,12 @@ func (readWriteHandler) ServeConn(ctx context.Context, conn net.Conn) error {
 
 		buffer.Reset()
 
-		if err := zc.Read(writeContent, true); err != nil {
+		if err := zc.WriteTo(writeContent); err != nil {
 			log.Printf("[readWriteHandler] | %s | Closing serverConn due to read error", zc.id)
 			return err
 		}
 
-		if err := zc.Write(writeContent, true); err != nil {
+		if err := zc.ReadFrom(readCloser, true); err != nil {
 			log.Printf("[readWriteHandler] | %s | Closing serverConn due to write error", zc.id)
 			return err
 		}
