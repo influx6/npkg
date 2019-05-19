@@ -17,55 +17,6 @@ var (
 	message = []byte("wondering through the ancient seas of the better world endless awaiting the pranch")
 )
 
-func BenchmarkZConn(b *testing.B) {
-	b.ResetTimer()
-	b.ReportAllocs()
-
-	b.StopTimer()
-	var listener, err = net.Listen("tcp", ":5050")
-	if err != nil {
-		panic(err)
-	}
-
-	var handler readHandler
-	var ctx, cancel = context.WithCancel(context.Background())
-	var server = NewServer(ctx, handler, listener, false)
-	server.Serve()
-
-	var clientConn, clientErr = net.DialTimeout("tcp", ":5050", time.Second*5)
-	if clientErr != nil {
-		panic(clientErr)
-	}
-
-	var readBufferSize = 4096
-	var zclient = NewZConn(clientConn, ZConnParentContext(ctx), ZConnReadBuffer(readBufferSize), ZConnWriteBuffer(readBufferSize))
-
-	var readBuffer = bytes.NewReader(message)
-	var readContent = ioutil.NopCloser(readBuffer)
-
-	go func() {
-		_, _ = io.Copy(ioutil.Discard, clientConn)
-	}()
-
-	b.SetBytes(int64(len(message)))
-	b.StartTimer()
-
-	for i := 0; i < b.N; i++ {
-		readBuffer.Reset(message)
-		if err := zclient.ReadFrom(readContent, false); err != nil {
-			panic(err)
-		}
-	}
-
-	_ = zclient.Flush()
-
-	b.StopTimer()
-	cancel()
-
-	_ = zclient.Close()
-	_ = server.Wait()
-}
-
 func TestZConn(t *testing.T) {
 	var listener, err = net.Listen("tcp", ":4050")
 	require.NoError(t, err)
