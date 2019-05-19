@@ -26,3 +26,17 @@ pkg: github.com/gokit/npkg/nstream/zconns
 BenchmarkZConn-8   	  500000	      9616 ns/op	   5.62 MB/s	       0 B/op	       0 allocs/op
 PASS
 ok  	github.com/gokit/npkg/nstream/zconns	5.013s
+2019/05/19 19:55:54 [TCPWorker.ServeRead] | Failed to finish read copy: read tcp 127.0.0.1:5050->127.0.0.1:44732: i/o timeout
+2019/05/19 19:55:54 [ConnHandler] | bjgk8hcfndit2cls4odg | Closing serverConn due to read error
+2019/05/19 19:55:54 [ConnHandler] | Closing serverConn
+goos: linux
+goarch: amd64
+pkg: github.com/gokit/npkg/nstream/zconns
+BenchmarkZConn-8   	2019/05/19 19:55:54 [ConnHandler] | bjgk8ikfndit2cls4of0 | Closing serverConn due to write error
+2019/05/19 19:55:54 [ConnHandler] | Closing serverConn
+2019/05/19 19:55:54 [ConnHandler] | bjgk8ikfndit2cls4og0 | Closing serverConn due to write error
+2019/05/19 19:55:54 [ConnHandler] | Closing serverConn
+2019/05/19 19:55:58 [ConnHandler] | Closing serverConn
+  500000	      6990 ns/op	   7.72 MB/s	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/gokit/npkg/nstream/zconns	8.754s

@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"testing"
 	"time"
@@ -13,7 +14,7 @@ import (
 )
 
 var (
-	message = []byte("wondering through the ancient seas of the better world")
+	message = []byte("wondering through the ancient seas of the better world endless awaiting the pranch")
 )
 
 func BenchmarkZConn(b *testing.B) {
@@ -36,8 +37,8 @@ func BenchmarkZConn(b *testing.B) {
 		panic(clientErr)
 	}
 
-	var readBufferSize = len(message) * 8
-	var zclient = NewZConn(clientConn, ZConnParentContext(ctx), ZConnReadBuffer(readBufferSize), ZConnMaxWrite(readBufferSize))
+	var readBufferSize = 4096
+	var zclient = NewZConn(clientConn, ZConnParentContext(ctx), ZConnReadBuffer(readBufferSize), ZConnWriteBuffer(readBufferSize))
 
 	var readBuffer = bytes.NewReader(message)
 	var readContent = ioutil.NopCloser(readBuffer)
@@ -56,11 +57,16 @@ func BenchmarkZConn(b *testing.B) {
 		}
 	}
 
-	cancel()
-	_ = zclient.Close()
-	b.StopTimer()
+	_ = zclient.Flush()
 
+	b.StopTimer()
+	cancel()
+
+	log.Println("Closing....")
+	_ = zclient.Close()
+	log.Println("Waiting....")
 	_ = server.Wait()
+	log.Println("Finished Waiting....")
 }
 
 func TestZConn(t *testing.T) {
@@ -95,6 +101,8 @@ func TestZConn(t *testing.T) {
 type connHandler struct{}
 
 func (connHandler) ServeConn(ctx context.Context, conn net.Conn) error {
+	defer log.Printf("[ConnHandler] | Closing serverConn")
+
 	var zc = NewZConn(conn, ZConnParentContext(ctx))
 	var buffer = bytes.NewBuffer(make([]byte, 0, 512))
 	var writeContent = noCloser(buffer)
@@ -102,6 +110,9 @@ func (connHandler) ServeConn(ctx context.Context, conn net.Conn) error {
 	for {
 		select {
 		case <-ctx.Done():
+			log.Println("Closing connHandler client....")
+			_ = zc.Close()
+			log.Println("Closing connHandler....")
 			return nil
 		default:
 		}
@@ -109,14 +120,14 @@ func (connHandler) ServeConn(ctx context.Context, conn net.Conn) error {
 		buffer.Reset()
 
 		if err := zc.Read(writeContent, true); err != nil {
-			//log.Printf("[ConnHandler] | %s | Closing serverConn due to read error", zc.id)
+			log.Printf("[ConnHandler] | %s | Closing serverConn due to read error", zc.id)
 			return err
 		}
 
-		if err := zc.Write(writeContent, true); err != nil {
-			//log.Printf("[ConnHandler] | %s | Closing serverConn due to write error", zc.id)
-			return err
-		}
+		//if err := zc.Write(writeContent, true); err != nil {
+		//	log.Printf("[ConnHandler] | %s | Closing serverConn due to write error", zc.id)
+		//	return err
+		//}
 	}
 }
 
@@ -133,7 +144,8 @@ func (writeConnHandler) ServeConn(ctx context.Context, conn net.Conn) error {
 	for {
 		select {
 		case <-ctx.Done():
-			//log.Printf("[ConnHandler] | %s | Closing serverConn", zc.id)
+			log.Printf("[ConnHandler] | %s | Closing serverConn", zc.id)
+			_ = zc.Close()
 			return nil
 		default:
 		}
@@ -141,12 +153,12 @@ func (writeConnHandler) ServeConn(ctx context.Context, conn net.Conn) error {
 		readBuffer.Reset()
 
 		if err := zc.Write(writeContent, true); err != nil {
-			//log.Printf("[ConnHandler] | %s | Closing serverConn due to write error", zc.id)
+			log.Printf("[ConnHandler] | %s | Closing serverConn due to write error", zc.id)
 			return err
 		}
 
 		if err := zc.Read(readContent, true); err != nil {
-			//log.Printf("[ConnHandler] | %s | Closing serverConn due to read error", zc.id)
+			log.Printf("[ConnHandler] | %s | Closing serverConn due to read error", zc.id)
 			return err
 		}
 
