@@ -22,7 +22,7 @@ func TestZConn(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, listener)
 
-	var handler readHandler
+	var handler readWriteHandler
 	var ctx, cancel = context.WithCancel(context.Background())
 	var server = NewServer(ctx, handler, listener, true)
 	server.Serve()
