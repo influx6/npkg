@@ -380,8 +380,9 @@ type DelimitedStreamReader struct {
 	unit      bool
 	unitLen   int
 
-	buffer *bufio.Reader
-	cached *bytes.Buffer
+	buffer  *bufio.Reader
+	cached  *bytes.Buffer
+	builder *BuildReader
 }
 
 // Read implements the io.Read interface providing writing of incoming
@@ -391,24 +392,32 @@ func (dr *DelimitedStreamReader) Read(b []byte) (int, error) {
 	var count int
 	for {
 		if dr.keepRead {
-			if dr.cached.Len() == 0 {
+			//if dr.cached.Len() == 0 {
+			//	dr.keepRead = false
+			//}
+
+			if dr.builder.Len() == 0 {
 				dr.keepRead = false
 			}
 
-			n, err := dr.cached.Read(b)
+			//n, err := dr.cached.Read(b)
+			n, err := dr.builder.Read(b)
 			count += n
 
 			if err != nil {
 				return count, err
 			}
 
-			if dr.cached.Len() == 0 {
+			//if dr.cached.Len() == 0 {
+			if dr.builder.Len() == 0 {
 				dr.keepRead = false
 
 				// if this is a unit, meaning a set unit of a stream
 				// in a multi-stream, return EOS (End of stream) error
 				// to signal end of a giving stream.
 				if dr.unit {
+					dr.builder.Reset(false)
+
 					dr.unit = false
 					return count, ErrEOS
 				}
@@ -433,8 +442,15 @@ func (dr *DelimitedStreamReader) Read(b []byte) (int, error) {
 
 			// if an error occurred, read what we have in cache
 			// and return error.
-			if dr.cached.Len() > 0 {
-				n, _ := dr.cached.Read(b)
+
+			//if dr.cached.Len() > 0 {
+			//	n, _ := dr.cached.Read(b)
+			//	count += n
+			//	return count, err
+			//}
+
+			if dr.builder.Len() > 0 {
+				n, _ := dr.builder.Read(b)
 				count += n
 				return count, err
 			}
@@ -452,13 +468,13 @@ func (dr *DelimitedStreamReader) Read(b []byte) (int, error) {
 	}
 }
 
-func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
+func (dr *DelimitedStreamReader) init() error {
 	escapeLen := len(dr.Escape)
 	delimLen := len(dr.Delimiter)
 	delims := escapeLen + delimLen
 	if dr.cached == nil && dr.buffer == nil {
 		if bytes.Equal(dr.Escape, dr.Delimiter) {
-			return false, ErrInvalidEscapeAndDelimiter
+			return ErrInvalidEscapeAndDelimiter
 		}
 
 		if dr.Swap == 0 {
@@ -474,18 +490,27 @@ func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
 		}
 
 		dr.buffer = bufio.NewReaderSize(dr.Src, readBuffer)
+		dr.builder = BuildReaderFor(make([]byte, 0, 1024))
+		//dr.cached = bytes.NewBuffer(make([]byte, 0, 1024))
+	}
+	return nil
+}
 
-		cacheBuffer := space
-		if cacheBuffer < defaultBuffer {
-			cacheBuffer = defaultBuffer
-		}
-		dr.cached = bytes.NewBuffer(make([]byte, 0, cacheBuffer))
+func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
+	escapeLen := len(dr.Escape)
+	delimLen := len(dr.Delimiter)
+	if err := dr.init(); err != nil {
+		return false, err
 	}
 
 	// if we are out of reading space and we have
 	// more elements in cache, then return and
 	// let it read off
-	if dr.cached.Len() >= space {
+	//if dr.cached.Len() >= space {
+	//	return true, nil
+	//}
+
+	if dr.builder.Len() >= space {
 		return true, nil
 	}
 
@@ -511,7 +536,11 @@ func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
 			dr.index = 0
 			dr.comparing = false
 
-			if err := dr.cached.WriteByte(dr.Delimiter[0]); err != nil {
+			//if err := dr.cached.WriteByte(dr.Delimiter[0]); err != nil {
+			//	return false, err
+			//}
+
+			if err := dr.builder.WriteByte(dr.Delimiter[0]); err != nil {
 				return false, err
 			}
 
@@ -528,7 +557,11 @@ func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
 			dr.index = 0
 			dr.comparing = false
 
-			if _, err := dr.cached.Write(next); err != nil {
+			//if _, err := dr.cached.Write(next); err != nil {
+			//	return false, err
+			//}
+
+			if _, err := dr.builder.Write(next); err != nil {
 				return false, err
 			}
 
@@ -544,7 +577,11 @@ func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
 		dr.index = 0
 		dr.comparing = false
 
-		if _, err := dr.cached.Write(dr.Escape); err != nil {
+		//if _, err := dr.cached.Write(dr.Escape); err != nil {
+		//	return false, err
+		//}
+
+		if _, err := dr.builder.Write(dr.Escape); err != nil {
 			return false, err
 		}
 
@@ -575,7 +612,11 @@ func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
 			}
 		}
 
-		if err := dr.cached.WriteByte(bm); err != nil {
+		//if err := dr.cached.WriteByte(bm); err != nil {
+		//	return false, err
+		//}
+
+		if err := dr.builder.WriteByte(bm); err != nil {
 			return false, err
 		}
 
@@ -612,7 +653,11 @@ func (dr *DelimitedStreamReader) readTill(space int) (bool, error) {
 		dr.comparing = false
 
 		// write part of escape sequence that had being checked.
-		if _, err := dr.cached.Write(part); err != nil {
+		//if _, err := dr.cached.Write(part); err != nil {
+		//	return false, err
+		//}
+
+		if _, err := dr.builder.Write(part); err != nil {
 			return false, err
 		}
 

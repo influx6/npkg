@@ -347,39 +347,19 @@ func ZConnNowTime(fn NowTime) ZApply {
 	}
 }
 
-// Timer exposes a interface which provides methods to reset
-// a duration producing object.
-type Timer interface {
-	Reset()
-	Next() time.Duration
-}
-
-// ConstantTimer implements the Timer interface.
-type ConstantTimer struct {
-	Duration time.Duration
-}
-
-// Reset resets duration from ConstantTimer.
-func (c ConstantTimer) Reset() {}
-
-// Next returns a new duration for giving constant timer.
-func (c ConstantTimer) Next() time.Duration {
-	return c.Duration
-}
-
 // ZConnWriteTimeout sets the ZTimeout function type to be used for write
 // calls for a ZConn.
-func ZConnWriteTimeout(t Timer) ZApply {
+func ZConnWriteTimeout(t time.Duration) ZApply {
 	return func(conn *ZConn) {
-		conn.writeTimer = t
+		conn.writeTime = t
 	}
 }
 
 // ZConnReadTimeout sets the ZTimeout function type to be used for read
 // calls for a ZConn.
-func ZConnReadTimeout(t Timer) ZApply {
+func ZConnReadTimeout(t time.Duration) ZApply {
 	return func(conn *ZConn) {
-		conn.readTimer = t
+		conn.readTime = t
 	}
 }
 
@@ -535,8 +515,8 @@ type ZConn struct {
 	readBuffer    int
 	writeBuffer   int
 	nowTime       NowTime
-	readTimer     Timer
-	writeTimer    Timer
+	readTime      time.Duration
+	writeTime     time.Duration
 	debug         bool
 	conn          net.Conn
 	worker        ZConnWorker
@@ -547,10 +527,6 @@ type ZConn struct {
 	ctxCanceler   context.CancelFunc
 	streamWriter  *nbytes.DelimitedStreamWriter
 	streamReader  *nbytes.DelimitedStreamReader
-	readers       *sync.Cond
-	rLock         sync.Mutex
-	writers       *sync.Cond
-	wLock         sync.Mutex
 	clm           sync.Mutex
 	closedBit     int64
 }
@@ -572,8 +548,8 @@ func NewZConn(conn net.Conn, fns ...ZApply) *ZConn {
 	zc.laddr = conn.LocalAddr()
 	zc.readBuffer = defaultReadBuffer
 	zc.writeBuffer = defaultWriteBuffer
-	zc.readers = sync.NewCond(&zc.rLock)
-	zc.writers = sync.NewCond(&zc.wLock)
+	zc.writeTime = defaultTimeout
+	zc.readTime = defaultTimeout
 	zc.readRequests = make(ZPayloadStream, 10)
 	zc.writeRequests = make(ZPayloadStream, 10)
 
@@ -587,16 +563,6 @@ func NewZConn(conn net.Conn, fns ...ZApply) *ZConn {
 
 	if zc.nowTime == nil {
 		zc.nowTime = time.Now
-	}
-
-	var ct ConstantTimer
-	ct.Duration = defaultTimeout
-	if zc.writeTimer == nil {
-		zc.writeTimer = &ct
-	}
-
-	if zc.readTimer == nil {
-		zc.readTimer = &ct
 	}
 
 	if zc.worker == nil {
@@ -634,9 +600,6 @@ func NewZConn(conn net.Conn, fns ...ZApply) *ZConn {
 		Delimiter:   []byte(defaultDelimiter),
 	}
 
-	//// boot up read and write loop.
-	//zc.readLoop()
-	//zc.writeLoop()
 	zc.handleClosure()
 
 	return zc
@@ -692,16 +655,8 @@ func (zc *ZConn) ReadFrom(w io.ReadCloser, flush bool) error {
 	select {
 	case <-zc.ctx.Done():
 		return zc.ctx.Err()
-	//case zc.writeRequests <- req:
 	default:
 	}
-
-	//select {
-	//case <-req.Done:
-	//	return nil
-	//case err := <-req.Err:
-	//	return err
-	//}
 
 	return zc.handleWriteRequest(req)
 }
@@ -716,18 +671,9 @@ func (zc *ZConn) WriteTo(w io.WriteCloser) error {
 	select {
 	case <-zc.ctx.Done():
 		return zc.ctx.Err()
-	//case zc.readRequests <- req:
 	default:
 	}
 
-	//zc.readers.Signal()
-
-	//select {
-	//case <-req.Done:
-	//	return nil
-	//case err := <-req.Err:
-	//	return err
-	//}
 	return zc.handleReadRequest(req)
 }
 
@@ -740,67 +686,6 @@ func (zc *ZConn) RemoteAddr() net.Addr {
 func (zc *ZConn) LocalAddr() net.Addr {
 	return zc.laddr
 }
-
-//func (zc *ZConn) writeLoop() {
-//	zc.waiter.Add(1)
-//	go func() {
-//		defer zc.waiter.Done()
-//
-//		for {
-//			//zc.writers.L.Lock()
-//			//zc.writers.Wait()
-//			//zc.writers.L.Lock()
-//
-//			select {
-//			case <-time.After(time.Second * 2):
-//				continue
-//			case <-zc.ctx.Done():
-//				// we are being asked to stop and close.
-//				if zc.debug {
-//					log.Printf("[Zconn] | %s | Closing write loop through context", zc.id)
-//				}
-//				return
-//			case req, ok := <-zc.writeRequests:
-//				if !ok {
-//					return
-//				}
-//
-//				zc.handleWriteRequest(req)
-//			}
-//		}
-//	}()
-//}
-
-//// readLoop lunches underline read loop.
-//func (zc *ZConn) readLoop() {
-//	zc.waiter.Add(1)
-//	go func() {
-//		defer zc.waiter.Done()
-//
-//		for {
-//			//zc.readers.L.Lock()
-//			//zc.readers.Wait()
-//			//zc.readers.L.Unlock()
-//
-//			select {
-//			case <-time.After(time.Second * 2):
-//				continue
-//			case <-zc.ctx.Done():
-//				// we are being asked to stop and close.
-//				if zc.debug {
-//					log.Printf("[Zconn] | %s | Closing read loop through context", zc.id)
-//				}
-//				return
-//			case req, ok := <-zc.readRequests:
-//				if !ok {
-//					return
-//				}
-//
-//				zc.handleReadRequest(req)
-//			}
-//		}
-//	}()
-//}
 
 func (zc *ZConn) handleWriteRequest(req *ZPayload) error {
 	req.verify()
@@ -862,7 +747,7 @@ func (zc *ZConn) handleReadRequest(req *ZPayload) error {
 
 func (zc *ZConn) writeUntil(req *ZPayload) error {
 	var err error
-	if err = zc.conn.SetWriteDeadline(zc.nowTime().Add(zc.writeTimer.Next())); err != nil {
+	if err = zc.conn.SetWriteDeadline(zc.nowTime().Add(zc.writeTime)); err != nil {
 		if zc.debug {
 			log.Printf("[Zconn] | %s | Failed to set read timeout: %s", zc.id, err)
 		}
@@ -871,18 +756,11 @@ func (zc *ZConn) writeUntil(req *ZPayload) error {
 
 	// Reset write timeout for connection.
 	defer zc.conn.SetWriteDeadline(noTime)
-	defer zc.writeTimer.Reset()
 
 	for {
 		if zc.isClosed() {
 			return ErrKillConnection
 		}
-
-		//select {
-		//case <-zc.ctx.Done():
-		//	return ErrKillConnection
-		//default:
-		//}
 
 		if err = zc.worker.ServeWrite(zc.ctx, zc.streamWriter, req); err != nil {
 			if zc.debug {
@@ -931,7 +809,7 @@ func (zc *ZConn) writeUntil(req *ZPayload) error {
 
 func (zc *ZConn) readUntil(req *ZPayload) error {
 	var err error
-	if err = zc.conn.SetReadDeadline(zc.nowTime().Add(zc.readTimer.Next())); err != nil {
+	if err = zc.conn.SetReadDeadline(zc.nowTime().Add(zc.readTime)); err != nil {
 		if zc.debug {
 			log.Printf("[Zconn] | %s | Failed to set read timeout: %s", zc.id, err)
 		}
@@ -940,18 +818,11 @@ func (zc *ZConn) readUntil(req *ZPayload) error {
 
 	// Reset read timeout for connection.
 	defer zc.conn.SetReadDeadline(noTime)
-	defer zc.readTimer.Reset()
 
 	for {
 		if zc.isClosed() {
 			return ErrKillConnection
 		}
-
-		//select {
-		//case <-zc.ctx.Done():
-		//	return ErrKillConnection
-		//default:
-		//}
 
 		if err = zc.worker.ServeRead(zc.ctx, zc.streamReader, req); err != nil {
 			if zc.debug {

@@ -1,4 +1,4 @@
-package nbytes_test
+package nbytes
 
 import (
 	"bytes"
@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"testing"
 
-	mb "github.com/gokit/npkg/nbytes"
 	"github.com/gokit/npkg/nerror"
 	"github.com/stretchr/testify/require"
 )
@@ -27,7 +26,7 @@ func BenchmarkBytesWriter(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	writer := &mb.DelimitedStreamWriter{
+	writer := &DelimitedStreamWriter{
 		Dest:      ioutil.Discard,
 		Escape:    []byte(":/"),
 		Delimiter: []byte("//"),
@@ -37,14 +36,14 @@ func BenchmarkBytesWriter(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var next = rand.Intn(available - 1)
 		if _, err := writer.Write([]byte(sentences[next])); err == nil {
-			writer.End()
+			_, _ = writer.End()
 		}
 	}
 }
 
 func TestMultiStreamReadingAndwriting(t *testing.T) {
 	var dest bytes.Buffer
-	writer := &mb.DelimitedStreamWriter{
+	writer := &DelimitedStreamWriter{
 		Dest:      &dest,
 		Escape:    []byte(":/"),
 		Delimiter: []byte("//"),
@@ -71,7 +70,7 @@ func TestMultiStreamReadingAndwriting(t *testing.T) {
 
 	require.NoError(t, writer.HardFlush())
 
-	reader := &mb.DelimitedStreamReader{
+	reader := &DelimitedStreamReader{
 		Src:       bytes.NewReader(dest.Bytes()),
 		Escape:    []byte(":/"),
 		Delimiter: []byte("//"),
@@ -80,8 +79,8 @@ func TestMultiStreamReadingAndwriting(t *testing.T) {
 	for index, sentence := range sentences {
 		res := make([]byte, len(sentence)+10)
 		read, err := reader.Read(res)
-		require.Len(t, sentence, read, "Sentence at index %d with read %q", index, res[:read])
-		require.Equal(t, mb.ErrEOS, nerror.UnwrapDeep(err), "Sentence at index %d with read %q", index, res[:read])
+		require.Len(t, sentence, read)
+		require.Equal(t, ErrEOS, nerror.UnwrapDeep(err), "Sentence at index %d with read %q", index, res[:read])
 		require.Equal(t, sentence, string(res[:read]), "Sentence at index %d", index)
 	}
 
@@ -89,7 +88,7 @@ func TestMultiStreamReadingAndwriting(t *testing.T) {
 
 func TestDelimitedStreamWriterWithDelimiterAndEscape(t *testing.T) {
 	var dest bytes.Buffer
-	writer := &mb.DelimitedStreamWriter{
+	writer := &DelimitedStreamWriter{
 		Dest:      &dest,
 		Escape:    []byte(":/"),
 		Delimiter: []byte("//"),
@@ -112,7 +111,7 @@ func TestDelimitedStreamWriterWithDelimiterAndEscape(t *testing.T) {
 
 func TestDelimitedStreamWriterWithAllDelimiter(t *testing.T) {
 	var dest bytes.Buffer
-	writer := &mb.DelimitedStreamWriter{
+	writer := &DelimitedStreamWriter{
 		Dest:      &dest,
 		Escape:    []byte(":/"),
 		Delimiter: []byte("//"),
@@ -135,7 +134,7 @@ func TestDelimitedStreamWriterWithAllDelimiter(t *testing.T) {
 
 func TestDelimitedStreamWriterWithMoreEscapeWithDelimiter(t *testing.T) {
 	var dest bytes.Buffer
-	writer := &mb.DelimitedStreamWriter{
+	writer := &DelimitedStreamWriter{
 		Dest:      &dest,
 		Escape:    []byte(":/"),
 		Delimiter: []byte("//"),
@@ -158,7 +157,7 @@ func TestDelimitedStreamWriterWithMoreEscapeWithDelimiter(t *testing.T) {
 
 func TestDelimitedStreamWriterWithDelimiter(t *testing.T) {
 	var dest bytes.Buffer
-	writer := &mb.DelimitedStreamWriter{
+	writer := &DelimitedStreamWriter{
 		Dest:      &dest,
 		Escape:    []byte(":/"),
 		Delimiter: []byte("//"),
@@ -181,7 +180,7 @@ func TestDelimitedStreamWriterWithDelimiter(t *testing.T) {
 
 func TestDelimitedStreamWriter(t *testing.T) {
 	var dest bytes.Buffer
-	writer := &mb.DelimitedStreamWriter{
+	writer := &DelimitedStreamWriter{
 		Dest:      &dest,
 		Escape:    []byte(":/"),
 		Delimiter: []byte("//"),
@@ -232,7 +231,7 @@ func TestDelimitedStreamWriterWithSet(t *testing.T) {
 
 	for ind, spec := range specs {
 		dest := bytes.NewBuffer(make([]byte, 0, 128))
-		writer := &mb.DelimitedStreamWriter{
+		writer := &DelimitedStreamWriter{
 			Dest:      dest,
 			Escape:    []byte(":/"),
 			Delimiter: []byte("//"),
@@ -257,22 +256,22 @@ func TestDelimitedStreamReaderWithSet(t *testing.T) {
 		{
 			In:  "Wondering out the clouds of endless streams beyond the shore//",
 			Out: "Wondering out the clouds of endless streams beyond the shore",
-			Err: mb.ErrEOS,
+			Err: ErrEOS,
 		},
 		{
 			In:  "Wondering out the :///clouds of endless :///streams beyond the shore//",
 			Out: "Wondering out the //clouds of endless //streams beyond the shore",
-			Err: mb.ErrEOS,
+			Err: ErrEOS,
 		},
 		{
 			In:  "Wondering out the :/:///clouds of endless :///streams beyond the shore//",
 			Out: "Wondering out the :///clouds of endless //streams beyond the shore",
-			Err: mb.ErrEOS,
+			Err: ErrEOS,
 		},
 		{
 			In:  "Wondering out the :/:///clouds of endless :///streams beyond the shore//",
 			Out: "Wondering out the :///clouds of endless //streams beyond the shore",
-			Err: mb.ErrEOS,
+			Err: ErrEOS,
 		},
 		{
 			In:   "Wondering out the :/:///:///:///:///:///:///:///:///:///:///:///:///:///:///:///:///:///:///",
@@ -283,12 +282,12 @@ func TestDelimitedStreamReaderWithSet(t *testing.T) {
 		{
 			In:  "Wondering out the :/:///:///:///:///:///:///:///:///:///:///:///:///:///:///:///:///:///:///:/&//",
 			Out: "Wondering out the ://////////////////////////////////////",
-			Err: mb.ErrEOS,
+			Err: ErrEOS,
 		},
 	}
 
 	for ind, spec := range specs {
-		reader := &mb.DelimitedStreamReader{
+		reader := &DelimitedStreamReader{
 			Src:       bytes.NewReader([]byte(spec.In)),
 			Escape:    []byte(":/"),
 			Delimiter: []byte("//"),
