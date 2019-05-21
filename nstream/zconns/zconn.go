@@ -120,20 +120,20 @@ type TCPWorker struct {
 func (zc *TCPWorker) ServeRead(ctx context.Context, src io.Reader, zp *ZPayload) error {
 	// If the reader has a WriteTo method, use it to do the copy.
 	// Avoids an allocation and a copy.
-	if wt, ok := src.(io.WriterTo); ok {
-		var n, err = wt.WriteTo(zp.Writer)
-		if err != nil && err != io.EOF {
-			if zc.Debug {
-				log.Printf("[TCPWorker.ServeRead] | Failed to finish read copy: %s", err)
-			}
-			return err
-		}
-
-		if zc.Debug {
-			log.Printf("[TCPWorker.ServeRead] | Read %d bytes from connection", n)
-		}
-		return nil
-	}
+	//if wt, ok := src.(io.WriterTo); ok {
+	//	var n, err = wt.WriteTo(zp.Writer)
+	//	if err != nil && err != io.EOF {
+	//		if zc.Debug {
+	//			log.Printf("[TCPWorker.ServeRead] | Failed to finish read copy: %s", err)
+	//		}
+	//		return err
+	//	}
+	//
+	//	if zc.Debug {
+	//		log.Printf("[TCPWorker.ServeRead] | Read %d bytes from connection", n)
+	//	}
+	//	return nil
+	//}
 
 	var read, err = copyBuffer(zp.Writer, src, zc.Buffer)
 	if err != nil {
@@ -159,18 +159,18 @@ func (zc *TCPWorker) ServeRead(ctx context.Context, src io.Reader, zp *ZPayload)
 // ServeRead handles reading data from Reader from payload into the underline connection.
 func (zc *TCPWorker) ServeWrite(ctx context.Context, dest io.Writer, zp *ZPayload) error {
 	// Similarly, if the writer has a ReadFrom method, use it to do the copy.
-	if rt, ok := dest.(io.ReaderFrom); ok {
-		var n, err = rt.ReadFrom(zp.Reader)
-		if err != nil && err != io.EOF {
-			log.Printf("[TCPWorker.ServeWrite] | Failed copy new data into connection: %s", err)
-			return err
-		}
-
-		if zc.Debug {
-			log.Printf("[TCPWorker.ServeWrite] | Written %d bytes into connection", n)
-		}
-		return nil
-	}
+	//if rt, ok := dest.(io.ReaderFrom); ok {
+	//	var n, err = rt.ReadFrom(zp.Reader)
+	//	if err != nil && err != io.EOF {
+	//		log.Printf("[TCPWorker.ServeWrite] | Failed copy new data into connection: %s", err)
+	//		return err
+	//	}
+	//
+	//	if zc.Debug {
+	//		log.Printf("[TCPWorker.ServeWrite] | Written %d bytes into connection", n)
+	//	}
+	//	return nil
+	//}
 
 	var written, err = copyBuffer(dest, zp.Reader, zc.Buffer)
 	if err != nil {

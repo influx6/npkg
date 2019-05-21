@@ -66,6 +66,12 @@ func (r *BuildReader) Read(b []byte) (n int, err error) {
 		return 0, ErrEOS
 	}
 
+	if r.i <= 0 {
+		r.i++
+		n = 0
+		return
+	}
+
 	n = copy(b, r.builder.buf[r.i:])
 	r.i += n
 	return
