@@ -1,4 +1,4 @@
-module github.com/gokit/npkg
+module github.com/influx6/npkg
 
 go 1.12
 
@@ -10,7 +10,7 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20190423205320-6a90982ecee2 // indirect
 	github.com/dimfeld/httptreemux v5.0.1+incompatible
 	github.com/go-redis/redis v6.15.2+incompatible
-	github.com/gokit/voxa v0.0.0-20180510151013-0969ca0e6629 // indirect
+	github.com/influx6/voxa v0.0.0-20180510151013-0969ca0e6629 // indirect
 	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20190430165422-3e4dfb77656c

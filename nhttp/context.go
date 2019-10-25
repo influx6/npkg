@@ -18,7 +18,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/gokit/npkg/nxid"
+	"github.com/influx6/npkg/nxid"
 )
 
 const (

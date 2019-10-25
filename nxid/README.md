@@ -69,7 +69,7 @@ References:
 
 ## Install
 
-    go get github.com/gokit/npkg/nxid
+    go get github.com/influx6/npkg/nxid
 
 ## Usage
 

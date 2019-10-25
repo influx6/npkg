@@ -9,11 +9,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gokit/npkg"
-	"github.com/gokit/npkg/natomic"
-	"github.com/gokit/npkg/nerror"
-	"github.com/gokit/npkg/njson"
-	"github.com/gokit/npkg/nxid"
+	"github.com/influx6/npkg"
+	"github.com/influx6/npkg/natomic"
+	"github.com/influx6/npkg/nerror"
+	"github.com/influx6/npkg/njson"
+	"github.com/influx6/npkg/nxid"
 )
 
 const (

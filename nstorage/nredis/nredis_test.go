@@ -7,7 +7,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/stretchr/testify/require"
 
-	"github.com/gokit/npkg/nstorage/internal/tharness"
+	"github.com/influx6/npkg/nstorage/internal/tharness"
 )
 
 func TestRedisStore(t *testing.T) {

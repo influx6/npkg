@@ -9,7 +9,7 @@ import (
 	
 	"github.com/stretchr/testify/require"
 	
-	"github.com/gokit/npkg/natomic"
+	"github.com/influx6/npkg/natomic"
 )
 
 type counter int

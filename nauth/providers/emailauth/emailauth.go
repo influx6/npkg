@@ -3,9 +3,9 @@ package emailauth
 import (
 	"net/http"
 
-	"github.com/gokit/npkg/nauth"
-	"github.com/gokit/npkg/nerror"
-	"github.com/gokit/npkg/nxid"
+	"github.com/influx6/npkg/nauth"
+	"github.com/influx6/npkg/nerror"
+	"github.com/influx6/npkg/nxid"
 )
 
 //***************************************************************************

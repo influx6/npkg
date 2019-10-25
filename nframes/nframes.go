@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/gokit/npkg"
+	"github.com/influx6/npkg"
 )
 
 // series of possible levels

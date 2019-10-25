@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/gokit/npkg/nhttp"
+	"github.com/influx6/npkg/nhttp"
 )
 
 // GET returns a new Context using GET method.

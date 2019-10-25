@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	pattern "github.com/gokit/npkg/npattrn"
+	pattern "github.com/influx6/npkg/npattrn"
 )
 
 func TestTrimEndSlashe(t *testing.T) {

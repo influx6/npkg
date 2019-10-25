@@ -6,7 +6,7 @@ import (
 	"io"
 	"sync/atomic"
 
-	"github.com/gokit/npkg/nerror"
+	"github.com/influx6/npkg/nerror"
 )
 
 var (

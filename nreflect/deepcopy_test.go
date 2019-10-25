@@ -3,7 +3,7 @@ package nreflect_test
 import (
 	"testing"
 
-	"github.com/gokit/npkg/nreflect"
+	"github.com/influx6/npkg/nreflect"
 	"github.com/stretchr/testify/require"
 )
 

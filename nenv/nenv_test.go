@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/gokit/npkg/nenv"
+	"github.com/influx6/npkg/nenv"
 )
 
 func TestEnv(t *testing.T) {

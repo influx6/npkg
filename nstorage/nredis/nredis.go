@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-redis/redis"
 
-	"github.com/gokit/npkg/nerror"
+	"github.com/influx6/npkg/nerror"
 )
 
 // RedisStore implements session management, storage and access using redis as

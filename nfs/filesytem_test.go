@@ -3,8 +3,8 @@ package nfs_test
 import (
 	"testing"
 
-	filesystem "github.com/gokit/npkg/nfs"
-	tests "github.com/gokit/npkg/ntests"
+	filesystem "github.com/influx6/npkg/nfs"
+	tests "github.com/influx6/npkg/ntests"
 )
 
 func TestFileSystemGroup(t *testing.T) {

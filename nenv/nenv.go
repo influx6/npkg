@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gokit/npkg/nstorage/nmap"
+	"github.com/influx6/npkg/nstorage/nmap"
 )
 
 // Loader defines a loader function which returns all

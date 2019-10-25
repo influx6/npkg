@@ -7,7 +7,7 @@ Errors provides a package for wrapping go based nerror with location of return s
 ## Install
 
 ```bash
-go get -v github.com/gokit/npkg/nerror
+go get -v github.com/influx6/npkg/nerror
 ```
 
 ## Usage

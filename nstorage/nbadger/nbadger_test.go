@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/dgraph-io/badger"
-	"github.com/gokit/npkg/nstorage/internal/tharness"
+	"github.com/influx6/npkg/nstorage/internal/tharness"
 	"github.com/stretchr/testify/require"
 )
 

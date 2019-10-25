@@ -3,7 +3,7 @@ package npattrn_test
 import (
 	"testing"
 
-	pattern "github.com/gokit/npkg/npattrn"
+	pattern "github.com/influx6/npkg/npattrn"
 )
 
 func TestPriority(t *testing.T) {

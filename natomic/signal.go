@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gokit/npkg/nerror"
+	"github.com/influx6/npkg/nerror"
 )
 
 //************************************************************************

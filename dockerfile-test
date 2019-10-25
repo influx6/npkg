@@ -2,8 +2,8 @@ FROM influx6/redis-golang-1.11.4-alpine-base:0.1
 
 RUN apk update && apk add --no-cache gcc g++
 
-RUN mkdir -p /go/src/github.com/gokit/npkg
-WORKDIR /go/src/github.com/gokit/npkg
+RUN mkdir -p /go/src/github.com/influx6/npkg
+WORKDIR /go/src/github.com/influx6/npkg
 COPY . .
 
 RUN export GO111MODULE=off && \

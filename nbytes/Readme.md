@@ -17,7 +17,7 @@ of a new message stream, which becomes powerful when handling larger and never-e
 ## Install
 
 ```bash
-go get -u github.com/gokit/npkg/nbytes
+go get -u github.com/influx6/npkg/nbytes
 ```
 
 

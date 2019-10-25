@@ -10,9 +10,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gokit/npkg/nbytes"
-	"github.com/gokit/npkg/nerror"
-	"github.com/gokit/npkg/nxid"
+	"github.com/influx6/npkg/nbytes"
+	"github.com/influx6/npkg/nerror"
+	"github.com/influx6/npkg/nxid"
 	"golang.org/x/sync/errgroup"
 )
 

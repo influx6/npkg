@@ -7,7 +7,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/gokit/npkg/nerror"
+	"github.com/influx6/npkg/nerror"
 	"github.com/stretchr/testify/require"
 )
 

@@ -1,7 +1,7 @@
 package nmap
 
 import "time"
-import "github.com/gokit/npkg/nerror"
+import "github.com/influx6/npkg/nerror"
 
 // ExprByteStore implements an expiring byte store that
 // matches the nstorage.ExpirableStorage interface.

@@ -7,7 +7,7 @@ functions with returned error.
 ## Install
 
 ```go
-go get github.com/gokit/npkg/nchain
+go get github.com/influx6/npkg/nchain
 ```
 
 ## Example

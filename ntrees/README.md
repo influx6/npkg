@@ -15,7 +15,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/gokit/npkg/ntrees"
+	"github.com/influx6/npkg/ntrees"
 )
 
 func main() {

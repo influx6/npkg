@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gokit/npkg"
+	"github.com/influx6/npkg"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"

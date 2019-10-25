@@ -6,7 +6,7 @@ import (
 
 	"github.com/dgraph-io/badger"
 
-	"github.com/gokit/npkg/nerror"
+	"github.com/influx6/npkg/nerror"
 )
 
 // BadgerStore implements session management, storage and access using Badger as

@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	netutils "github.com/gokit/npkg/nnet"
+	netutils "github.com/influx6/npkg/nnet"
 	"golang.org/x/crypto/acme/autocert"
 )
 

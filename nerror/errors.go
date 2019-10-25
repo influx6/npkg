@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/gokit/npkg/nframes"
+	"github.com/influx6/npkg/nframes"
 )
 
 // vars

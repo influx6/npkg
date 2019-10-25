@@ -1,64 +1,64 @@
 goos: linux
 goarch: amd64
-pkg: github.com/gokit/npkg/nstream/zconns
+pkg: github.com/influx6/npkg/nstream/zconns
 BenchmarkZConn-8   	  200000	      8533 ns/op	   6.33 MB/s	       0 B/op	       0 allocs/op
 PASS
-ok  	github.com/gokit/npkg/nstream/zconns	1.911s
+ok  	github.com/influx6/npkg/nstream/zconns	1.911s
 
 goos: linux
 goarch: amd64
-pkg: github.com/gokit/npkg/nstream/zconns
+pkg: github.com/influx6/npkg/nstream/zconns
 BenchmarkZConn-8   	  300000	      9722 ns/op	   5.55 MB/s	       0 B/op	       0 allocs/op
 PASS
-ok  	github.com/gokit/npkg/nstream/zconns	8.121s
+ok  	github.com/influx6/npkg/nstream/zconns	8.121s
 
 goos: linux
 goarch: amd64
-pkg: github.com/gokit/npkg/nstream/zconns
+pkg: github.com/influx6/npkg/nstream/zconns
 BenchmarkZConn-8   	  500000	      9726 ns/op	   5.55 MB/s	       0 B/op	       0 allocs/op
 PASS
-ok  	github.com/gokit/npkg/nstream/zconns	10.021s
+ok  	github.com/influx6/npkg/nstream/zconns	10.021s
 
 goos: linux
 goarch: amd64
-pkg: github.com/gokit/npkg/nstream/zconns
+pkg: github.com/influx6/npkg/nstream/zconns
 BenchmarkZConn-8   	  500000	      9616 ns/op	   5.62 MB/s	       0 B/op	       0 allocs/op
 PASS
-ok  	github.com/gokit/npkg/nstream/zconns	5.013s
+ok  	github.com/influx6/npkg/nstream/zconns	5.013s
 
 goos: linux
 goarch: amd64
-pkg: github.com/gokit/npkg/nstream/zconns
+pkg: github.com/influx6/npkg/nstream/zconns
 BenchmarkZConn-8   	500000	      6990 ns/op	   7.72 MB/s	       0 B/op	       0 allocs/op
 PASS
-ok  	github.com/gokit/npkg/nstream/zconns	8.754s
+ok  	github.com/influx6/npkg/nstream/zconns	8.754s
 
 goos: linux
 goarch: amd64
-pkg: github.com/gokit/npkg/nstream/zconns
+pkg: github.com/influx6/npkg/nstream/zconns
 BenchmarkZConn-8   	 1000000	      2403 ns/op	  34.12 MB/s	       0 B/op	       0 allocs/op
 PASS
-ok  	github.com/gokit/npkg/nstream/zconns	2.444s
+ok  	github.com/influx6/npkg/nstream/zconns	2.444s
 
 goos: linux
 goarch: amd64
-pkg: github.com/gokit/npkg/nstream/zconns
+pkg: github.com/influx6/npkg/nstream/zconns
 2019/05/19 22:31:40 [readHandler] | bjgmhhsfndioagag3ne0 | Closing serverConn due to read error
   500000	      2577 ns/op	  31.81 MB/s	       0 B/op	       0 allocs/op
 PASS
-ok  	github.com/gokit/npkg/nstream/zconns	6.331s
+ok  	github.com/influx6/npkg/nstream/zconns	6.331s
 
 goos: linux
 goarch: amd64
-pkg: github.com/gokit/npkg/nstream/zconns
+pkg: github.com/influx6/npkg/nstream/zconns
 BenchmarkZConn-8   	 1000000	      2333 ns/op	  35.14 MB/s	       0 B/op	       0 allocs/op
 PASS
-ok  	github.com/gokit/npkg/nstream/zconns	2.362s
+ok  	github.com/influx6/npkg/nstream/zconns	2.362s
 
 
 goos: linux
 goarch: amd64
-pkg: github.com/gokit/npkg/nstream/zconns
+pkg: github.com/influx6/npkg/nstream/zconns
 BenchmarkZConnMessages/0_Bytes-8         	 2000000	      1039 ns/op	   3.85 MB/s	       0 B/op	       0 allocs/op
 BenchmarkZConnMessages/2_Bytes-8         	 2000000	       887 ns/op	   6.76 MB/s	       0 B/op	       0 allocs/op
 BenchmarkZConnMessages/4_Bytes-8         	 2000000	       869 ns/op	   9.20 MB/s	       0 B/op	       0 allocs/op
@@ -74,12 +74,12 @@ BenchmarkZConnMessages/4K_Bytes-8        	   20000	     75727 ns/op	  54.14 MB/s
 BenchmarkZConnMessages/8K_Bytes-8        	   10000	    152228 ns/op	  53.84 MB/s	       4 B/op	       0 allocs/op
 BenchmarkZConnMessages/16K_Bytes-8       	    5000	    307194 ns/op	  53.35 MB/s	      14 B/op	       0 allocs/op
 PASS
-ok  	github.com/gokit/npkg/nstream/zconns	33.361s
+ok  	github.com/influx6/npkg/nstream/zconns	33.361s
 
 
 goos: linux
 goarch: amd64
-pkg: github.com/gokit/npkg/nstream/zconns
+pkg: github.com/influx6/npkg/nstream/zconns
 BenchmarkZConnMessages/0_Bytes-8         	 2000000	       905 ns/op	   4.42 MB/s	       0 B/op	       0 allocs/op
 BenchmarkZConnMessages/2_Bytes-8         	 2000000	       826 ns/op	   7.26 MB/s	       0 B/op	       0 allocs/op
 BenchmarkZConnMessages/4_Bytes-8         	 2000000	       957 ns/op	   8.36 MB/s	       0 B/op	       0 allocs/op
@@ -95,4 +95,4 @@ BenchmarkZConnMessages/4K_Bytes-8        	   20000	     69823 ns/op	  58.72 MB/s
 BenchmarkZConnMessages/8K_Bytes-8        	   10000	    140101 ns/op	  58.50 MB/s	       8 B/op	       0 allocs/op
 BenchmarkZConnMessages/16K_Bytes-8       	    5000	    277929 ns/op	  58.96 MB/s	      31 B/op	       0 allocs/op
 PASS
-ok  	github.com/gokit/npkg/nstream/zconns	32.370s
+ok  	github.com/influx6/npkg/nstream/zconns	32.370s

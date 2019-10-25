@@ -6,8 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/gokit/npkg/nerror"
-	"github.com/gokit/npkg/nstream"
+	"github.com/influx6/npkg/nerror"
+	"github.com/influx6/npkg/nstream"
 )
 
 //*********************************************************************************************

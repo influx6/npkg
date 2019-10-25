@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	filesystem "github.com/gokit/npkg/nfs"
+	filesystem "github.com/influx6/npkg/nfs"
 )
 
 // GzipServe returns a Handler which handles the necessary bits to gzip or ungzip

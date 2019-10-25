@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gokit/npkg/nchain"
+	"github.com/influx6/npkg/nchain"
 	"github.com/stretchr/testify/assert"
 )
 

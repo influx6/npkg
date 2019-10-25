@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/go-redis/redis"
-	"github.com/gokit/npkg/nstorage/internal/tharness"
+	"github.com/influx6/npkg/nstorage/internal/tharness"
 	"github.com/stretchr/testify/require"
 )
 

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gokit/npkg/ntransport"
+	"github.com/influx6/npkg/ntransport"
 )
 
 // Response is an implementation of http.ResponseWriter that

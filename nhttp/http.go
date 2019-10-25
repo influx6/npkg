@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gokit/npkg"
-	"github.com/gokit/npkg/njson"
+	"github.com/influx6/npkg"
+	"github.com/influx6/npkg/njson"
 )
 
 const (

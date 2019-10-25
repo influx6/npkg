@@ -10,12 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gokit/npkg"
-	"github.com/gokit/npkg/nerror"
-	"github.com/gokit/npkg/njson"
-	"github.com/gokit/npkg/ntrace"
-	"github.com/gokit/npkg/nunsafe"
-	"github.com/gokit/npkg/nxid"
+	"github.com/influx6/npkg"
+	"github.com/influx6/npkg/nerror"
+	"github.com/influx6/npkg/njson"
+	"github.com/influx6/npkg/ntrace"
+	"github.com/influx6/npkg/nunsafe"
+	"github.com/influx6/npkg/nxid"
 	"github.com/gorilla/securecookie"
 	opentracing "github.com/opentracing/opentracing-go"
 )

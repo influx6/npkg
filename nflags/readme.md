@@ -3,7 +3,7 @@ Flags
 Flags provides a simple multicommand package built ontop of the internal `flag` Go/Golang package.
 
 
-See [Flags Docs](https://golang.org/pkg/github.com/gokit/npkg/nflags) for more.
+See [Flags Docs](https://golang.org/pkg/github.com/influx6/npkg/nflags) for more.
 
 If only one command is provided then Flags treats that command like the default command to be runned when argument is giving with no command name.
 

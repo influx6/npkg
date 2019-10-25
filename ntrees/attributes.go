@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gokit/npkg"
+	"github.com/influx6/npkg"
 )
 
 var _ Attrs = (*AttrList)(nil)

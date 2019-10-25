@@ -3,9 +3,9 @@ package ntrees
 import (
 	"strings"
 
-	"github.com/gokit/npkg"
-	"github.com/gokit/npkg/natomic"
-	"github.com/gokit/npkg/nerror"
+	"github.com/influx6/npkg"
+	"github.com/influx6/npkg/natomic"
+	"github.com/influx6/npkg/nerror"
 )
 
 //*****************************************************

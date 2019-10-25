@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/gokit/npkg/nbytes/seeker"
-	tests "github.com/gokit/npkg/ntests"
+	"github.com/influx6/npkg/nbytes/seeker"
+	tests "github.com/influx6/npkg/ntests"
 )
 
 func TestBufferedPeeker(t *testing.T) {

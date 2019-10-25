@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	filesystem "github.com/gokit/npkg/nfs"
+	filesystem "github.com/influx6/npkg/nfs"
 )
 
 // ByteReaderFunc defines a type which returns a byte.Reader

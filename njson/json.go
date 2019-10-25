@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"github.com/gokit/npkg"
+	"github.com/influx6/npkg"
 )
 
 var (

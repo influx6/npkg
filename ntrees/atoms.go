@@ -3,7 +3,7 @@ package ntrees
 import (
 	"sync/atomic"
 
-	"github.com/gokit/npkg/natomic"
+	"github.com/influx6/npkg/natomic"
 )
 
 // AtomSet defines the set method requirements for a safe

@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/gokit/npkg/nstorage"
+	"github.com/influx6/npkg/nstorage"
 )
 
 func TestByteStore(t *testing.T, store nstorage.ByteStore) {
