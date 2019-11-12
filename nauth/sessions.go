@@ -22,7 +22,7 @@ import (
 
 const (
 	// SessionCookieName defines the name used for the Session cookie.
-	SessionCookieName = "_auth_session"
+	SessionCookieName = "npkg_auth_session"
 
 	// SessionUserDataKeyName defines the name used for the user data
 	// attached to a session.
