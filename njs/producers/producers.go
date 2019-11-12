@@ -58,6 +58,18 @@ func ComposeDecrementVariable(data Var) Producer {
 	}
 }
 
+func ComposeClassBlock(data Class) Producer {
+	return func() string {
+		return ClassBlock(data)
+	}
+}
+
+func ComposeVarFunction(data Func) Producer {
+	return func() string {
+		return VarFunction(data)
+	}
+}
+
 func ComposeFunction(data Func) Producer {
 	return func() string {
 		return Function(data)

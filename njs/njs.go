@@ -144,10 +144,33 @@ func DecrementVariable(data Var) string {
 }
 
 type Func struct {
-	Name  string
-	Args  string
-	Body  string
-	Async bool
+	Name   string
+	Args   string
+	Body   string
+	Async  bool
+	Static bool
+}
+
+/*
+  @param Object data {
+    {string} name,
+    {array} args (Optional),
+	{bool} async
+    {func} body
+  }
+  @returns {
+    data: data,
+    code: code
+  }
+*/
+func VarFunction(data Func) string {
+	var code = `var ` + data.Name + ` = `
+	if data.Async {
+		code += `async `
+	}
+	code += `function(` + data.Args + `) {` + "\n" +
+		`` + data.Body + "\n" + `};`
+	return Indent(code)
 }
 
 /*
@@ -163,11 +186,20 @@ type Func struct {
   }
 */
 func Function(data Func) string {
-	var code = `var ` + data.Name + ` = `
+	var code string
+	if data.Static {
+		code += `static `
+	}
+
 	if data.Async {
 		code += `async `
 	}
-	code += `func(` + data.Args + `) {` + "\n" +
+
+	if !data.Static {
+		code += `function `
+	}
+
+	code += data.Name + `(` + data.Args + `) {` + "\n" +
 		`` + data.Body + "\n" + `};`
 	return Indent(code)
 }
@@ -359,7 +391,7 @@ func ObjectFunction(data ObjFunc) string {
 		code += `async `
 	}
 
-	code += `func(` + data.Args + `) {` + "\n" +
+	code += `function(` + data.Args + `) {` + "\n" +
 		`` + data.Body + `` + "\n" +
 		`};`
 
@@ -457,6 +489,21 @@ func ForLoop(data Loop) string {
 		`` + data.Body + `` + "\n" +
 		`}`
 
+	return Indent(code)
+}
+
+type Class struct {
+	Name    string
+	Extends string
+	Body    string
+}
+
+func ClassBlock(data Class) string {
+	var code = `class ` + data.Name
+	if data.Extends != "" {
+		code += ` extends ` + data.Extends + ` `
+	}
+	code += ` {` + "\n" + data.Body + "\n" + `};`
 	return Indent(code)
 }
 
@@ -575,6 +622,7 @@ func Indent(code string) string {
 		var line = items[i]
 		if i == 0 || i == len(items)-1 {
 			mapped = append(mapped, GenerateTabs(0)+CleanCode(line))
+			continue
 		}
 		mapped = append(mapped, GenerateTabs(numTabs)+CleanCode(line))
 	}
