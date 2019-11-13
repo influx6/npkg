@@ -14,13 +14,14 @@ type ByteStore interface {
 	Each(fn func([]byte, string) bool) error
 }
 
-// QueryByteStore defines a queryable store which can
+// QueryableByteStore defines a queryable store which can
 // take a function to find giving matching elements.
-type QueryByteStore interface {
+type QueryableByteStore interface {
 	ByteStore
 
 	Find(fn func([]byte, string) bool) ([]byte, error)
 	FindAll(fn func([]byte, string) bool) ([][]byte, error)
+	FindEach(fn func([]byte, string) bool, count int) ([]byte, error)
 }
 
 // ExpirableStore composes the ByteStore providing the

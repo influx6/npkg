@@ -8,6 +8,38 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestIntegrationRedisStoreFindEach(t *testing.T) {
+	var ops redis.Options
+	ops.Addr = "localhost:6379"
+	ops.Network = "tcp"
+	require.NotNil(t, &ops)
+
+	var redisClient = redis.NewClient(&ops)
+	require.NotNil(t, redisClient)
+
+	var store, err = FromRedisStore("testing_mb", redisClient)
+	require.NoError(t, err)
+	require.NotNil(t, store)
+
+	tharness.TestByteStoreFindEach(t, store)
+}
+
+func TestIntegrationRedisStoreFindAll(t *testing.T) {
+	var ops redis.Options
+	ops.Addr = "localhost:6379"
+	ops.Network = "tcp"
+	require.NotNil(t, &ops)
+
+	var redisClient = redis.NewClient(&ops)
+	require.NotNil(t, redisClient)
+
+	var store, err = FromRedisStore("testing_mb", redisClient)
+	require.NoError(t, err)
+	require.NotNil(t, store)
+
+	tharness.TestByteStoreFindAll(t, store)
+}
+
 func TestIntegrationRedisStore(t *testing.T) {
 	var ops redis.Options
 	ops.Addr = "localhost:6379"

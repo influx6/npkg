@@ -88,6 +88,49 @@ func (rd *RedisStore) Each(fn func([]byte, string) bool) error {
 	return nil
 }
 
+// FindAll returns all match elements for giving function.
+func (rd *RedisStore) FindAll(fn func([]byte, string) bool, count int) ([][]byte, error) {
+	return rd.FindEach(fn, -1)
+}
+
+// Find returns match content for giving function.
+func (rd *RedisStore) Find(fn func([]byte, string) bool, count int) ([]byte, error) {
+	var res, err = rd.FindEach(fn, 1)
+	if err != nil {
+		return nil, err
+	}
+	if len(res) == 1 {
+		return res[0], err
+	}
+	return nil, nil
+}
+
+// FindEach returns all matching values within store, if elements found match giving
+// count then all values returned.
+func (rd *RedisStore) FindEach(fn func([]byte, string) bool, count int) ([][]byte, error) {
+	var result [][]byte
+
+	var nstatus = rd.client.SMembers(rd.hashList)
+	if err := nstatus.Err(); err != nil {
+		return result, nerror.WrapOnly(err)
+	}
+	for _, item := range nstatus.Val() {
+		if count > 0 && count == len(result) {
+			return result, nil
+		}
+
+		var gstatus = rd.client.Get(item)
+		if err := gstatus.Err(); err == nil {
+			var data = string2Bytes(gstatus.Val())
+			if fn(data, item) {
+				result = append(result, data)
+				continue
+			}
+		}
+	}
+	return result, nil
+}
+
 // Exists returns true/false if giving key exists.
 func (rd *RedisStore) Exists(key string) (bool, error) {
 	var hashKey = rd.getHashKey(key)
