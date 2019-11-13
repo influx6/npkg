@@ -12,7 +12,7 @@ import (
 	"github.com/influx6/npkg/nstorage"
 )
 
-func TestByteStoreFindAll(t *testing.T, store nstorage.ByteStore) {
+func TestByteStoreFindAll(t *testing.T, store nstorage.QueryableByteStore) {
 	for i := 0; i < 10; i++ {
 		require.NoError(t, store.Save("day", string2Bytes(fmt.Sprintf("i"))))
 	}
@@ -26,7 +26,7 @@ func TestByteStoreFindAll(t *testing.T, store nstorage.ByteStore) {
 	require.Equal(t, len(vals), 10)
 }
 
-func TestByteStoreFindEach(t *testing.T, store nstorage.ByteStore) {
+func TestByteStoreFindEach(t *testing.T, store nstorage.QueryableByteStore) {
 	for i := 0; i < 10; i++ {
 		require.NoError(t, store.Save("day", string2Bytes(fmt.Sprintf("i"))))
 	}
