@@ -10,19 +10,18 @@ require (
 	github.com/dimfeld/httptreemux v5.0.1+incompatible
 	github.com/go-redis/redis v6.15.6+incompatible
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
-	github.com/gopherjs/gopherjs v0.0.0-20190915194858-d3ddacdb130f
+	github.com/gopherjs/gopherjs v0.0.0-20191106031601-ce3c9ade29de
 	github.com/gorilla/mux v1.7.3
 	github.com/gorilla/securecookie v1.1.1
 	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a
-	github.com/onsi/ginkgo v1.10.2 // indirect
-	github.com/onsi/gomega v1.7.0 // indirect
+	github.com/onsi/ginkgo v1.10.3 // indirect
+	github.com/onsi/gomega v1.7.1 // indirect
 	github.com/opentracing/opentracing-go v1.1.0
 	github.com/stretchr/testify v1.4.0
-	github.com/uber-go/atomic v1.4.0 // indirect
-	github.com/uber/jaeger-client-go v2.19.0+incompatible
+	github.com/uber/jaeger-client-go v2.20.1+incompatible
 	github.com/uber/jaeger-lib v2.2.0+incompatible // indirect
 	github.com/yuin/gopher-lua v0.0.0-20190514113301-1cd887cd7036 // indirect
-	go.uber.org/atomic v1.4.0 // indirect
-	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
+	go.uber.org/atomic v1.5.0 // indirect
+	golang.org/x/crypto v0.0.0-20191112222119-e1110fd1c708
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 )
