@@ -7,6 +7,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestStoreWithBadgerStoreFindEach(t *testing.T) {
+	var store = NewExprByteStore(100)
+	require.NotNil(t, store)
+
+	tharness.TestByteStoreFindEach(t, store)
+}
+
+func TestStoreWithBadgerStoreFindAll(t *testing.T) {
+	var store = NewExprByteStore(100)
+	require.NotNil(t, store)
+
+	tharness.TestByteStoreFindAll(t, store)
+}
+
 func TestStoreWithBadgerStore(t *testing.T) {
 	var store = NewExprByteStore(100)
 	require.NotNil(t, store)

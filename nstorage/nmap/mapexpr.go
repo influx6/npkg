@@ -1,7 +1,10 @@
 package nmap
 
-import "time"
-import "github.com/influx6/npkg/nerror"
+import (
+	"time"
+
+	"github.com/influx6/npkg/nerror"
+)
 
 // ExprByteStore implements an expiring byte store that
 // matches the nstorage.ExpirableStorage interface.
@@ -94,7 +97,7 @@ func (expr *ExprByteStore) UpdateTTL(k string, v []byte, t time.Duration) error 
 	return nil
 }
 
-// Each alteratives through all keys and values from underline cache.
+// Each alternatives through all keys and values from underline cache.
 //
 // To ensure no-undesired behaviour, ensure to copy the value to avoid
 // possible change to it, as the underline store owns the giving value
@@ -108,6 +111,39 @@ func (expr *ExprByteStore) Each(fn func([]byte, string) bool) error {
 		}
 	})
 	return nil
+}
+
+// FindAll returns all match elements for giving function.
+func (rd *ExprByteStore) FindAll(fn func([]byte, string) bool, count int) ([][]byte, error) {
+	return rd.FindEach(fn, -1)
+}
+
+// Find returns the single result matching giving function.
+func (rd *ExprByteStore) Find(fn func([]byte, string) bool) ([]byte, error) {
+	var res, err = rd.FindEach(fn, 1)
+	if err != nil {
+		return nil, err
+	}
+	if len(res) == 1 {
+		return res[0], err
+	}
+	return nil, nil
+}
+
+// FindEach returns all elements matching giving function and count.
+func (expr *ExprByteStore) FindEach(fn func([]byte, string) bool, count int) ([][]byte, error) {
+	var results [][]byte
+	expr.cache.GetMany(func(values map[string]ExpiringValue) {
+		for key, value := range values {
+			if count > 0 && count == len(results) {
+				return
+			}
+			if fn(value.Value, key) {
+				results = append(results, value.Value)
+			}
+		}
+	})
+	return results, nil
 }
 
 // Remove deletes giving key from underling store.

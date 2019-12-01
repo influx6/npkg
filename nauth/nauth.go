@@ -3,6 +3,7 @@ package nauth
 import (
 	"encoding/base64"
 	"errors"
+	"net"
 	"net/http"
 	"strings"
 
@@ -74,11 +75,13 @@ func (c Claim) Valid() error {
 // Authenticator as to a giving authenticated claim with associated
 // session data.
 type VerifiedClaim struct {
-	User     nxid.ID
-	Method   string      // email-password, phone-number, token,..etc
-	Provider string      // google, in-house, phone, facebook, we-chat, github, ...etc
-	Roles    []string    // Roles of verified claim.
-	Data     interface{} // Extra Data to be attached to session for user.
+	User         nxid.ID
+	BrowserAgent string
+	IP           net.IP
+	Method       string      // email-password, phone-number, token,..etc
+	Provider     string      // google, in-house, phone, facebook, we-chat, github, ...etc
+	Roles        []string    // Roles of verified claim.
+	Data         interface{} // Extra Data to be attached to session for user.
 }
 
 // Valid returns an error if giving credentials could not be validated

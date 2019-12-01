@@ -73,6 +73,75 @@ func (rd *BadgerStore) Keys() ([]string, error) {
 	return keys, err
 }
 
+// FindAll returns all match elements for giving function.
+func (rd *BadgerStore) FindAll(fn func([]byte, string) bool, count int) ([][]byte, error) {
+	return rd.FindEach(fn, -1)
+}
+
+// Find returns the single result matching giving function.
+func (rd *BadgerStore) Find(fn func([]byte, string) bool) ([]byte, error) {
+	var res, err = rd.FindEach(fn, 1)
+	if err != nil {
+		return nil, err
+	}
+	if len(res) == 1 {
+		return res[0], err
+	}
+	return nil, nil
+}
+
+// FindEach returns all matching results within count if not -1 using giving functions.
+func (rd *BadgerStore) FindEach(fn func([]byte, string) bool, count int) ([][]byte, error) {
+	var results [][]byte
+	var err = rd.db.View(func(txn *badger.Txn) error {
+		var iterator = txn.NewIterator(rd.iter)
+		defer iterator.Close()
+
+		if rd.prefix == "" {
+			for iterator.Rewind(); iterator.Valid(); iterator.Next() {
+				if count > 0 && len(results) == count {
+					return nil
+				}
+				var item = iterator.Item()
+				if item.IsDeletedOrExpired() {
+					continue
+				}
+				var value, err = item.Value()
+				if err != nil {
+					return nerror.WrapOnly(err)
+				}
+
+				if fn(value, string(item.Key())) {
+					results = append(results, value)
+					continue
+				}
+			}
+			return nil
+		}
+
+		var prefix = []byte(rd.prefix)
+		for iterator.Rewind(); iterator.ValidForPrefix(prefix); iterator.Next() {
+			if count > 0 && len(results) == count {
+				return nil
+			}
+			var item = iterator.Item()
+			if item.IsDeletedOrExpired() {
+				continue
+			}
+			var value, err = item.Value()
+			if err != nil {
+				return nerror.WrapOnly(err)
+			}
+			if fn(value, string(item.Key())) {
+				results = append(results, value)
+				continue
+			}
+		}
+		return nil
+	})
+	return results, err
+}
+
 // Each runs through all elements for giving store, skipping keys
 // in Badger who have no data or an empty byte slice.
 //

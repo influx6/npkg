@@ -6,18 +6,21 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"io"
+	"net"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/influx6/npkg/nstorage"
+
+	"github.com/gorilla/securecookie"
 	"github.com/influx6/npkg"
 	"github.com/influx6/npkg/nerror"
 	"github.com/influx6/npkg/njson"
 	"github.com/influx6/npkg/ntrace"
 	"github.com/influx6/npkg/nunsafe"
 	"github.com/influx6/npkg/nxid"
-	"github.com/gorilla/securecookie"
-	opentracing "github.com/opentracing/opentracing-go"
+	openTracing "github.com/opentracing/opentracing-go"
 )
 
 const (
@@ -35,15 +38,15 @@ const (
 // Session embodies a current accessible session for a user
 // over a underline service.
 type Session struct {
-	Provider string                 `json:"provider"`
-	Method   string                 `json:"method"`
-	ID       nxid.ID                `json:"id"`
-	User     nxid.ID                `json:"user"`
-	Created  time.Time              `json:"created"`
-	Updated  time.Time              `json:"updated"`
-	Expiring time.Time              `json:"expiring"`
-	Userdata interface{} `json:"userdata"`
-	Attached map[string]interface{} `json:"attached"`
+	Provider string    `json:"provider"`
+	Method   string    `json:"method"`
+	Browser  string    `json:"browser"`
+	IP       net.IP    `json:"ip"`
+	ID       nxid.ID   `json:"id"`
+	User     nxid.ID   `json:"user"`
+	Created  time.Time `json:"created"`
+	Updated  time.Time `json:"updated"`
+	Expiring time.Time `json:"expiring"`
 }
 
 // EncodeToCookie returns a http.Cookie with session encoded into
@@ -113,7 +116,7 @@ func (s *Session) Write(signer *securecookie.SecureCookie, w http.ResponseWriter
 		mod(cookie)
 	}
 
-	w.Header.Add(CookieHeaderName, cookie.String())
+	w.Header().Add(CookieHeaderName, cookie.String())
 	return nil
 }
 
@@ -135,27 +138,30 @@ func (s *Session) EncodeForCookie(encoder npkg.ObjectEncoder) error {
 	if err := encoder.String("provider", s.Provider); err != nil {
 		return nerror.WrapOnly(err)
 	}
-	// if err := encoder.String("user", s.User.String()); err != nil {
-	// 	return nerror.WrapOnly(err)
-	// }
-	// if err := encoder.Int64("created", s.Created.Unix()); err != nil {
-	// 	return nerror.WrapOnly(err)
-	// }
-	// if err := encoder.Int64("updated", s.Updated.Unix()); err != nil {
-	// 	return nerror.WrapOnly(err)
-	// }
-	// if err := encoder.Int64("expiring", s.Expiring.Unix()); err != nil {
-	// 	return nerror.WrapOnly(err)
-	// }
-	// if err := encoder.Int64("expiring_nano", s.Expiring.UnixNano()); err != nil {
-	// 	return nerror.WrapOnly(err)
-	// }
+	if err := encoder.String("user", s.User.String()); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	if err := encoder.Int64("created", s.Created.Unix()); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	if err := encoder.Int64("updated", s.Updated.Unix()); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	if err := encoder.Int64("expiring", s.Expiring.Unix()); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	if err := encoder.Int64("expiring_nano", s.Expiring.UnixNano()); err != nil {
+		return nerror.WrapOnly(err)
+	}
 	return nil
 }
 
 // EncodeObject implements the npkg.EncodableObject interface.
 func (s *Session) EncodeObject(encoder npkg.ObjectEncoder) error {
 	if err := s.Validate(); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	if err := encoder.String("browser", s.Browser); err != nil {
 		return nerror.WrapOnly(err)
 	}
 	if err := encoder.String("method", s.Method); err != nil {
@@ -182,8 +188,10 @@ func (s *Session) EncodeObject(encoder npkg.ObjectEncoder) error {
 	if err := encoder.Int64("expiring_nano", s.Expiring.UnixNano()); err != nil {
 		return nerror.WrapOnly(err)
 	}
-	if err := encoder.Object("attached", npkg.EncodableMap(s.Attached)); err != nil {
-		return nerror.WrapOnly(err)
+	if len(s.IP) != 0 {
+		if err := encoder.String("method", s.IP.String()); err != nil {
+			return nerror.WrapOnly(err)
+		}
 	}
 	return nil
 }
@@ -247,19 +255,22 @@ var (
 type SessionsStorage interface {
 	Save(context.Context, Session) error
 	Update(context.Context, Session) error
-	Get(context.Context, string) (Session, error)
+	GetAll(context.Context) ([]Session, error)
 	Remove(context.Context, string) (Session, error)
+	GetByID(context.Context, string) (Session, error)
+	GetByUser(context.Context, string) (Session, error)
+	GetAllByUser(context.Context, string) ([]Session, error)
 }
 
 // SessionStorage implements a storage type for CRUD operations on
 // sessions.
 type SessionStorage struct {
 	Codec SessionCodec
-	Store nstorage.ExpirableStorage
+	Store nstorage.ExpirableStore
 }
 
 // NewSessionStorage returns a new instance of a SessionStorage.
-func NewSessionStorage(codec SessionCodec, store nstorage.ExpirableStorage) *SessionStorage {
+func NewSessionStorage(codec SessionCodec, store nstorage.ExpirableStore) *SessionStorage {
 	return &SessionStorage{
 		Codec: codec,
 		Store: store,
@@ -273,24 +284,24 @@ func NewSessionStorage(codec SessionCodec, store nstorage.ExpirableStorage) *Ses
 //
 // Save calculates the ttl by subtracting the Session.Created value from
 // the Session.Expiring value.
-func (s *SessionStorage) Save(ctx context.Context, s Session) error {
-	var span opentracing.Span
+func (s *SessionStorage) Save(ctx context.Context, se Session) error {
+	var span openTracing.Span
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "SessionStorage.Save"); span != nil {
 		defer span.Finish()
 	}
 
-	if err := s.Validate(); err != nil {
+	if err := se.Validate(); err != nil {
 		return nerror.Wrap(err, "Session failed validation")
 	}
 
 	var content = bytes.NewBuffer(make([]byte, 0, 512))
-	if err := s.Codec.Encode(content, s); err != nil {
+	if err := s.Codec.Encode(content, se); err != nil {
 		return nerror.Wrap(err, "Failed to encode data")
 	}
 
 	// Calculate expiration for giving value.
-	var expiration = s.Expiring.Sub(s.Created)
-	if err := s.Store.SaveTTL(s.ID.String(), content.Bytes(), expiration); err != nil {
+	var expiration = se.Expiring.Sub(se.Created)
+	if err := s.Store.SaveTTL(se.ID.String(), content.Bytes(), expiration); err != nil {
 		return nerror.Wrap(err, "Failed to save encoded session")
 	}
 	return nil
@@ -301,32 +312,32 @@ func (s *SessionStorage) Save(ctx context.Context, s Session) error {
 //
 // Update calculates the ttl by subtracting the Session.Updated value from
 // the Session.Expiring value.
-func (s *SessionStorage) Update(ctx context.Context, s Session) error {
-	var span opentracing.Span
+func (s *SessionStorage) Update(ctx context.Context, se Session) error {
+	var span openTracing.Span
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "SessionStorage.Update"); span != nil {
 		defer span.Finish()
 	}
-	if err := s.Validate(); err != nil {
+	if err := se.Validate(); err != nil {
 		return nerror.Wrap(err, "Session failed validation")
 	}
 
 	var content = bytes.NewBuffer(make([]byte, 0, 512))
-	if err := s.Codec.Encode(content, s); err != nil {
+	if err := s.Codec.Encode(content, se); err != nil {
 		return nerror.Wrap(err, "Failed to encode data")
 	}
 
 	// Calculate expiration for giving value.
-	var expiration = s.Expiring.Sub(s.Updated)
-	if err := s.Store.UpdateTTL(s.ID.String(), content.Bytes(), expiration); err != nil {
+	var expiration = se.Expiring.Sub(se.Updated)
+	if err := s.Store.UpdateTTL(se.ID.String(), content.Bytes(), expiration); err != nil {
 		return nerror.Wrap(err, "Failed to update encoded session")
 	}
 	return nil
 }
 
-// Get retrieves giving session from store based on the provided
+// GetByID retrieves giving session from store based on the provided
 // session ID value.
-func (s *SessionStorage) Get(ctx context.Context, key string) (Session, error) {
-	var span opentracing.Span
+func (s *SessionStorage) GetByID(ctx context.Context, key string) (Session, error) {
+	var span openTracing.Span
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "SessionStorage.Get"); span != nil {
 		defer span.Finish()
 	}
@@ -349,7 +360,7 @@ func (s *SessionStorage) Get(ctx context.Context, key string) (Session, error) {
 
 // Remove removes underline session if still present from underline store.
 func (s *SessionStorage) Remove(ctx context.Context, key string) (Session, error) {
-	var span opentracing.Span
+	var span openTracing.Span
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "SessionStorage.Remove"); span != nil {
 		defer span.Finish()
 	}
@@ -489,7 +500,7 @@ func NewSessionImpl(config SessionConfig) (*SessionImpl, error) {
 // context if already existing, else tries to get the cookie using the SessionCookieName
 // decoding the value and returning the Session object.
 func (s *SessionImpl) Get(req *http.Request) (Session, error) {
-	var span opentracing.Span
+	var span openTracing.Span
 	var ctx = req.Context()
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "SessionImpl.Get"); span != nil {
 		defer span.Finish()
@@ -523,7 +534,7 @@ func (s *SessionImpl) Get(req *http.Request) (Session, error) {
 		}
 
 		var tmp Session
-		if err = json.Umarshal(nunsafe.String2Bytes(content), &tmp); err != nil {
+		if err = json.Unmarshal(nunsafe.String2Bytes(content), &tmp); err != nil {
 			return session, nerror.WrapOnly(err)
 		}
 
@@ -541,7 +552,7 @@ func (s *SessionImpl) Get(req *http.Request) (Session, error) {
 	}
 
 	var tmp Session
-	if err = json.Umarshal(nunsafe.String2Bytes(content), &tmp); err != nil {
+	if err = json.Unmarshal(nunsafe.String2Bytes(content), &tmp); err != nil {
 		return session, nerror.WrapOnly(err)
 	}
 
@@ -554,7 +565,7 @@ func (s *SessionImpl) Get(req *http.Request) (Session, error) {
 
 // GetByID retrieves a giving Session from the underline SessionStorage.
 func (s *SessionImpl) GetByID(ctx context.Context, id nxid.ID) (Session, error) {
-	var span opentracing.Span
+	var span openTracing.Span
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "SessionImpl.GetByID"); span != nil {
 		defer span.Finish()
 	}
@@ -571,7 +582,7 @@ func (s *SessionImpl) GetByID(ctx context.Context, id nxid.ID) (Session, error) 
 // said user with associated information to be included within
 // such session.
 func (s *SessionImpl) Create(ctx context.Context, claim VerifiedClaim) (Session, error) {
-	var span opentracing.Span
+	var span openTracing.Span
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "SessionImpl.Create"); span != nil {
 		defer span.Finish()
 	}
@@ -598,7 +609,7 @@ func (s *SessionImpl) Create(ctx context.Context, claim VerifiedClaim) (Session,
 
 // Delete removes a giving Session from the underline SessionStorage.
 func (s *SessionImpl) Delete(ctx context.Context, id nxid.ID) (Session, error) {
-	var span opentracing.Span
+	var span openTracing.Span
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "SessionImpl.Delete"); span != nil {
 		defer span.Finish()
 	}
@@ -607,7 +618,7 @@ func (s *SessionImpl) Delete(ctx context.Context, id nxid.ID) (Session, error) {
 
 // Extend extends a giving Session with default extension duration.
 func (s *SessionImpl) Extend(ctx context.Context, id nxid.ID) error {
-	var span opentracing.Span
+	var span openTracing.Span
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "SessionImpl.Extend"); span != nil {
 		defer span.Finish()
 	}
