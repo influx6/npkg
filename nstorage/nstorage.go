@@ -19,9 +19,7 @@ type ByteStore interface {
 type QueryableByteStore interface {
 	ByteStore
 
-	Find(fn func([]byte, string) bool) ([]byte, error)
-	FindAll(fn func([]byte, string) bool) ([][]byte, error)
-	FindEach(fn func([]byte, string) bool, count int) ([]byte, error)
+	Find(fn func([]byte, string) bool) error
 }
 
 // ExpirableStore composes the ByteStore providing the
@@ -29,11 +27,11 @@ type QueryableByteStore interface {
 type ExpirableStore interface {
 	ByteStore
 
-	// TTL should return current expiry value of
+	// TTL should return current expiration value of
 	// giving key in millisecond.
 	TTL(string) (time.Duration, error)
 
-	// ExtendTTL should extend expiry by giving duration,
+	// ExtendTTL should extend expiration by giving duration,
 	// by add new duration to the remaining ttl of key.
 	//
 	// A zero value should persist key.
@@ -44,10 +42,10 @@ type ExpirableStore interface {
 	// A zero value should persist key.
 	ResetTTL(string, time.Duration) error
 
-	// SaveTTL save giving key with giving expiry.
+	// SaveTTL save giving key with giving expiration.
 	SaveTTL(string, []byte, time.Duration) error
 
-	// UpdateTTL updates giving key with giving expiry.
+	// UpdateTTL updates giving key with giving value and use new expiration.
 	// It should update key's value and add giving duration
 	// to remaining time of key.
 	//

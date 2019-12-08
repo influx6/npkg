@@ -129,7 +129,12 @@ func (s *Session) EncodeForCookie(encoder npkg.ObjectEncoder) error {
 	if err := encoder.String("id", s.ID.String()); err != nil {
 		return nerror.WrapOnly(err)
 	}
-	if err := encoder.Object("attached", npkg.EncodableMap(s.Attached)); err != nil {
+	if len(s.IP) != 0 {
+		if err := encoder.String("ip", s.IP.String()); err != nil {
+			return nerror.WrapOnly(err)
+		}
+	}
+	if err := encoder.String("browser", s.Browser); err != nil {
 		return nerror.WrapOnly(err)
 	}
 	if err := encoder.String("method", s.Method); err != nil {
@@ -243,7 +248,7 @@ func (gb *GobSessionCodec) Decode(r io.Reader, s *Session) error {
 //**********************************************
 
 var (
-	_          SessionsStorage = (*SessionStorage)(nil)
+	_   SessionsStorage = (*SessionStorage)(nil)
 	readerPool                 = sync.Pool{
 		New: func() interface{} {
 			return bytes.NewReader(nil)
@@ -332,6 +337,16 @@ func (s *SessionStorage) Update(ctx context.Context, se Session) error {
 		return nerror.Wrap(err, "Failed to update encoded session")
 	}
 	return nil
+}
+
+// GetAll returns all sessions stored within store.
+func (s *SessionStorage) GetAll(ctx context.Context) ([]Session, error) {
+	var span openTracing.Span
+	if ctx, span = ntrace.NewSpanFromContext(ctx, "SessionStorage.Update"); span != nil {
+		defer span.Finish()
+	}
+
+	var records, err = s.Store.GetAll(ctx)
 }
 
 // GetByID retrieves giving session from store based on the provided

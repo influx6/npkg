@@ -7,7 +7,11 @@ import (
 	"github.com/dgraph-io/badger"
 
 	"github.com/influx6/npkg/nerror"
+	"github.com/influx6/npkg/nstorage"
 )
+
+var _ nstorage.ExpirableStore = (*BadgerStore)(nil)
+var _ nstorage.QueryableByteStore = (*BadgerStore)(nil)
 
 // BadgerStore implements session management, storage and access using Badger as
 // underline store.
@@ -73,47 +77,32 @@ func (rd *BadgerStore) Keys() ([]string, error) {
 	return keys, err
 }
 
-// FindAll returns all match elements for giving function.
-func (rd *BadgerStore) FindAll(fn func([]byte, string) bool, count int) ([][]byte, error) {
-	return rd.FindEach(fn, -1)
-}
-
-// Find returns the single result matching giving function.
-func (rd *BadgerStore) Find(fn func([]byte, string) bool) ([]byte, error) {
-	var res, err = rd.FindEach(fn, 1)
-	if err != nil {
-		return nil, err
-	}
-	if len(res) == 1 {
-		return res[0], err
-	}
-	return nil, nil
-}
-
-// FindEach returns all matching results within count if not -1 using giving functions.
-func (rd *BadgerStore) FindEach(fn func([]byte, string) bool, count int) ([][]byte, error) {
-	var results [][]byte
+// Find returns all matching results within using giving functions.
+func (rd *BadgerStore) Find(fn func([]byte, string) bool) error {
 	var err = rd.db.View(func(txn *badger.Txn) error {
 		var iterator = txn.NewIterator(rd.iter)
 		defer iterator.Close()
 
 		if rd.prefix == "" {
 			for iterator.Rewind(); iterator.Valid(); iterator.Next() {
-				if count > 0 && len(results) == count {
-					return nil
-				}
 				var item = iterator.Item()
 				if item.IsDeletedOrExpired() {
 					continue
 				}
-				var value, err = item.Value()
+				var stop = false
+				var err = item.Value(func(value []byte) error {
+					if !fn(value, string(item.Key())) {
+						stop = true
+					}
+					return nil
+				})
+
 				if err != nil {
 					return nerror.WrapOnly(err)
 				}
 
-				if fn(value, string(item.Key())) {
-					results = append(results, value)
-					continue
+				if stop {
+					return nil
 				}
 			}
 			return nil
@@ -121,25 +110,29 @@ func (rd *BadgerStore) FindEach(fn func([]byte, string) bool, count int) ([][]by
 
 		var prefix = []byte(rd.prefix)
 		for iterator.Rewind(); iterator.ValidForPrefix(prefix); iterator.Next() {
-			if count > 0 && len(results) == count {
-				return nil
-			}
 			var item = iterator.Item()
 			if item.IsDeletedOrExpired() {
 				continue
 			}
-			var value, err = item.Value()
+			var stop = false
+			var err = item.Value(func(value []byte) error {
+				if !fn(value, string(item.Key())) {
+					stop = true
+				}
+				return nil
+			})
+
 			if err != nil {
 				return nerror.WrapOnly(err)
 			}
-			if fn(value, string(item.Key())) {
-				results = append(results, value)
-				continue
+
+			if stop {
+				return nil
 			}
 		}
 		return nil
 	})
-	return results, err
+	return err
 }
 
 // Each runs through all elements for giving store, skipping keys
@@ -161,12 +154,19 @@ func (rd *BadgerStore) Each(fn func([]byte, string) bool) error {
 				if item.IsDeletedOrExpired() {
 					continue
 				}
-				var value, err = item.Value()
+				var stop = false
+				var err = item.Value(func(value []byte) error {
+					if !fn(value, string(item.Key())) {
+						stop = true
+					}
+					return nil
+				})
+
 				if err != nil {
 					return nerror.WrapOnly(err)
 				}
 
-				if !fn(value, string(item.Key())) {
+				if stop {
 					return nil
 				}
 			}
@@ -179,11 +179,19 @@ func (rd *BadgerStore) Each(fn func([]byte, string) bool) error {
 			if item.IsDeletedOrExpired() {
 				continue
 			}
-			var value, err = item.Value()
+			var stop = false
+			var err = item.Value(func(value []byte) error {
+				if !fn(value, string(item.Key())) {
+					stop = true
+				}
+				return nil
+			})
+
 			if err != nil {
 				return nerror.WrapOnly(err)
 			}
-			if !fn(value, string(item.Key())) {
+
+			if stop {
 				return nil
 			}
 		}
@@ -223,12 +231,11 @@ func (rd *BadgerStore) Get(key string) ([]byte, error) {
 			return nerror.New("not found")
 		}
 
-		dbValue, err := item.Value()
+		value, err = item.ValueCopy(nil)
 		if err != nil {
 			return nerror.WrapOnly(err)
 		}
 
-		value = copyBytes(dbValue)
 		return nil
 	}); err != nil {
 		return nil, err
@@ -246,13 +253,12 @@ func (rd *BadgerStore) Save(key string, data []byte) error {
 // Duration of 0 means no expiration.
 func (rd *BadgerStore) SaveTTL(key string, data []byte, expiration time.Duration) error {
 	return rd.db.Update(func(txn *badger.Txn) error {
-		if expiration > 0 {
-			if err := txn.SetWithTTL(string2Bytes(key), data, expiration); err != nil {
-				return nerror.WrapOnly(err)
-			}
-			return nil
-		}
-		if err := txn.Set(string2Bytes(key), data); err != nil {
+		var op badger.Entry
+		op.Value = data
+		op.Key = string2Bytes(key)
+		op.ExpiresAt = uint64(time.Now().Add(expiration).Unix())
+
+		if err := txn.SetEntry(&op); err != nil {
 			return nerror.WrapOnly(err)
 		}
 		return nil
@@ -290,19 +296,19 @@ func (rd *BadgerStore) ExtendTTL(key string, expiration time.Duration) error {
 			return nerror.New("not found, possibly expired")
 		}
 
-		value, err := item.Value()
+		value, err := item.ValueCopy(nil)
 		if err != nil {
 			return err
 		}
 
-		if expiration == 0 {
-			return txn.Set(string2Bytes(key), copyBytes(value))
-		}
+		var op badger.Entry
+		op.Value = value
+		op.Key = string2Bytes(key)
 
 		var expr = ttlDur(item.ExpiresAt(), 0)
-		var newExpr = expr + expiration
+		op.ExpiresAt = uint64(time.Now().Add(expr + expiration).Unix())
 
-		if err := txn.SetWithTTL(string2Bytes(key), copyBytes(value), newExpr); err != nil {
+		if err := txn.SetEntry(&op); err != nil {
 			return err
 		}
 		return nil
@@ -323,16 +329,17 @@ func (rd *BadgerStore) ResetTTL(key string, expiration time.Duration) error {
 			return nerror.New("not found, possibly expired")
 		}
 
-		value, err := item.Value()
+		value, err := item.ValueCopy(nil)
 		if err != nil {
 			return err
 		}
 
-		if expiration == 0 {
-			return txn.Set(string2Bytes(key), copyBytes(value))
-		}
+		var op badger.Entry
+		op.Value = value
+		op.Key = string2Bytes(key)
+		op.ExpiresAt = uint64(time.Now().Add(expiration).Unix())
 
-		if err := txn.SetWithTTL(string2Bytes(key), copyBytes(value), expiration); err != nil {
+		if err := txn.SetEntry(&op); err != nil {
 			return err
 		}
 		return nil
@@ -353,22 +360,32 @@ func (rd *BadgerStore) Update(key string, data []byte) error {
 // as is.
 func (rd *BadgerStore) UpdateTTL(key string, data []byte, expiration time.Duration) error {
 	return rd.db.Update(func(txn *badger.Txn) error {
-		if expiration > 0 {
-			var item, err = txn.Get(string2Bytes(key))
-			if err != nil {
-				return nerror.Wrap(err, "Failed to retrieve key")
-			}
-			if item.IsDeletedOrExpired() {
-				return nerror.New("not found, possibly expired")
-			}
-
-			var ttl = ttlDur(item.ExpiresAt(), 0) + expiration
-			if err := txn.SetWithTTL(string2Bytes(key), data, ttl); err != nil {
-				return err
-			}
-			return nil
+		var item, err = txn.Get(string2Bytes(key))
+		if err != nil {
+			return nerror.Wrap(err, "Failed to retrieve key")
 		}
-		if err := txn.Set(string2Bytes(key), data); err != nil {
+		if item.IsDeletedOrExpired() {
+			return nerror.New("not found, possibly expired")
+		}
+
+		value, err := item.ValueCopy(nil)
+		if err != nil {
+			return err
+		}
+
+		var op badger.Entry
+		op.Value = value
+		op.Key = string2Bytes(key)
+
+		var ttl time.Time
+		if expiration == 0 {
+			ttl = time.Unix(int64(item.ExpiresAt()), 0)
+		} else {
+			ttl = time.Now().Add(expiration)
+		}
+
+		op.ExpiresAt = uint64(ttl.Unix())
+		if err := txn.SetEntry(&op); err != nil {
 			return err
 		}
 		return nil
@@ -385,12 +402,12 @@ func (rd *BadgerStore) Remove(key string) ([]byte, error) {
 			return err
 		}
 
-		value, err := item.Value()
+		old = make([]byte, item.ValueSize())
+		old, err = item.ValueCopy(old)
 		if err != nil {
 			return err
 		}
 
-		old = copyBytes(value)
 		return txn.Delete(string2Bytes(key))
 	})
 	return old, err

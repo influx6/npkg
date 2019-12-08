@@ -4,7 +4,11 @@ import (
 	"time"
 
 	"github.com/influx6/npkg/nerror"
+	"github.com/influx6/npkg/nstorage"
 )
+
+var _ nstorage.ExpirableStore = (*ExprByteStore)(nil)
+var _ nstorage.QueryableByteStore = (*ExprByteStore)(nil)
 
 // ExprByteStore implements an expiring byte store that
 // matches the nstorage.ExpirableStorage interface.
@@ -113,37 +117,16 @@ func (expr *ExprByteStore) Each(fn func([]byte, string) bool) error {
 	return nil
 }
 
-// FindAll returns all match elements for giving function.
-func (rd *ExprByteStore) FindAll(fn func([]byte, string) bool, count int) ([][]byte, error) {
-	return rd.FindEach(fn, -1)
-}
-
-// Find returns the single result matching giving function.
-func (rd *ExprByteStore) Find(fn func([]byte, string) bool) ([]byte, error) {
-	var res, err = rd.FindEach(fn, 1)
-	if err != nil {
-		return nil, err
-	}
-	if len(res) == 1 {
-		return res[0], err
-	}
-	return nil, nil
-}
-
-// FindEach returns all elements matching giving function and count.
-func (expr *ExprByteStore) FindEach(fn func([]byte, string) bool, count int) ([][]byte, error) {
-	var results [][]byte
+// Find returns all elements matching giving function and count.
+func (expr *ExprByteStore) Find(fn func([]byte, string) bool) error {
 	expr.cache.GetMany(func(values map[string]ExpiringValue) {
 		for key, value := range values {
-			if count > 0 && count == len(results) {
+			if !fn(value.Value, key) {
 				return
-			}
-			if fn(value.Value, key) {
-				results = append(results, value.Value)
 			}
 		}
 	})
-	return results, nil
+	return nil
 }
 
 // Remove deletes giving key from underling store.

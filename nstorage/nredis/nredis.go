@@ -8,7 +8,11 @@ import (
 	"github.com/go-redis/redis"
 
 	"github.com/influx6/npkg/nerror"
+	"github.com/influx6/npkg/nstorage"
 )
+
+var _ nstorage.ExpirableStore = (*RedisStore)(nil)
+var _ nstorage.QueryableByteStore = (*RedisStore)(nil)
 
 // RedisStore implements session management, storage and access using redis as
 // underline store.
@@ -88,47 +92,23 @@ func (rd *RedisStore) Each(fn func([]byte, string) bool) error {
 	return nil
 }
 
-// FindAll returns all match elements for giving function.
-func (rd *RedisStore) FindAll(fn func([]byte, string) bool, count int) ([][]byte, error) {
-	return rd.FindEach(fn, -1)
-}
-
-// Find returns match content for giving function.
-func (rd *RedisStore) Find(fn func([]byte, string) bool, count int) ([]byte, error) {
-	var res, err = rd.FindEach(fn, 1)
-	if err != nil {
-		return nil, err
-	}
-	if len(res) == 1 {
-		return res[0], err
-	}
-	return nil, nil
-}
-
-// FindEach returns all matching values within store, if elements found match giving
+// Find returns all matching values within store, if elements found match giving
 // count then all values returned.
-func (rd *RedisStore) FindEach(fn func([]byte, string) bool, count int) ([][]byte, error) {
-	var result [][]byte
-
+func (rd *RedisStore) Find(fn func([]byte, string) bool) error {
 	var nstatus = rd.client.SMembers(rd.hashList)
 	if err := nstatus.Err(); err != nil {
-		return result, nerror.WrapOnly(err)
+		return nerror.WrapOnly(err)
 	}
 	for _, item := range nstatus.Val() {
-		if count > 0 && count == len(result) {
-			return result, nil
-		}
-
 		var gstatus = rd.client.Get(item)
 		if err := gstatus.Err(); err == nil {
 			var data = string2Bytes(gstatus.Val())
-			if fn(data, item) {
-				result = append(result, data)
-				continue
+			if !fn(data, item) {
+				return nil
 			}
 		}
 	}
-	return result, nil
+	return nil
 }
 
 // Exists returns true/false if giving key exists.
