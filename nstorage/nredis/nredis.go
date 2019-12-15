@@ -19,8 +19,8 @@ var _ nstorage.QueryableByteStore = (*RedisStore)(nil)
 type RedisStore struct {
 	hashList string
 	hashElem string
-	config   *redis.Options
-	client   *redis.Client
+	Config   *redis.Options
+	Client   *redis.Client
 }
 
 // NewRedisStore returns a new instance of a redis store.
@@ -28,7 +28,7 @@ func NewRedisStore(hash string, config redis.Options) (*RedisStore, error) {
 	var red RedisStore
 	red.hashList = hash + "_keys"
 	red.hashElem = hash + "_item"
-	red.config = &config
+	red.Config = &config
 	if err := red.createConnection(); err != nil {
 		return nil, nerror.WrapOnly(err)
 	}
@@ -44,18 +44,18 @@ func FromRedisStore(hash string, conn *redis.Client) (*RedisStore, error) {
 	var red RedisStore
 	red.hashList = hash + "_keys"
 	red.hashElem = hash + "_item"
-	red.client = conn
+	red.Client = conn
 	return &red, nil
 }
 
 // createConnection attempts to create a new redis connection.
 func (rd *RedisStore) createConnection() error {
-	client := redis.NewClient(rd.config)
+	client := redis.NewClient(rd.Config)
 	status := client.Ping()
 	if err := status.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
-	rd.client = client
+	rd.Client = client
 	return nil
 }
 
@@ -67,7 +67,7 @@ func (rd *RedisStore) getHashKey(key string) string {
 
 // Keys returns all giving keys of elements within store.
 func (rd *RedisStore) Keys() ([]string, error) {
-	var nstatus = rd.client.SMembers(rd.hashList)
+	var nstatus = rd.Client.SMembers(rd.hashList)
 	if err := nstatus.Err(); err != nil {
 		return nil, nerror.WrapOnly(err)
 	}
@@ -77,12 +77,12 @@ func (rd *RedisStore) Keys() ([]string, error) {
 // Each runs through all elements for giving store, skipping keys
 // in redis who have no data or an empty byte slice.
 func (rd *RedisStore) Each(fn func([]byte, string) bool) error {
-	var nstatus = rd.client.SMembers(rd.hashList)
+	var nstatus = rd.Client.SMembers(rd.hashList)
 	if err := nstatus.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
 	for _, item := range nstatus.Val() {
-		var gstatus = rd.client.Get(item)
+		var gstatus = rd.Client.Get(item)
 		if err := gstatus.Err(); err == nil {
 			if !fn(string2Bytes(gstatus.Val()), item) {
 				return nil
@@ -95,12 +95,12 @@ func (rd *RedisStore) Each(fn func([]byte, string) bool) error {
 // Find returns all matching values within store, if elements found match giving
 // count then all values returned.
 func (rd *RedisStore) Find(fn func([]byte, string) bool) error {
-	var nstatus = rd.client.SMembers(rd.hashList)
+	var nstatus = rd.Client.SMembers(rd.hashList)
 	if err := nstatus.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
 	for _, item := range nstatus.Val() {
-		var gstatus = rd.client.Get(item)
+		var gstatus = rd.Client.Get(item)
 		if err := gstatus.Err(); err == nil {
 			var data = string2Bytes(gstatus.Val())
 			if !fn(data, item) {
@@ -114,7 +114,7 @@ func (rd *RedisStore) Find(fn func([]byte, string) bool) error {
 // Exists returns true/false if giving key exists.
 func (rd *RedisStore) Exists(key string) (bool, error) {
 	var hashKey = rd.getHashKey(key)
-	var nstatus = rd.client.SIsMember(rd.hashList, hashKey)
+	var nstatus = rd.Client.SIsMember(rd.hashList, hashKey)
 	if err := nstatus.Err(); err != nil {
 		return false, nerror.WrapOnly(err)
 	}
@@ -124,7 +124,7 @@ func (rd *RedisStore) Exists(key string) (bool, error) {
 // exists returns true/false if giving key is set in redis.
 func (rd *RedisStore) exists(key string) (bool, error) {
 	var hashKey = rd.getHashKey(key)
-	var nstatus = rd.client.Exists(hashKey)
+	var nstatus = rd.Client.Exists(hashKey)
 	if err := nstatus.Err(); err != nil {
 		return false, nerror.WrapOnly(err)
 	}
@@ -137,7 +137,7 @@ func (rd *RedisStore) expire(keys []string) error {
 	for index, elem := range keys {
 		items[index] = elem
 	}
-	var nstatus = rd.client.SRem(rd.hashList, items...)
+	var nstatus = rd.Client.SRem(rd.hashList, items...)
 	if err := nstatus.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
@@ -154,12 +154,12 @@ func (rd *RedisStore) Save(key string, data []byte) error {
 // Duration of 0 means no expiration.
 func (rd *RedisStore) SaveTTL(key string, data []byte, expiration time.Duration) error {
 	var hashKey = rd.getHashKey(key)
-	var nstatus = rd.client.SAdd(rd.hashList, hashKey)
+	var nstatus = rd.Client.SAdd(rd.hashList, hashKey)
 	if err := nstatus.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
 
-	var nset = rd.client.Set(hashKey, data, expiration)
+	var nset = rd.Client.Set(hashKey, data, expiration)
 	if err := nset.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
@@ -178,7 +178,7 @@ func (rd *RedisStore) Update(key string, data []byte) error {
 // as is.
 func (rd *RedisStore) UpdateTTL(key string, data []byte, expiration time.Duration) error {
 	var hashKey = rd.getHashKey(key)
-	var fstatus = rd.client.SIsMember(rd.hashList, hashKey)
+	var fstatus = rd.Client.SIsMember(rd.hashList, hashKey)
 	if err := fstatus.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
@@ -192,7 +192,7 @@ func (rd *RedisStore) UpdateTTL(key string, data []byte, expiration time.Duratio
 
 	var newTTL time.Duration
 	if expiration > 0 {
-		var ttlstatus = rd.client.PTTL(hashKey)
+		var ttlstatus = rd.Client.PTTL(hashKey)
 		if err := ttlstatus.Err(); err != nil {
 			return nerror.WrapOnly(err)
 		}
@@ -203,7 +203,7 @@ func (rd *RedisStore) UpdateTTL(key string, data []byte, expiration time.Duratio
 		}
 	}
 
-	var nset = rd.client.Set(hashKey, data, newTTL)
+	var nset = rd.Client.Set(hashKey, data, newTTL)
 	if err := nset.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
@@ -213,7 +213,7 @@ func (rd *RedisStore) UpdateTTL(key string, data []byte, expiration time.Duratio
 // TTL returns current expiration time for giving key.
 func (rd *RedisStore) TTL(key string) (time.Duration, error) {
 	var hashKey = rd.getHashKey(key)
-	var nstatus = rd.client.PTTL(hashKey)
+	var nstatus = rd.Client.PTTL(hashKey)
 	if err := nstatus.Err(); err != nil {
 		return 0, nerror.WrapOnly(err)
 	}
@@ -227,7 +227,7 @@ func (rd *RedisStore) TTL(key string) (time.Duration, error) {
 // in milliseconds. If expiration value is zero then we consider that you wish to remove the expiration.
 func (rd *RedisStore) ExtendTTL(key string, expiration time.Duration) error {
 	var hashKey = rd.getHashKey(key)
-	var nstatus = rd.client.PTTL(hashKey)
+	var nstatus = rd.Client.PTTL(hashKey)
 	if err := nstatus.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
@@ -237,12 +237,12 @@ func (rd *RedisStore) ExtendTTL(key string, expiration time.Duration) error {
 	}
 
 	if expiration == 0 {
-		var exstatus = rd.client.Persist(hashKey)
+		var exstatus = rd.Client.Persist(hashKey)
 		return exstatus.Err()
 	}
 
 	var newExpiration = expiration + nstatus.Val()
-	var exstatus = rd.client.Expire(hashKey, newExpiration)
+	var exstatus = rd.Client.Expire(hashKey, newExpiration)
 	return exstatus.Err()
 }
 
@@ -251,7 +251,7 @@ func (rd *RedisStore) ExtendTTL(key string, expiration time.Duration) error {
 // A duration of zero persists the giving key.
 func (rd *RedisStore) ResetTTL(key string, expiration time.Duration) error {
 	var hashKey = rd.getHashKey(key)
-	var nstatus = rd.client.PTTL(hashKey)
+	var nstatus = rd.Client.PTTL(hashKey)
 	if err := nstatus.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
@@ -261,11 +261,11 @@ func (rd *RedisStore) ResetTTL(key string, expiration time.Duration) error {
 	}
 
 	if expiration == 0 {
-		var exstatus = rd.client.Persist(hashKey)
+		var exstatus = rd.Client.Persist(hashKey)
 		return exstatus.Err()
 	}
 
-	var exstatus = rd.client.Expire(hashKey, expiration)
+	var exstatus = rd.Client.Expire(hashKey, expiration)
 	return exstatus.Err()
 }
 
@@ -273,7 +273,7 @@ func (rd *RedisStore) ResetTTL(key string, expiration time.Duration) error {
 // error if not found.
 func (rd *RedisStore) Get(key string) ([]byte, error) {
 	var hashKey = rd.getHashKey(key)
-	var nstatus = rd.client.Get(hashKey)
+	var nstatus = rd.Client.Get(hashKey)
 	if err := nstatus.Err(); err != nil {
 		return nil, nerror.WrapOnly(err)
 	}
@@ -284,15 +284,15 @@ func (rd *RedisStore) Get(key string) ([]byte, error) {
 // returning giving session.
 func (rd *RedisStore) Remove(key string) ([]byte, error) {
 	var hashKey = rd.getHashKey(key)
-	var nstatus = rd.client.Get(hashKey)
+	var nstatus = rd.Client.Get(hashKey)
 	if err := nstatus.Err(); err != nil {
 		return nil, nerror.WrapOnly(err)
 	}
-	var mstatus = rd.client.SRem(rd.hashList, hashKey)
+	var mstatus = rd.Client.SRem(rd.hashList, hashKey)
 	if err := mstatus.Err(); err != nil {
 		return nil, nerror.WrapOnly(err)
 	}
-	var dstatus = rd.client.Del(hashKey)
+	var dstatus = rd.Client.Del(hashKey)
 	if err := dstatus.Err(); err != nil {
 		return nil, nerror.WrapOnly(err)
 	}
@@ -301,7 +301,7 @@ func (rd *RedisStore) Remove(key string) ([]byte, error) {
 
 func (rd *RedisStore) remove(key string) error {
 	var hashKey = rd.getHashKey(key)
-	var dstatus = rd.client.Del(hashKey)
+	var dstatus = rd.Client.Del(hashKey)
 	return dstatus.Err()
 }
 

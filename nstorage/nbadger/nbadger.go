@@ -19,7 +19,7 @@ type BadgerStore struct {
 	prefix string
 	ops    badger.Options
 	iter   badger.IteratorOptions
-	db     *badger.DB
+	Db     *badger.DB
 }
 
 // NewBadgerStore returns a new instance of a Badger store using provided prefix if present.
@@ -40,14 +40,14 @@ func (rd *BadgerStore) createConnection() error {
 	if err != nil {
 		return nerror.WrapOnly(err)
 	}
-	rd.db = db
+	rd.Db = db
 	return nil
 }
 
 // Keys returns all giving keys of elements within store.
 func (rd *BadgerStore) Keys() ([]string, error) {
 	var keys = make([]string, 0)
-	var err = rd.db.View(func(txn *badger.Txn) error {
+	var err = rd.Db.View(func(txn *badger.Txn) error {
 		var newIterator = rd.iter
 		newIterator.PrefetchValues = false
 		var iterator = txn.NewIterator(newIterator)
@@ -79,7 +79,7 @@ func (rd *BadgerStore) Keys() ([]string, error) {
 
 // Find returns all matching results within using giving functions.
 func (rd *BadgerStore) Find(fn func([]byte, string) bool) error {
-	var err = rd.db.View(func(txn *badger.Txn) error {
+	var err = rd.Db.View(func(txn *badger.Txn) error {
 		var iterator = txn.NewIterator(rd.iter)
 		defer iterator.Close()
 
@@ -144,7 +144,7 @@ func (rd *BadgerStore) Find(fn func([]byte, string) bool) error {
 // given byte slice yourself within function to protect against
 // undefined behaviour.
 func (rd *BadgerStore) Each(fn func([]byte, string) bool) error {
-	return rd.db.View(func(txn *badger.Txn) error {
+	return rd.Db.View(func(txn *badger.Txn) error {
 		var iterator = txn.NewIterator(rd.iter)
 		defer iterator.Close()
 
@@ -202,7 +202,7 @@ func (rd *BadgerStore) Each(fn func([]byte, string) bool) error {
 // Exists returns true/false if giving key exists.
 func (rd *BadgerStore) Exists(key string) (bool, error) {
 	var exist bool
-	if err := rd.db.View(func(txn *badger.Txn) error {
+	if err := rd.Db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(string2Bytes(key))
 		if err != nil {
 			return nerror.WrapOnly(err)
@@ -222,7 +222,7 @@ func (rd *BadgerStore) Exists(key string) (bool, error) {
 // error if not found.
 func (rd *BadgerStore) Get(key string) ([]byte, error) {
 	var value []byte
-	if err := rd.db.View(func(txn *badger.Txn) error {
+	if err := rd.Db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(string2Bytes(key))
 		if err != nil {
 			return nerror.WrapOnly(err)
@@ -252,7 +252,7 @@ func (rd *BadgerStore) Save(key string, data []byte) error {
 // expiration.
 // Duration of 0 means no expiration.
 func (rd *BadgerStore) SaveTTL(key string, data []byte, expiration time.Duration) error {
-	return rd.db.Update(func(txn *badger.Txn) error {
+	return rd.Db.Update(func(txn *badger.Txn) error {
 		var op badger.Entry
 		op.Value = data
 		op.Key = string2Bytes(key)
@@ -268,7 +268,7 @@ func (rd *BadgerStore) SaveTTL(key string, data []byte, expiration time.Duration
 // TTL returns giving expiration time for giving key.
 func (rd *BadgerStore) TTL(key string) (time.Duration, error) {
 	var ttl time.Duration
-	var err = rd.db.Update(func(txn *badger.Txn) error {
+	var err = rd.Db.Update(func(txn *badger.Txn) error {
 		var item, err = txn.Get(string2Bytes(key))
 		if err != nil {
 			return nerror.Wrap(err, "Failed to retrieve key")
@@ -287,7 +287,7 @@ func (rd *BadgerStore) TTL(key string) (time.Duration, error) {
 //
 // A expiration value of zero means to persist the giving key.
 func (rd *BadgerStore) ExtendTTL(key string, expiration time.Duration) error {
-	return rd.db.Update(func(txn *badger.Txn) error {
+	return rd.Db.Update(func(txn *badger.Txn) error {
 		var item, err = txn.Get(string2Bytes(key))
 		if err != nil {
 			return nerror.Wrap(err, "Failed to retrieve key")
@@ -320,7 +320,7 @@ func (rd *BadgerStore) ExtendTTL(key string, expiration time.Duration) error {
 //
 // A expiration value of zero means to persist the giving key.
 func (rd *BadgerStore) ResetTTL(key string, expiration time.Duration) error {
-	return rd.db.Update(func(txn *badger.Txn) error {
+	return rd.Db.Update(func(txn *badger.Txn) error {
 		var item, err = txn.Get(string2Bytes(key))
 		if err != nil {
 			return nerror.Wrap(err, "Failed to retrieve key")
@@ -359,7 +359,7 @@ func (rd *BadgerStore) Update(key string, data []byte) error {
 // if expiration is zero then giving value expiration will not be reset but left
 // as is.
 func (rd *BadgerStore) UpdateTTL(key string, data []byte, expiration time.Duration) error {
-	return rd.db.Update(func(txn *badger.Txn) error {
+	return rd.Db.Update(func(txn *badger.Txn) error {
 		var item, err = txn.Get(string2Bytes(key))
 		if err != nil {
 			return nerror.Wrap(err, "Failed to retrieve key")
@@ -396,7 +396,7 @@ func (rd *BadgerStore) UpdateTTL(key string, data []byte, expiration time.Durati
 // returning giving session.
 func (rd *BadgerStore) Remove(key string) ([]byte, error) {
 	var old []byte
-	err := rd.db.Update(func(txn *badger.Txn) error {
+	err := rd.Db.Update(func(txn *badger.Txn) error {
 		var item, err = txn.Get(string2Bytes(key))
 		if err != nil {
 			return err

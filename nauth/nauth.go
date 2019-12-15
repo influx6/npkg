@@ -57,6 +57,14 @@ type Claim struct {
 	// as towards the source.
 	Provider string // google, in-house, phone, facebook, we-chat, github, ...etc
 
+	// Attached IP during reception of claim, possibly attached by the handler receiving
+	// giving request which maybe able to get IP details.
+	IP net.IP
+
+	// Attached Agent during reception of claim, possibly attached by the handler receiving
+	// giving request which maybe able to get Agent details.
+	Agent string
+
 	// Credentials contains the deserialized data delivered by the user for authentication
 	// which must match the method and provider expected data type.
 	Credentials Credential
@@ -127,7 +135,7 @@ func (c VerifiedClaim) checkRole(role string) bool {
 type Authenticator interface {
 	// VerifyClaim exposes the underline function within Authenticator.Authenticate
 	// used to authenticate the request claim and the returned verified claim. It
-	// allow's testing and also
+	// allows testing and also
 	VerifyClaim(Claim) (VerifiedClaim, error)
 }
 
@@ -160,7 +168,7 @@ type AuthenticationProvider interface {
 	Authenticate(res http.ResponseWriter, req *http.Request)
 
 	// Verify exposes to others by the provider a means of getting a verified
-	// claim from a incoming request after had being authenticated in some previous step.
+	// claim from a incoming request after it has being authenticated in some previous step.
 	//
 	// It exists to let you handle cases of already authenticated users whoes session is yet
 	// to expire and are making new request for resources.
@@ -173,7 +181,7 @@ type AuthenticationProvider interface {
 	// Refresh handles the refreshing of an authentication session, useful
 	// for protocols that require and provide refresh token as a means of
 	// updating their access token expiry timeline.
-	// This is based on protocols and a may protocol may not implement it
+	// This is based on protocols and a protocol may not implement it
 	// and hence return a 501 (NOT Implemented) status
 	Refresh(res http.ResponseWriter, req *http.Request)
 }
