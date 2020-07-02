@@ -79,6 +79,10 @@ func (c Claim) Valid() error {
 	return ErrNoCredentials
 }
 
+type Data interface {
+	Type() string
+}
+
 // VerifiedClaim represents the response received back from the
 // Authenticator as to a giving authenticated claim with associated
 // session data.
@@ -89,7 +93,7 @@ type VerifiedClaim struct {
 	Method       string      // email-password, phone-number, token,..etc
 	Provider     string      // google, in-house, phone, facebook, we-chat, github, ...etc
 	Roles        []string    // Roles of verified claim.
-	Data         interface{} // Extra Data to be attached to session for user.
+	Attached     Data 		// Extra Data to be attached to session for user.
 }
 
 // Valid returns an error if giving credentials could not be validated
@@ -129,14 +133,14 @@ func (c VerifiedClaim) checkRole(role string) bool {
 	return false
 }
 
-// Authenticator defines what we expect from a Authenticator of
+// ClaimVerifier defines what we expect from a Authenticator of
 // claims. It exposes the underline method used for verifying
 // an authentication claim.
-type Authenticator interface {
+type ClaimVerifier interface {
 	// VerifyClaim exposes the underline function within Authenticator.Authenticate
 	// used to authenticate the request claim and the returned verified claim. It
 	// allows testing and also
-	VerifyClaim(Claim) (VerifiedClaim, error)
+	Verify(Claim) (VerifiedClaim, error)
 }
 
 // AuthenticationProvider defines what the Authentication should be as,
@@ -147,7 +151,7 @@ type Authenticator interface {
 // Exposes such a final form allows us to swap in, any form of authentication
 // be it email, facebook, google or oauth based without much work.
 type AuthenticationProvider interface {
-	Authenticator
+	ClaimVerifier
 
 	// Initiate handles the initial response to a request to initiate/begin
 	// a authentication procedure e.g to redirect to
@@ -167,7 +171,7 @@ type AuthenticationProvider interface {
 	// be managed.
 	Authenticate(res http.ResponseWriter, req *http.Request)
 
-	// Verify exposes to others by the provider a means of getting a verified
+	// GetVerifiedClaim exposes to others by the provider a means of getting a verified
 	// claim from a incoming request after it has being authenticated in some previous step.
 	//
 	// It exists to let you handle cases of already authenticated users whoes session is yet
@@ -176,7 +180,7 @@ type AuthenticationProvider interface {
 	// This lets others step into the middle of the Authentication procedure
 	// to retrieve the verified request claim as dictated by provider, which
 	// can be used for other uses.
-	Verify(req *http.Request) (VerifiedClaim, error)
+	GetVerifiedClaim(req *http.Request) (VerifiedClaim, error)
 
 	// Refresh handles the refreshing of an authentication session, useful
 	// for protocols that require and provide refresh token as a means of

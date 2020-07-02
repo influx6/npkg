@@ -17,6 +17,7 @@ var _ nstorage.QueryableByteStore = (*RedisStore)(nil)
 // RedisStore implements session management, storage and access using redis as
 // underline store.
 type RedisStore struct {
+	tableName string
 	hashList string
 	hashElem string
 	Config   *redis.Options
@@ -24,10 +25,11 @@ type RedisStore struct {
 }
 
 // NewRedisStore returns a new instance of a redis store.
-func NewRedisStore(hash string, config redis.Options) (*RedisStore, error) {
+func NewRedisStore(tableName string, config redis.Options) (*RedisStore, error) {
 	var red RedisStore
-	red.hashList = hash + "_keys"
-	red.hashElem = hash + "_item"
+	red.tableName = tableName
+	red.hashList = tableName + "_keys"
+	red.hashElem = tableName + "_item"
 	red.Config = &config
 	if err := red.createConnection(); err != nil {
 		return nil, nerror.WrapOnly(err)
@@ -36,14 +38,15 @@ func NewRedisStore(hash string, config redis.Options) (*RedisStore, error) {
 }
 
 // FromRedisStore returns a new instance of a RedisStore using giving client.
-func FromRedisStore(hash string, conn *redis.Client) (*RedisStore, error) {
+func FromRedisStore(tableName string, conn *redis.Client) (*RedisStore, error) {
 	if status := conn.Ping(); status.Err() != nil {
 		return nil, status.Err()
 	}
 
 	var red RedisStore
-	red.hashList = hash + "_keys"
-	red.hashElem = hash + "_item"
+	red.tableName = tableName
+	red.hashList = tableName + "_keys"
+	red.hashElem = tableName + "_item"
 	red.Client = conn
 	return &red, nil
 }
@@ -59,10 +62,10 @@ func (rd *RedisStore) createConnection() error {
 	return nil
 }
 
-// getHashKey returns the key of giving key used to store
-// both in map and redis.
+// getHashKey returns formatted for unique form towards using creating
+// efficient hashmaps to contain list of keys.
 func (rd *RedisStore) getHashKey(key string) string {
-	return fmt.Sprintf("%s_%s", rd.hashList, key)
+	return fmt.Sprintf("_redis_store_%s_%s", rd.hashList, key)
 }
 
 // Keys returns all giving keys of elements within store.
