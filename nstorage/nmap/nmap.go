@@ -68,7 +68,7 @@ func (m *AnyMap) SetMany(fn func(map[interface{}]interface{})) {
 	m.init()
 
 	var cached = m.cache.Load().(map[interface{}]interface{})
-	var copied = copyInterfaceKeyMap(cached)
+	var copied = CopyInterfaceKeyMap(cached)
 	fn(copied)
 
 	m.lock.Lock()
@@ -157,7 +157,7 @@ func (m *StringAnyMap) SetMany(fn func(map[string]interface{})) {
 	m.init()
 
 	var cached = m.cache.Load().(map[string]interface{})
-	var copied = copyStringKeyMap(cached)
+	var copied = CopyStringKeyMap(cached)
 	fn(copied)
 
 	m.lock.Lock()
@@ -245,7 +245,7 @@ func (m *StringMap) SetMany(fn func(map[string]string)) {
 	m.init()
 
 	var cached = m.cache.Load().(map[string]string)
-	var copied = copyStringMap(cached)
+	var copied = CopyStringMap(cached)
 	fn(copied)
 
 	m.lock.Lock()
@@ -351,7 +351,7 @@ func (m *ByteMap) SetMany(fn func(map[string][]byte)) {
 	m.init()
 
 	var cached = m.cache.Load().(map[string][]byte)
-	var copied = copyStringBytesMap(cached)
+	var copied = CopyStringBytesMap(cached)
 	fn(copied)
 
 	m.lock.Lock()
@@ -571,7 +571,7 @@ func (m *ExpiringByteMap) SetMany(fn func(map[string]ExpiringValue)) {
 	m.init()
 
 	var cached = m.cache.Load().(map[string]ExpiringValue)
-	var copied = copyExpiringBytesMap(cached)
+	var copied = CopyExpiringBytesMap(cached)
 	fn(copied)
 
 	m.lock.Lock()
@@ -597,61 +597,3 @@ func (m *ExpiringByteMap) init() {
 	m.cache = &newValue
 }
 
-//**********************************************************************
-// internals
-//**********************************************************************
-
-// copyExpiringBytesMap returns a new copy of a giving string map.
-func copyExpiringBytesMap(src map[string]ExpiringValue) map[string]ExpiringValue {
-	var dest = make(map[string]ExpiringValue, len(src))
-	for key, value := range src {
-		if value.Expired() {
-			continue
-		}
-		dest[key] = value
-	}
-	return dest
-}
-
-// copyStringBytesMap returns a new copy of a giving string map.
-func copyStringBytesMap(src map[string][]byte) map[string][]byte {
-	var dest = make(map[string][]byte, len(src))
-	for key, value := range src {
-		dest[key] = copyBytes(value)
-	}
-	return dest
-}
-
-// copyStringMap returns a new copy of a giving string map.
-func copyStringMap(src map[string]string) map[string]string {
-	var dest = make(map[string]string, len(src))
-	for key, value := range src {
-		dest[key] = value
-	}
-	return dest
-}
-
-// copyStringKeyMap returns a new copy of a giving string keyed map.
-func copyStringKeyMap(src map[string]interface{}) map[string]interface{} {
-	var dest = make(map[string]interface{}, len(src))
-	for key, value := range src {
-		dest[key] = value
-	}
-	return dest
-}
-
-// copyInterfaceKeyMap returns a new copy of a giving interface keyed map.
-func copyInterfaceKeyMap(src map[interface{}]interface{}) map[interface{}]interface{} {
-	var dest = make(map[interface{}]interface{}, len(src))
-	for key, value := range src {
-		dest[key] = value
-	}
-	return dest
-}
-
-// copyBytes returns a new copy of giving byte slice.
-func copyBytes(bu []byte) []byte {
-	var cu = make([]byte, len(bu))
-	copy(cu, bu)
-	return cu
-}

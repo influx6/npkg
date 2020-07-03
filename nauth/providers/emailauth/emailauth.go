@@ -154,11 +154,11 @@ func (eu InhouseEmailAuth) VerifyClaim(cm nauth.Claim) (nauth.VerifiedClaim, err
 	return verified, nil
 }
 
-// Verify implements the nauth.AuthenticationProvider interface.
+// GetVerifiedClaim implements the nauth.AuthenticationProvider interface.
 //
 // Verify exists for the purpose of verifying  an authenticated session with
 // an existing bearer token.
-func (eu InhouseEmailAuth) Verify(req *http.Request) (nauth.VerifiedClaim, error) {
+func (eu InhouseEmailAuth) GetVerifiedClaim(req *http.Request) (nauth.VerifiedClaim, error) {
 	var verified nauth.VerifiedClaim
 
 	// Retrieve user session from request.

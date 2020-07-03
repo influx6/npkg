@@ -3,6 +3,7 @@ package nauth
 import (
 	"bytes"
 	"context"
+	"sync"
 
 	"github.com/influx6/npkg/nerror"
 	"github.com/influx6/npkg/nstorage/nbadger"
@@ -10,7 +11,15 @@ import (
 	openTracing "github.com/opentracing/opentracing-go"
 )
 
-var _ SessionsStorage = (*BadgerSessionStore)(nil)
+var (
+	bufferPool = sync.Pool{
+		New: func() interface{} {
+			return bytes.NewBuffer(make([]byte, 0, 512))
+		},
+	}
+)
+
+var _ SessionStorage = (*BadgerSessionStore)(nil)
 
 // BadgerSessionStore implements a storage type for CRUD operations on
 // sessions.
@@ -25,6 +34,11 @@ func NewBadgerSessionStore(codec SessionCodec, store *nbadger.BadgerStore) *Badg
 		Codec: codec,
 		Store: store,
 	}
+}
+
+// GetAllByUser will return a suitable error towards supporting multiple sessions.
+func (s *BadgerSessionStore) GetAllByUser(ctx context.Context, userId string) ([]Session, error) {
+	return nil, nerror.New("badger is not suitable for multiple sessions")
 }
 
 // Save adds giving session into underline store.
@@ -44,7 +58,10 @@ func (s *BadgerSessionStore) Save(ctx context.Context, se Session) error {
 		return nerror.Wrap(err, "Session failed validation")
 	}
 
-	var content = bytes.NewBuffer(make([]byte, 0, 512))
+	var content = bufferPool.Get().(*bytes.Buffer)
+	defer bufferPool.Put(content)
+	content.Reset()
+
 	if err := s.Codec.Encode(content, se); err != nil {
 		return nerror.Wrap(err, "Failed to encode data")
 	}
@@ -71,7 +88,10 @@ func (s *BadgerSessionStore) Update(ctx context.Context, se Session) error {
 		return nerror.Wrap(err, "Session failed validation")
 	}
 
-	var content = bytes.NewBuffer(make([]byte, 0, 512))
+	var content = bufferPool.Get().(*bytes.Buffer)
+	defer bufferPool.Put(content)
+	content.Reset()
+
 	if err := s.Codec.Encode(content, se); err != nil {
 		return nerror.Wrap(err, "Failed to encode data")
 	}
@@ -87,15 +107,29 @@ func (s *BadgerSessionStore) Update(ctx context.Context, se Session) error {
 // GetAll returns all sessions stored within store.
 func (s *BadgerSessionStore) GetAll(ctx context.Context) ([]Session, error) {
 	var span openTracing.Span
-	if ctx, span = ntrace.NewSpanFromContext(ctx, "BadgerSessionStore.Update"); span != nil {
+	if ctx, span = ntrace.NewSpanFromContext(ctx, "BadgerSessionStore.GetAll"); span != nil {
 		defer span.Finish()
 	}
 
-	var records, err = s.Store.GetAll(ctx)
+	var decodeErr error
+	var sessions []Session
+	var err = s.Store.Each(func(content []byte, key string) bool {
+		var reader = bytes.NewBuffer(content)
+
+		var session Session
+		decodeErr = s.Codec.Decode(reader, &session)
+		if decodeErr == nil {
+			sessions = append(sessions, session)
+		}
+		return decodeErr == nil
+	})
 	if err != nil {
-		return session, nerror.WrapOnly(err)
+		return nil, nerror.WrapOnly(err)
 	}
-	return records, nil
+	if decodeErr != nil {
+		return nil, nerror.WrapOnly(decodeErr)
+	}
+	return sessions, nil
 }
 
 // GetByUser retrieves giving session from store based on the provided
@@ -111,11 +145,7 @@ func (s *BadgerSessionStore) GetByUser(ctx context.Context, key string) (Session
 		return session, nerror.WrapOnly(err)
 	}
 
-	var reader = readerPool.Get().(*bytes.Reader)
-	defer readerPool.Put(reader)
-
-	reader.Reset(sessionBytes)
-	defer reader.Reset(nil)
+	var reader = bytes.NewReader(sessionBytes)
 	if err := s.Codec.Decode(reader, &session); err != nil {
 		return session, nerror.WrapOnly(err)
 	}
@@ -135,11 +165,7 @@ func (s *BadgerSessionStore) GetByID(ctx context.Context, key string) (Session, 
 		return session, nerror.WrapOnly(err)
 	}
 
-	var reader = readerPool.Get().(*bytes.Reader)
-	defer readerPool.Put(reader)
-
-	reader.Reset(sessionBytes)
-	defer reader.Reset(nil)
+	var reader = bytes.NewReader(sessionBytes)
 	if err := s.Codec.Decode(reader, &session); err != nil {
 		return session, nerror.WrapOnly(err)
 	}
@@ -158,11 +184,7 @@ func (s *BadgerSessionStore) Remove(ctx context.Context, key string) (Session, e
 		return session, nerror.WrapOnly(err)
 	}
 
-	var reader = readerPool.Get().(*bytes.Reader)
-	defer readerPool.Put(reader)
-
-	reader.Reset(sessionBytes)
-	defer reader.Reset(nil)
+	var reader = bytes.NewReader(sessionBytes)
 	if err := s.Codec.Decode(reader, &session); err != nil {
 		return session, nerror.WrapOnly(err)
 	}

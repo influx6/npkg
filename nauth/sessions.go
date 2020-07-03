@@ -1,17 +1,14 @@
 package nauth
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/gob"
+	"encoding/json"
 	"io"
 	"net"
 	"net/http"
-	"sync"
 	"time"
-
-	"github.com/influx6/npkg/nstorage"
 
 	"github.com/gorilla/securecookie"
 	"github.com/influx6/npkg"
@@ -47,6 +44,7 @@ type Session struct {
 	Created  time.Time `json:"created"`
 	Updated  time.Time `json:"updated"`
 	Expiring time.Time `json:"expiring"`
+	Data map[string]string `json:"data"`
 }
 
 // EncodeToCookie returns a http.Cookie with session encoded into
@@ -247,16 +245,14 @@ func (gb *GobSessionCodec) Decode(r io.Reader, s *Session) error {
 // Session Storage
 //**********************************************
 
-var (
-	readerPool                 = sync.Pool{
-		New: func() interface{} {
-			return bytes.NewReader(nil)
-		},
-	}
+const (
+	// SessionKey defines the key used to save a session instance in a
+	// request object.
+	SessionKey = sessionKey("nauth-session")
 )
 
-// SessionsStorage defines a underline store for a giving session by key.
-type SessionsStorage interface {
+// SessionStorage defines a underline store for a giving session by key.
+type SessionStorage interface {
 	Save(context.Context, Session) error
 	Update(context.Context, Session) error
 	GetAll(context.Context) ([]Session, error)
@@ -265,17 +261,6 @@ type SessionsStorage interface {
 	GetByUser(context.Context, string) (Session, error)
 	GetAllByUser(context.Context, string) ([]Session, error)
 }
-
-
-//**********************************************
-// Sessions
-//**********************************************
-
-const (
-	// SessionKey defines the key used to save a session instance in a
-	// request object.
-	SessionKey = sessionKey("nauth-session")
-)
 
 type sessionKey string
 
@@ -294,7 +279,7 @@ func GetSessionFromContext(ctx context.Context) (Session, bool) {
 // GetUserDataFromSession returns possible user data attached to
 // giving session.
 func GetUserDataFromSession(s Session) (interface{}, error) {
-	if userData, ok := s.Attached[SessionUserDataKeyName]; ok {
+	if userData, ok := s.Data[SessionUserDataKeyName]; ok {
 		return userData, nil
 	}
 	return nil, nerror.New("no user data attached")
@@ -303,30 +288,6 @@ func GetUserDataFromSession(s Session) (interface{}, error) {
 // AddSessionToContext adds session into provided context, returning new context.
 func AddSessionToContext(ctx context.Context, session Session) context.Context {
 	return context.WithValue(ctx, SessionKey, session)
-}
-
-// Sessions embodies what we expect from a session store or provider
-// which handles the underline storing and management of sessions.
-type Sessions interface {
-	// Get retrieves the underline session from request, retrieving
-	// underline session from the store from the information retrieved
-	// from the request.
-	Get(req *http.Request) (Session, error)
-
-	// Create creates new session information for verified claim
-	// attaching claim data.
-	Create(ctx context.Context, claim VerifiedClaim) (Session, error)
-
-	// GetByID attempts to retrieve an existing session by it's unique
-	// nxid ID.
-	GetByID(ctx context.Context, id nxid.ID) (Session, error)
-
-	// Delete removes giving session from underline store.
-	Delete(ctx context.Context, id nxid.ID) (Session, error)
-
-	// Extend extends giving session underline lifetime to
-	// extend giving session time.
-	Extend(ctx context.Context, id nxid.ID) (Session, error)
 }
 
 // SessionConfig defines the configuration which are the values for giving
@@ -412,9 +373,9 @@ func (s *SessionImpl) Get(req *http.Request) (Session, error) {
 	}
 
 	var err error
-	var content string
-
 	if s.Config.Signer != nil {
+		var content string
+
 		if err = s.Config.Signer.Decode(SessionCookieName, sessionCookie.Value, &content); err != nil {
 			return session, nerror.WrapOnly(err)
 		}
@@ -424,7 +385,7 @@ func (s *SessionImpl) Get(req *http.Request) (Session, error) {
 			return session, nerror.WrapOnly(err)
 		}
 
-		session, err = s.Config.Storage.Get(ctx, tmp.ID.String())
+		session, err = s.Config.Storage.GetByID(ctx, tmp.ID.String())
 		if err != nil {
 			return session, nerror.WrapOnly(err)
 		}
@@ -432,17 +393,18 @@ func (s *SessionImpl) Get(req *http.Request) (Session, error) {
 		return session, nil
 	}
 
+	var content []byte
 	content, err = base64.StdEncoding.DecodeString(sessionCookie.Value)
 	if err != nil {
 		return session, nerror.WrapOnly(err)
 	}
 
 	var tmp Session
-	if err = json.Unmarshal(nunsafe.String2Bytes(content), &tmp); err != nil {
+	if err = json.Unmarshal(content, &tmp); err != nil {
 		return session, nerror.WrapOnly(err)
 	}
 
-	session, err = s.Config.Storage.Get(ctx, tmp.ID.String())
+	session, err = s.Config.Storage.GetByID(ctx, tmp.ID.String())
 	if err != nil {
 		return session, nerror.WrapOnly(err)
 	}
@@ -456,7 +418,7 @@ func (s *SessionImpl) GetByID(ctx context.Context, id nxid.ID) (Session, error) 
 		defer span.Finish()
 	}
 
-	session, err = s.Config.Storage.Get(req.Context(), id.String())
+	var session, err = s.Config.Storage.GetByID(ctx, id.String())
 	if err != nil {
 		return session, nerror.WrapOnly(err)
 	}
@@ -480,12 +442,8 @@ func (s *SessionImpl) Create(ctx context.Context, claim VerifiedClaim) (Session,
 	session.Provider = claim.Provider
 	session.Created = time.Now()
 	session.Updated = session.Created
+	session.Data = claim.Attached.WebSafe()
 	session.Expiring = session.Created.Add(s.Config.Lifetime)
-	if claim.Data != nil {
-		session.Attached = map[string]interface{}{
-			SessionUserDataKeyName: claim.Data,
-		}
-	}
 
 	if err := s.Config.Storage.Save(ctx, session); err != nil {
 		return session, nerror.WrapOnly(err)
@@ -509,7 +467,7 @@ func (s *SessionImpl) Extend(ctx context.Context, id nxid.ID) error {
 		defer span.Finish()
 	}
 
-	var session, err = s.Config.Storage.Get(ctx, id.String())
+	var session, err = s.Config.Storage.GetByID(ctx, id.String())
 	if err != nil {
 		return nerror.WrapOnly(err)
 	}

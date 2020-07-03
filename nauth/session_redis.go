@@ -10,7 +10,7 @@ import (
 	openTracing "github.com/opentracing/opentracing-go"
 )
 
-var _ SessionsStorage = (*RedisSessionStore)(nil)
+var _ SessionStorage = (*RedisSessionStore)(nil)
 
 // RedisSessionStore implements a storage type for CRUD operations on
 // sessions.
@@ -25,6 +25,11 @@ func NewRedisSessionStore(codec SessionCodec, store *nredis.RedisStore) *RedisSe
 		Codec: codec,
 		Store: store,
 	}
+}
+
+// GetAllByUser will return a suitable error towards supporting multiple sessions.
+func (s *RedisSessionStore) GetAllByUser(ctx context.Context, userId string) ([]Session, error) {
+	return nil, nerror.New("redis is not suitable for multiple sessions")
 }
 
 // Save adds giving session into underline store.
@@ -44,7 +49,10 @@ func (s *RedisSessionStore) Save(ctx context.Context, se Session) error {
 		return nerror.Wrap(err, "Session failed validation")
 	}
 
-	var content = bytes.NewBuffer(make([]byte, 0, 512))
+	var content = bufferPool.Get().(*bytes.Buffer)
+	defer bufferPool.Put(content)
+	content.Reset()
+
 	if err := s.Codec.Encode(content, se); err != nil {
 		return nerror.Wrap(err, "Failed to encode data")
 	}
@@ -92,11 +100,11 @@ func (s *RedisSessionStore) GetAll(ctx context.Context) ([]Session, error) {
 	}
 
 	var records []Session
-	var err = s.Store.Find((content []byte, id string) bool {
+	var err = s.Store.Find(func (content []byte, id string) bool {
 		return true
 	})
 	if err != nil {
-		return session, nerror.WrapOnly(err)
+		return nil, nerror.WrapOnly(err)
 	}
 	return records, nil
 }
@@ -114,11 +122,7 @@ func (s *RedisSessionStore) GetByUser(ctx context.Context, key string) (Session,
 		return session, nerror.WrapOnly(err)
 	}
 
-	var reader = readerPool.Get().(*bytes.Reader)
-	defer readerPool.Put(reader)
-
-	reader.Reset(sessionBytes)
-	defer reader.Reset(nil)
+	var reader = bytes.NewReader(sessionBytes)
 	if err := s.Codec.Decode(reader, &session); err != nil {
 		return session, nerror.WrapOnly(err)
 	}
@@ -138,11 +142,7 @@ func (s *RedisSessionStore) GetByID(ctx context.Context, key string) (Session, e
 		return session, nerror.WrapOnly(err)
 	}
 
-	var reader = readerPool.Get().(*bytes.Reader)
-	defer readerPool.Put(reader)
-
-	reader.Reset(sessionBytes)
-	defer reader.Reset(nil)
+	var reader = bytes.NewReader(sessionBytes)
 	if err := s.Codec.Decode(reader, &session); err != nil {
 		return session, nerror.WrapOnly(err)
 	}
@@ -161,11 +161,7 @@ func (s *RedisSessionStore) Remove(ctx context.Context, key string) (Session, er
 		return session, nerror.WrapOnly(err)
 	}
 
-	var reader = readerPool.Get().(*bytes.Reader)
-	defer readerPool.Put(reader)
-
-	reader.Reset(sessionBytes)
-	defer reader.Reset(nil)
+	var reader = bytes.NewReader(sessionBytes)
 	if err := s.Codec.Decode(reader, &session); err != nil {
 		return session, nerror.WrapOnly(err)
 	}

@@ -48,9 +48,9 @@ func (rd *BadgerStore) createConnection() error {
 func (rd *BadgerStore) Keys() ([]string, error) {
 	var keys = make([]string, 0)
 	var err = rd.Db.View(func(txn *badger.Txn) error {
-		var newIterator = rd.iter
-		newIterator.PrefetchValues = false
-		var iterator = txn.NewIterator(newIterator)
+		var iteratorOption = rd.iter
+		iteratorOption.PrefetchValues = false
+		var iterator = txn.NewIterator(iteratorOption)
 		defer iterator.Close()
 
 		if rd.prefix == "" {
@@ -79,60 +79,7 @@ func (rd *BadgerStore) Keys() ([]string, error) {
 
 // Find returns all matching results within using giving functions.
 func (rd *BadgerStore) Find(fn func([]byte, string) bool) error {
-	var err = rd.Db.View(func(txn *badger.Txn) error {
-		var iterator = txn.NewIterator(rd.iter)
-		defer iterator.Close()
-
-		if rd.prefix == "" {
-			for iterator.Rewind(); iterator.Valid(); iterator.Next() {
-				var item = iterator.Item()
-				if item.IsDeletedOrExpired() {
-					continue
-				}
-				var stop = false
-				var err = item.Value(func(value []byte) error {
-					if !fn(value, string(item.Key())) {
-						stop = true
-					}
-					return nil
-				})
-
-				if err != nil {
-					return nerror.WrapOnly(err)
-				}
-
-				if stop {
-					return nil
-				}
-			}
-			return nil
-		}
-
-		var prefix = []byte(rd.prefix)
-		for iterator.Rewind(); iterator.ValidForPrefix(prefix); iterator.Next() {
-			var item = iterator.Item()
-			if item.IsDeletedOrExpired() {
-				continue
-			}
-			var stop = false
-			var err = item.Value(func(value []byte) error {
-				if !fn(value, string(item.Key())) {
-					stop = true
-				}
-				return nil
-			})
-
-			if err != nil {
-				return nerror.WrapOnly(err)
-			}
-
-			if stop {
-				return nil
-			}
-		}
-		return nil
-	})
-	return err
+	return rd.Each(fn)
 }
 
 // Each runs through all elements for giving store, skipping keys

@@ -79,8 +79,20 @@ func (c Claim) Valid() error {
 	return ErrNoCredentials
 }
 
+// WebSafeData exposes method for providing web safe data that can be attached
+// to a session, jwt or such.
+type WebSafeData interface {
+	WebSafe() map[string]string
+}
+
 type Data interface {
+	WebSafeData
+
+	// Type returns the type of Data.
 	Type() string
+
+	// ToMap returns a map of data values representing content.
+	ToMap() map[string]string
 }
 
 // VerifiedClaim represents the response received back from the
@@ -93,7 +105,7 @@ type VerifiedClaim struct {
 	Method       string      // email-password, phone-number, token,..etc
 	Provider     string      // google, in-house, phone, facebook, we-chat, github, ...etc
 	Roles        []string    // Roles of verified claim.
-	Attached     Data 		// Extra Data to be attached to session for user.
+	Attached     Data
 }
 
 // Valid returns an error if giving credentials could not be validated
