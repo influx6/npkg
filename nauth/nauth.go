@@ -102,9 +102,9 @@ type VerifiedClaim struct {
 	User         nxid.ID
 	BrowserAgent string
 	IP           net.IP
-	Method       string      // email-password, phone-number, token,..etc
-	Provider     string      // google, in-house, phone, facebook, we-chat, github, ...etc
-	Roles        []string    // Roles of verified claim.
+	Method       string   // email-password, phone-number, token,..etc
+	Provider     string   // google, in-house, phone, facebook, we-chat, github, ...etc
+	Roles        []string // Roles of verified claim.
 	Attached     Data
 }
 
@@ -155,6 +155,47 @@ type ClaimVerifier interface {
 	Verify(Claim) (VerifiedClaim, error)
 }
 
+// Handles the initial response to a request to initiate/begin
+// a authentication procedure e.g to redirect to
+// a page for user-name and password login or google oauth page with
+// a secure token.
+type AuthInitiator interface {
+	Initiate(res http.ResponseWriter, req *http.Request) error
+}
+
+// Authenticate takes data from the initiation phase (e.g username and password)
+// which is consider a Claim, which then is verified written accordingly to the response.
+//
+// It is expected that both the verified claim is returned.
+//
+// The authenticate process can be the authentication of a new login
+// or the authentication of an existing login. The provider implementation
+// should decide for it'self as it sees fit to match on how this two should
+// be managed.
+type Authenticator interface {
+	Authenticate(req *http.Request) (VerifiedClaim, error)
+}
+
+// Finalization procedure required by the authentication
+// provider which may be required.
+type AuthFinalizer interface {
+	Finalize(req *http.Request) error
+}
+
+// Handles the refreshing of an authentication session, useful
+// for protocols that require and provide refresh token as a means of
+// updating their access token expiry timeline.
+// This is based on protocols and a protocol may not implement it
+// and hence return a 501 (NOT Implemented) status
+type AuthRefresh interface {
+	Refresh(req *http.Request) (VerifiedClaim, error)
+}
+
+// GetVerifiedClaim retrieves verified claim from incoming request.
+type AuthClaims interface {
+	GetVerifiedClaim(req *http.Request) (VerifiedClaim, error)
+}
+
 // AuthenticationProvider defines what the Authentication should be as,
 // it both exposes the the method from Authenticator and the provides
 // the Initiate and Authenticate methods which are the underline
@@ -163,43 +204,11 @@ type ClaimVerifier interface {
 // Exposes such a final form allows us to swap in, any form of authentication
 // be it email, facebook, google or oauth based without much work.
 type AuthenticationProvider interface {
-	ClaimVerifier
-
-	// Initiate handles the initial response to a request to initiate/begin
-	// a authentication procedure e.g to redirect to
-	// a page for user-name and password login or google oauth page with
-	// a secure token.
-	Initiate(res http.ResponseWriter, req *http.Request)
-
-	// Authenticate finalizes the response to initiation of authentication
-	// with the call to AuthenticationProvider.Initiate.
-	//
-	// It handles the process which finalizes and verifies the authentication data sent
-	// back after the initiation, with a response as dictated by provider.
-	//
-	// The authenticate process can be the authentication of a new login
-	// or the authentication of an existing login. The provider implementation
-	// should decide for it'self as it sees fit to match on how this two should
-	// be managed.
-	Authenticate(res http.ResponseWriter, req *http.Request)
-
-	// GetVerifiedClaim exposes to others by the provider a means of getting a verified
-	// claim from a incoming request after it has being authenticated in some previous step.
-	//
-	// It exists to let you handle cases of already authenticated users whoes session is yet
-	// to expire and are making new request for resources.
-	//
-	// This lets others step into the middle of the Authentication procedure
-	// to retrieve the verified request claim as dictated by provider, which
-	// can be used for other uses.
-	GetVerifiedClaim(req *http.Request) (VerifiedClaim, error)
-
-	// Refresh handles the refreshing of an authentication session, useful
-	// for protocols that require and provide refresh token as a means of
-	// updating their access token expiry timeline.
-	// This is based on protocols and a protocol may not implement it
-	// and hence return a 501 (NOT Implemented) status
-	Refresh(res http.ResponseWriter, req *http.Request)
+	AuthClaims
+	AuthRefresh
+	AuthInitiator
+	Authenticator
+	AuthFinalizer
 }
 
 // ParseAuthorization returns the scheme and token of the Authorization string

@@ -139,6 +139,7 @@ func (s *BadgerSessionStore) GetByUser(ctx context.Context, key string) (Session
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "BadgerSessionStore.Get"); span != nil {
 		defer span.Finish()
 	}
+
 	var session Session
 	var sessionBytes, err = s.Store.Get(key)
 	if err != nil {
@@ -159,6 +160,7 @@ func (s *BadgerSessionStore) GetByID(ctx context.Context, key string) (Session, 
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "BadgerSessionStore.Get"); span != nil {
 		defer span.Finish()
 	}
+
 	var session Session
 	var sessionBytes, err = s.Store.Get(key)
 	if err != nil {

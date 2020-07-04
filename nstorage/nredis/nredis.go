@@ -18,10 +18,10 @@ var _ nstorage.QueryableByteStore = (*RedisStore)(nil)
 // underline store.
 type RedisStore struct {
 	tableName string
-	hashList string
-	hashElem string
-	Config   *redis.Options
-	Client   *redis.Client
+	hashList  string
+	hashElem  string
+	Config    *redis.Options
+	Client    *redis.Client
 }
 
 // NewRedisStore returns a new instance of a redis store.
@@ -60,6 +60,10 @@ func (rd *RedisStore) createConnection() error {
 	}
 	rd.Client = client
 	return nil
+}
+
+func (rd *RedisStore) Close() error {
+	return rd.Client.Close()
 }
 
 // getHashKey returns formatted for unique form towards using creating

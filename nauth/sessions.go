@@ -35,16 +35,42 @@ const (
 // Session embodies a current accessible session for a user
 // over a underline service.
 type Session struct {
-	Provider string    `json:"provider"`
-	Method   string    `json:"method"`
-	Browser  string    `json:"browser"`
-	IP       net.IP    `json:"ip"`
-	ID       nxid.ID   `json:"id"`
-	User     nxid.ID   `json:"user"`
-	Created  time.Time `json:"created"`
-	Updated  time.Time `json:"updated"`
-	Expiring time.Time `json:"expiring"`
-	Data map[string]string `json:"data"`
+	Provider string            `json:"provider"`
+	Method   string            `json:"method"`
+	Browser  string            `json:"browser"`
+	IP       net.IP            `json:"ip"`
+	ID       nxid.ID           `json:"id"`
+	User     nxid.ID           `json:"user"`
+	Created  time.Time         `json:"created"`
+	Updated  time.Time         `json:"updated"`
+	Expiring time.Time         `json:"expiring"`
+	Data     map[string]string `json:"data"`
+}
+
+// Validate returns an error if giving session was invalid.
+func (s *Session) Validate() error {
+	if s.Created.IsZero() {
+		return nerror.New("session.Created has no created time stamp")
+	}
+	if s.Updated.IsZero() {
+		return nerror.New("session.Updated has no updated time stamp")
+	}
+	if s.Expiring.IsZero() {
+		return nerror.New("session.Expiring has no expiration time stamp")
+	}
+	if len(s.ID) == 0 {
+		return nerror.New("session.ID must have a valid value")
+	}
+	if len(s.User) == 0 {
+		return nerror.New("session.User must have a valid value")
+	}
+	if len(s.Provider) == 0 {
+		return nerror.New("session.Provider must have a valid value")
+	}
+	if len(s.Method) == 0 {
+		return nerror.New("session.Method must have a valid value")
+	}
+	return nil
 }
 
 // EncodeToCookie returns a http.Cookie with session encoded into
@@ -75,32 +101,6 @@ func (s *Session) EncodeToCookie(signer *securecookie.SecureCookie) (*http.Cooki
 	}
 	cookie.Value = encrypted
 	return &cookie, nil
-}
-
-// Validate returns an error if giving session was invalid.
-func (s *Session) Validate() error {
-	if s.Created.IsZero() {
-		return nerror.New("session.Created has no created time stamp")
-	}
-	if s.Updated.IsZero() {
-		return nerror.New("session.Updated has no updated time stamp")
-	}
-	if s.Expiring.IsZero() {
-		return nerror.New("session.Expiring has no expiration time stamp")
-	}
-	if len(s.ID) == 0 {
-		return nerror.New("session.ID must have a valid value")
-	}
-	if len(s.User) == 0 {
-		return nerror.New("session.User must have a valid value")
-	}
-	if len(s.Provider) == 0 {
-		return nerror.New("session.Provider must have a valid value")
-	}
-	if len(s.Method) == 0 {
-		return nerror.New("session.Method must have a valid value")
-	}
-	return nil
 }
 
 // Writes giving session as a cookie into the provided http.ResponseWriter.
@@ -156,6 +156,18 @@ func (s *Session) EncodeForCookie(encoder npkg.ObjectEncoder) error {
 	if err := encoder.Int64("expiring_nano", s.Expiring.UnixNano()); err != nil {
 		return nerror.WrapOnly(err)
 	}
+	if s.Data != nil && len(s.Data) != 0 {
+		if err := encoder.ObjectFor("data", func(mapEncoder npkg.ObjectEncoder) error {
+			for k, v := range s.Data {
+				if mapErr := mapEncoder.String(k, v); mapErr != nil {
+					return mapErr
+				}
+			}
+			return nil
+		}); err != nil {
+			return nerror.WrapOnly(err)
+		}
+	}
 	return nil
 }
 
@@ -190,6 +202,18 @@ func (s *Session) EncodeObject(encoder npkg.ObjectEncoder) error {
 	}
 	if err := encoder.Int64("expiring_nano", s.Expiring.UnixNano()); err != nil {
 		return nerror.WrapOnly(err)
+	}
+	if s.Data != nil && len(s.Data) != 0 {
+		if err := encoder.ObjectFor("data", func(mapEncoder npkg.ObjectEncoder) error {
+			for k, v := range s.Data {
+				if mapErr := mapEncoder.String(k, v); mapErr != nil {
+					return mapErr
+				}
+			}
+			return nil
+		}); err != nil {
+			return nerror.WrapOnly(err)
+		}
 	}
 	if len(s.IP) != 0 {
 		if err := encoder.String("method", s.IP.String()); err != nil {

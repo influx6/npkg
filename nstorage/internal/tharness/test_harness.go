@@ -14,30 +14,45 @@ import (
 
 func TestByteStoreFindAll(t *testing.T, store nstorage.QueryableByteStore) {
 	for i := 0; i < 10; i++ {
-		require.NoError(t, store.Save("day", string2Bytes(fmt.Sprintf("i"))))
+		var key = fmt.Sprintf("day-%d", i)
+		require.NoError(t, store.Save(key, string2Bytes(fmt.Sprintf("i"))))
 	}
 
-	var vals, err = store.FindAll(func(val []byte, k string) bool {
+	var keys, keyErr = store.Keys()
+	require.NoError(t, keyErr)
+	require.Len(t, keys, 10)
+
+	var count int
+	var err = store.Find(func(val []byte, k string) bool {
+		count++
 		return true
 	})
 
 	require.NoError(t, err)
-	require.NotNil(t, vals)
-	require.Equal(t, len(vals), 10)
+	require.Equal(t, 10, count)
 }
 
 func TestByteStoreFindEach(t *testing.T, store nstorage.QueryableByteStore) {
 	for i := 0; i < 10; i++ {
-		require.NoError(t, store.Save("day", string2Bytes(fmt.Sprintf("i"))))
+		var key = fmt.Sprintf("day-%d", i)
+		require.NoError(t, store.Save(key, string2Bytes(fmt.Sprintf("i"))))
 	}
 
-	var vals, err = store.FindEach(func(val []byte, k string) bool {
+	var keys, keyErr = store.Keys()
+	require.NoError(t, keyErr)
+	require.Len(t, keys, 10)
+
+	var count int
+	var err = store.Find(func(val []byte, k string) bool {
+		if count >= 2 {
+			return false
+		}
+		count++
 		return true
-	}, 2)
+	})
 
 	require.NoError(t, err)
-	require.NotNil(t, vals)
-	require.Equal(t, len(vals), 2)
+	require.Equal(t, 2, count)
 }
 
 func TestByteStore(t *testing.T, store nstorage.ByteStore) {
@@ -51,11 +66,16 @@ func TestByteStore(t *testing.T, store nstorage.ByteStore) {
 	require.NoError(t, err)
 	require.True(t, exist)
 
-	require.NoError(t, store.Update("day", string2Bytes("tweeter")))
+	var newValue = "tweeter"
+	require.NoError(t, store.Update("day", string2Bytes(newValue)))
 
 	exist, err = store.Exists("day")
 	require.NoError(t, err)
 	require.True(t, exist)
+
+	var keyValue, kerr = store.Get("day")
+	require.NoError(t, kerr)
+	require.Equal(t, newValue, string(keyValue))
 
 	var count int
 	store.Each(func(v []byte, k string) bool {
@@ -71,7 +91,7 @@ func TestByteStore(t *testing.T, store nstorage.ByteStore) {
 }
 
 func TestExpirableStore(t *testing.T, store nstorage.ExpirableStore) {
-	require.NoError(t, store.SaveTTL("day", string2Bytes("wrecker"), time.Second))
+	require.NoError(t, store.SaveTTL("day", string2Bytes("wrecker"), 3*time.Second))
 
 	var val, err = store.Get("day")
 	require.NoError(t, err)
@@ -79,13 +99,13 @@ func TestExpirableStore(t *testing.T, store nstorage.ExpirableStore) {
 
 	ttl, err := store.TTL("day")
 	require.NoError(t, err)
-	require.True(t, time.Second <= ttl)
+	require.True(t, ttl > 0)
 
 	require.NoError(t, store.ExtendTTL("day", time.Second))
 
 	ttl, err = store.TTL("day")
 	require.NoError(t, err)
-	require.True(t, (time.Second) < ttl)
+	require.True(t, ttl > 0)
 
 	require.NoError(t, store.UpdateTTL("day", string2Bytes("tweeter"), time.Second))
 
@@ -93,16 +113,10 @@ func TestExpirableStore(t *testing.T, store nstorage.ExpirableStore) {
 	require.NoError(t, err)
 	require.Equal(t, "tweeter", bytes2String(val))
 
-	ttl, err = store.TTL("day")
-	require.NoError(t, err)
-	require.True(t, (time.Second*2) < ttl)
-
-	fmt.Printf("BeforeTTL: %+q\n", ttl)
-
-	<-time.After(time.Second * 10)
-	val, err = store.Get("day")
-	fmt.Printf("Returned data: %+q\n", val)
-	require.Error(t, err)
+	var ttl2, terr = store.TTL("day")
+	require.NoError(t, terr)
+	fmt.Printf("TTL: %s -> %s\n", ttl2, ttl)
+	require.True(t, ttl2 < ttl)
 }
 
 func bytes2String(bc []byte) string {

@@ -17,6 +17,11 @@ func TestIntegrationRedisStoreFindEach(t *testing.T) {
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
+	if err := redisClient.Ping(); err != nil {
+		t.SkipNow()
+		return
+	}
+
 	var store, err = FromRedisStore("testing_mb", redisClient)
 	require.NoError(t, err)
 	require.NotNil(t, store)
@@ -32,6 +37,11 @@ func TestIntegrationRedisStoreFindAll(t *testing.T) {
 
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
+
+	if err := redisClient.Ping(); err != nil {
+		t.SkipNow()
+		return
+	}
 
 	var store, err = FromRedisStore("testing_mb", redisClient)
 	require.NoError(t, err)
@@ -49,6 +59,11 @@ func TestIntegrationRedisStore(t *testing.T) {
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
+	if err := redisClient.Ping(); err != nil {
+		t.SkipNow()
+		return
+	}
+
 	var store, err = FromRedisStore("testing_mb", redisClient)
 	require.NoError(t, err)
 	require.NotNil(t, store)
@@ -64,6 +79,11 @@ func TestIntegrationRedisStoreExpirables(t *testing.T) {
 
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
+
+	if err := redisClient.Ping(); err != nil {
+		t.SkipNow()
+		return
+	}
 
 	var store, err = FromRedisStore("testing_mb", redisClient)
 	require.NoError(t, err)

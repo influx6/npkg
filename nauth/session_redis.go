@@ -79,7 +79,10 @@ func (s *RedisSessionStore) Update(ctx context.Context, se Session) error {
 		return nerror.Wrap(err, "Session failed validation")
 	}
 
-	var content = bytes.NewBuffer(make([]byte, 0, 512))
+	var content = bufferPool.Get().(*bytes.Buffer)
+	defer bufferPool.Put(content)
+	content.Reset()
+
 	if err := s.Codec.Encode(content, se); err != nil {
 		return nerror.Wrap(err, "Failed to encode data")
 	}
@@ -99,14 +102,25 @@ func (s *RedisSessionStore) GetAll(ctx context.Context) ([]Session, error) {
 		defer span.Finish()
 	}
 
-	var records []Session
-	var err = s.Store.Find(func (content []byte, id string) bool {
-		return true
+	var decodeErr error
+	var sessions []Session
+	var err = s.Store.Each(func(content []byte, key string) bool {
+		var reader = bytes.NewBuffer(content)
+
+		var session Session
+		decodeErr = s.Codec.Decode(reader, &session)
+		if decodeErr == nil {
+			sessions = append(sessions, session)
+		}
+		return decodeErr == nil
 	})
 	if err != nil {
 		return nil, nerror.WrapOnly(err)
 	}
-	return records, nil
+	if decodeErr != nil {
+		return nil, nerror.WrapOnly(decodeErr)
+	}
+	return sessions, nil
 }
 
 // GetByUser retrieves giving session from store based on the provided
@@ -116,6 +130,7 @@ func (s *RedisSessionStore) GetByUser(ctx context.Context, key string) (Session,
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "RedisSessionStore.Get"); span != nil {
 		defer span.Finish()
 	}
+
 	var session Session
 	var sessionBytes, err = s.Store.Get(key)
 	if err != nil {
@@ -136,6 +151,7 @@ func (s *RedisSessionStore) GetByID(ctx context.Context, key string) (Session, e
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "RedisSessionStore.Get"); span != nil {
 		defer span.Finish()
 	}
+
 	var session Session
 	var sessionBytes, err = s.Store.Get(key)
 	if err != nil {
@@ -155,6 +171,7 @@ func (s *RedisSessionStore) Remove(ctx context.Context, key string) (Session, er
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "RedisSessionStore.Remove"); span != nil {
 		defer span.Finish()
 	}
+
 	var session Session
 	var sessionBytes, err = s.Store.Remove(key)
 	if err != nil {

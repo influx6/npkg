@@ -515,12 +515,8 @@ func (m *ExpiringByteMap) Set(k string, value []byte, expire time.Duration) {
 	m.SetMany(func(values map[string]ExpiringValue) {
 		if nval, ok := values[k]; ok {
 			nval.Value = value
-			if expire != 0 {
-				if nval.when.IsZero() {
-					nval.when = time.Now().Add(expire)
-				} else {
-					nval.when = nval.when.Add(expire)
-				}
+			if expire > 0 {
+				nval.when = time.Now().Add(expire)
 			}
 			values[k] = nval
 			return
@@ -596,4 +592,3 @@ func (m *ExpiringByteMap) init() {
 	newValue.Store(store)
 	m.cache = &newValue
 }
-

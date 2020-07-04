@@ -4,7 +4,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/v2"
 
 	"github.com/influx6/npkg/nerror"
 	"github.com/influx6/npkg/nstorage"
@@ -203,7 +203,10 @@ func (rd *BadgerStore) SaveTTL(key string, data []byte, expiration time.Duration
 		var op badger.Entry
 		op.Value = data
 		op.Key = string2Bytes(key)
-		op.ExpiresAt = uint64(time.Now().Add(expiration).Unix())
+
+		if expiration > 0 {
+			op.WithTTL(expiration)
+		}
 
 		if err := txn.SetEntry(&op); err != nil {
 			return nerror.WrapOnly(err)
@@ -225,9 +228,22 @@ func (rd *BadgerStore) TTL(key string) (time.Duration, error) {
 		}
 
 		ttl = ttlDur(item.ExpiresAt(), 0)
+		if ttl < 0 {
+			ttl *= -1
+		}
 		return nil
 	})
 	return ttl, err
+}
+
+// Close updates to disk.
+func (rd *BadgerStore) Close() error {
+	return rd.Db.Close()
+}
+
+// Sync updates to disk.
+func (rd *BadgerStore) Sync() error {
+	return rd.Db.Sync()
 }
 
 // ExtendTTL resets new TTL for giving key if it has not expired and is still accessible.
@@ -243,20 +259,31 @@ func (rd *BadgerStore) ExtendTTL(key string, expiration time.Duration) error {
 			return nerror.New("not found, possibly expired")
 		}
 
+		var lastTTL = ttlDur(item.ExpiresAt(), 0)
+		if lastTTL < 0 {
+			lastTTL *= -1
+		}
+
 		value, err := item.ValueCopy(nil)
 		if err != nil {
-			return err
+			return nerror.Wrap(err, "failed to delete")
+		}
+
+		// delete old key
+		if err := txn.Delete(string2Bytes(key)); err != nil {
+			return nerror.Wrap(err, "failed to delete")
 		}
 
 		var op badger.Entry
 		op.Value = value
 		op.Key = string2Bytes(key)
 
-		var expr = ttlDur(item.ExpiresAt(), 0)
-		op.ExpiresAt = uint64(time.Now().Add(expr + expiration).Unix())
+		if expiration > 0 {
+			op.WithTTL(lastTTL + expiration)
+		}
 
 		if err := txn.SetEntry(&op); err != nil {
-			return err
+			return nerror.Wrap(err, "failed to save")
 		}
 		return nil
 	})
@@ -284,7 +311,10 @@ func (rd *BadgerStore) ResetTTL(key string, expiration time.Duration) error {
 		var op badger.Entry
 		op.Value = value
 		op.Key = string2Bytes(key)
-		op.ExpiresAt = uint64(time.Now().Add(expiration).Unix())
+
+		if expiration > 0 {
+			op.WithTTL(expiration)
+		}
 
 		if err := txn.SetEntry(&op); err != nil {
 			return err
@@ -315,26 +345,18 @@ func (rd *BadgerStore) UpdateTTL(key string, data []byte, expiration time.Durati
 			return nerror.New("not found, possibly expired")
 		}
 
-		value, err := item.ValueCopy(nil)
-		if err != nil {
-			return err
-		}
-
 		var op badger.Entry
-		op.Value = value
+		op.Value = data
 		op.Key = string2Bytes(key)
 
-		var ttl time.Time
-		if expiration == 0 {
-			ttl = time.Unix(int64(item.ExpiresAt()), 0)
-		} else {
-			ttl = time.Now().Add(expiration)
+		if expiration > 0 {
+			op.WithTTL(expiration)
 		}
 
-		op.ExpiresAt = uint64(ttl.Unix())
 		if err := txn.SetEntry(&op); err != nil {
 			return err
 		}
+
 		return nil
 	})
 }

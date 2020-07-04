@@ -1,22 +1,15 @@
 package nbadger
 
 import (
-	"os"
 	"testing"
 
-	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/v2"
 	"github.com/influx6/npkg/nstorage/internal/tharness"
 	"github.com/stretchr/testify/require"
 )
 
 func TestStoreWithBadgerStoreFindEach(t *testing.T) {
-	defer os.RemoveAll("./tmp")
-	require.NoError(t, os.MkdirAll("./tmp", 0777))
-
-	var ops = badger.DefaultOptions
-	ops.Dir = "/tmp/badger"
-	ops.ValueDir = "/tmp/badger"
-
+	var ops = badger.DefaultOptions("").WithInMemory(true)
 	var store, err = NewBadgerStore("", ops, badger.DefaultIteratorOptions)
 	require.NoError(t, err)
 	require.NotNil(t, store)
@@ -25,13 +18,7 @@ func TestStoreWithBadgerStoreFindEach(t *testing.T) {
 }
 
 func TestStoreWithBadgerStoreFindAll(t *testing.T) {
-	defer os.RemoveAll("./tmp")
-	require.NoError(t, os.MkdirAll("./tmp", 0777))
-
-	var ops = badger.DefaultOptions
-	ops.Dir = "/tmp/badger"
-	ops.ValueDir = "/tmp/badger"
-
+	var ops = badger.DefaultOptions("").WithInMemory(true)
 	var store, err = NewBadgerStore("", ops, badger.DefaultIteratorOptions)
 	require.NoError(t, err)
 	require.NotNil(t, store)
@@ -40,13 +27,7 @@ func TestStoreWithBadgerStoreFindAll(t *testing.T) {
 }
 
 func TestStoreWithBadgerStore(t *testing.T) {
-	defer os.RemoveAll("./tmp")
-	require.NoError(t, os.MkdirAll("./tmp", 0777))
-
-	var ops = badger.DefaultOptions
-	ops.Dir = "/tmp/badger"
-	ops.ValueDir = "/tmp/badger"
-
+	var ops = badger.DefaultOptions("").WithInMemory(true)
 	var store, err = NewBadgerStore("", ops, badger.DefaultIteratorOptions)
 	require.NoError(t, err)
 	require.NotNil(t, store)
@@ -55,13 +36,7 @@ func TestStoreWithBadgerStore(t *testing.T) {
 }
 
 func TestBadgerExpiryStore(t *testing.T) {
-	defer os.RemoveAll("./tmp")
-	require.NoError(t, os.MkdirAll("./tmp/badger", 0777))
-
-	var ops = badger.DefaultOptions
-	ops.Dir = "/tmp/badger"
-	ops.ValueDir = "/tmp/badger"
-
+	var ops = badger.DefaultOptions("").WithInMemory(true)
 	var store, err = NewBadgerStore("", ops, badger.DefaultIteratorOptions)
 	require.NoError(t, err)
 	require.NotNil(t, store)
