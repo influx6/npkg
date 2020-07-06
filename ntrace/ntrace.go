@@ -23,19 +23,20 @@ const (
 
 type contextKey string
 
-// Trace defines a function which giving provided context, traceName will call provided function
-// with the trace created and finished. Note if tracing is disabled, then a nil span is provided
-// to passed in function.
+// WithTrace returns a new context.Context and a function which can be used to finish the
+// opentracing.Span attached to giving context.
 //
-// WARNING: The do function may receive a nil span, if no span was found within context, has
-// this is used to indicate if tracing was enabled.
-func Trace(ctx context.Context, traceName string, do func(context.Context, opentracing.Span)) {
+// It's an alternative to using Trace.
+func WithTrace(ctx context.Context, methodName string) (context.Context, func()) {
 	var span opentracing.Span
-	if ctx, span = NewSpanFromContext(ctx, traceName); span != nil {
-		defer span.Finish()
-	}
+	ctx, span = NewSpanFromContext(ctx, methodName)
 
-	do(ctx, span)
+	return ctx, func() {
+		if span == nil  {
+			return
+		}
+		span.Finish()
+	}
 }
 
 // GetSpanFromContext returns a OpenTracing span if available from provided context.

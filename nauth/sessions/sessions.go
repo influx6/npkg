@@ -1,10 +1,11 @@
-package nauth
+package sessions
 
 import (
 	"context"
 	"encoding/base64"
 	"encoding/gob"
 	"encoding/json"
+	"github.com/influx6/npkg/nauth"
 	"io"
 	"net"
 	"net/http"
@@ -453,7 +454,7 @@ func (s *SessionImpl) GetByID(ctx context.Context, id nxid.ID) (Session, error) 
 // within underline storage, it returns a new session representing
 // said user with associated information to be included within
 // such session.
-func (s *SessionImpl) Create(ctx context.Context, claim VerifiedClaim) (Session, error) {
+func (s *SessionImpl) Create(ctx context.Context, claim nauth.VerifiedClaim) (Session, error) {
 	var span openTracing.Span
 	if ctx, span = ntrace.NewSpanFromContext(ctx, "SessionImpl.Create"); span != nil {
 		defer span.Finish()

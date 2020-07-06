@@ -1,35 +1,44 @@
-package nauth
+package sessions
 
 import (
 	"bytes"
 	"context"
+	"sync"
 
 	"github.com/influx6/npkg/nerror"
-	"github.com/influx6/npkg/nstorage/nredis"
+	"github.com/influx6/npkg/nstorage/nbadger"
 	"github.com/influx6/npkg/ntrace"
 	openTracing "github.com/opentracing/opentracing-go"
 )
 
-var _ SessionStorage = (*RedisSessionStore)(nil)
+var (
+	bufferPool = sync.Pool{
+		New: func() interface{} {
+			return bytes.NewBuffer(make([]byte, 0, 512))
+		},
+	}
+)
 
-// RedisSessionStore implements a storage type for CRUD operations on
+var _ SessionStorage = (*BadgerSessionStore)(nil)
+
+// BadgerSessionStore implements a storage type for CRUD operations on
 // sessions.
-type RedisSessionStore struct {
+type BadgerSessionStore struct {
 	Codec SessionCodec
-	Store *nredis.RedisStore
+	Store *nbadger.BadgerStore
 }
 
-// NewRedisSessionStore returns a new instance of a RedisSessionStore.
-func NewRedisSessionStore(codec SessionCodec, store *nredis.RedisStore) *RedisSessionStore {
-	return &RedisSessionStore{
+// NewBadgerSessionStore returns a new instance of a BadgerSessionStore.
+func NewBadgerSessionStore(codec SessionCodec, store *nbadger.BadgerStore) *BadgerSessionStore {
+	return &BadgerSessionStore{
 		Codec: codec,
 		Store: store,
 	}
 }
 
 // GetAllByUser will return a suitable error towards supporting multiple sessions.
-func (s *RedisSessionStore) GetAllByUser(ctx context.Context, userId string) ([]Session, error) {
-	return nil, nerror.New("redis is not suitable for multiple sessions")
+func (s *BadgerSessionStore) GetAllByUser(ctx context.Context, userId string) ([]Session, error) {
+	return nil, nerror.New("badger is not suitable for multiple sessions")
 }
 
 // Save adds giving session into underline store.
@@ -39,9 +48,9 @@ func (s *RedisSessionStore) GetAllByUser(ctx context.Context, userId string) ([]
 //
 // Save calculates the ttl by subtracting the Session.Created value from
 // the Session.Expiring value.
-func (s *RedisSessionStore) Save(ctx context.Context, se Session) error {
+func (s *BadgerSessionStore) Save(ctx context.Context, se Session) error {
 	var span openTracing.Span
-	if ctx, span = ntrace.NewSpanFromContext(ctx, "RedisSessionStore.Save"); span != nil {
+	if ctx, span = ntrace.NewSpanFromContext(ctx, "BadgerSessionStore.Save"); span != nil {
 		defer span.Finish()
 	}
 
@@ -70,9 +79,9 @@ func (s *RedisSessionStore) Save(ctx context.Context, se Session) error {
 //
 // Update calculates the ttl by subtracting the Session.Updated value from
 // the Session.Expiring value.
-func (s *RedisSessionStore) Update(ctx context.Context, se Session) error {
+func (s *BadgerSessionStore) Update(ctx context.Context, se Session) error {
 	var span openTracing.Span
-	if ctx, span = ntrace.NewSpanFromContext(ctx, "RedisSessionStore.Update"); span != nil {
+	if ctx, span = ntrace.NewSpanFromContext(ctx, "BadgerSessionStore.Update"); span != nil {
 		defer span.Finish()
 	}
 	if err := se.Validate(); err != nil {
@@ -96,9 +105,9 @@ func (s *RedisSessionStore) Update(ctx context.Context, se Session) error {
 }
 
 // GetAll returns all sessions stored within store.
-func (s *RedisSessionStore) GetAll(ctx context.Context) ([]Session, error) {
+func (s *BadgerSessionStore) GetAll(ctx context.Context) ([]Session, error) {
 	var span openTracing.Span
-	if ctx, span = ntrace.NewSpanFromContext(ctx, "RedisSessionStore.Update"); span != nil {
+	if ctx, span = ntrace.NewSpanFromContext(ctx, "BadgerSessionStore.GetAll"); span != nil {
 		defer span.Finish()
 	}
 
@@ -125,9 +134,9 @@ func (s *RedisSessionStore) GetAll(ctx context.Context) ([]Session, error) {
 
 // GetByUser retrieves giving session from store based on the provided
 // session user value.
-func (s *RedisSessionStore) GetByUser(ctx context.Context, key string) (Session, error) {
+func (s *BadgerSessionStore) GetByUser(ctx context.Context, key string) (Session, error) {
 	var span openTracing.Span
-	if ctx, span = ntrace.NewSpanFromContext(ctx, "RedisSessionStore.Get"); span != nil {
+	if ctx, span = ntrace.NewSpanFromContext(ctx, "BadgerSessionStore.Get"); span != nil {
 		defer span.Finish()
 	}
 
@@ -146,9 +155,9 @@ func (s *RedisSessionStore) GetByUser(ctx context.Context, key string) (Session,
 
 // GetByID retrieves giving session from store based on the provided
 // session ID value.
-func (s *RedisSessionStore) GetByID(ctx context.Context, key string) (Session, error) {
+func (s *BadgerSessionStore) GetByID(ctx context.Context, key string) (Session, error) {
 	var span openTracing.Span
-	if ctx, span = ntrace.NewSpanFromContext(ctx, "RedisSessionStore.Get"); span != nil {
+	if ctx, span = ntrace.NewSpanFromContext(ctx, "BadgerSessionStore.Get"); span != nil {
 		defer span.Finish()
 	}
 
@@ -166,12 +175,11 @@ func (s *RedisSessionStore) GetByID(ctx context.Context, key string) (Session, e
 }
 
 // Remove removes underline session if still present from underline store.
-func (s *RedisSessionStore) Remove(ctx context.Context, key string) (Session, error) {
+func (s *BadgerSessionStore) Remove(ctx context.Context, key string) (Session, error) {
 	var span openTracing.Span
-	if ctx, span = ntrace.NewSpanFromContext(ctx, "RedisSessionStore.Remove"); span != nil {
+	if ctx, span = ntrace.NewSpanFromContext(ctx, "BadgerSessionStore.Remove"); span != nil {
 		defer span.Finish()
 	}
-
 	var session Session
 	var sessionBytes, err = s.Store.Remove(key)
 	if err != nil {

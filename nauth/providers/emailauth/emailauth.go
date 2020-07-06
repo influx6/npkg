@@ -1,6 +1,7 @@
 package emailauth
 
 import (
+	"github.com/influx6/npkg/nauth/providers"
 	"net/http"
 
 	"github.com/influx6/npkg/nauth"
@@ -60,14 +61,59 @@ type VerifiedEmail struct {
 	PublicID string `json:"public_id"`
 }
 
-// UserData contains data retrieved from underline UserStore containing
-// appropriate data useful for authentication and authorization.
-type UserData struct {
+type UserBaseData struct {
 	Email          string
 	Username       string
+	PublicID       nxid.ID
+}
+
+func (u UserBaseData) Type() string {
+	return "EmailAuth_UserData"
+}
+
+func (u UserBaseData) WebSafe() map[string]string {
+	return map[string]string{
+		"email": u.Email,
+		"username": u.Username,
+		"public_id": u.PublicID.String(),
+	}
+}
+
+func (u *UserBaseData) FromMap(data map[string]string) error {
+	var userName, hasUserName = data["username"]
+	var userEmail, hasUserEmail = data["email"]
+	if !hasUserEmail && !hasUserName {
+		return nerror.New("data has no username or email attribute")
+	}
+	if userEmail == "" && userName == "" {
+		return nerror.New("data has no username and email attribute is empty")
+	}
+
+	u.Username = userName
+	u.Email = userEmail
+
+	var publicId, hasPublicID = data["public_id"]
+	if !hasPublicID {
+		return nerror.New("data has no public_id attribute")
+	}
+	if publicId == "" {
+		return nerror.New("public_id value in data is empty")
+	}
+
+	var id, err = nxid.FromString(publicId)
+	if err != nil {
+		return nerror.Wrap(err, "Failed to convert public_id, its invalid")
+	}
+
+	u.PublicID = id
+	return nil
+}
+
+type UserData struct {
+	UserBaseData
+
 	PrivateSalt    string
 	HashedPassword string
-	PublicID       nxid.ID
 	Roles          []string
 }
 
@@ -83,7 +129,7 @@ type UserStore interface {
 // UserValidator embodies what we expect to use for verifying user data and
 // credentials. It returns some data it want attached to the verified user data.
 type UserValidator interface {
-	Verify(credential EmailCredential, data UserData) (interface{}, error)
+	Verify(credential EmailCredential, data UserData) error
 }
 
 // InhouseEmailAuth provides an implementation of a AuthenticationProvider,
@@ -92,7 +138,11 @@ type InhouseEmailAuth struct {
 	UserStore     UserStore
 	UserValidator UserValidator
 	AuthInitiator http.Handler
-	Sessions      nauth.Sessions
+	Sessions      providers.HTTPSession
+}
+
+func (eu InhouseEmailAuth) Finalize(req *http.Request) error {
+	panic("implement me")
 }
 
 // Initiate implements the nauth.AuthenticationProvider interface.
@@ -120,9 +170,8 @@ func (eu InhouseEmailAuth) VerifyClaim(cm nauth.Claim) (nauth.VerifiedClaim, err
 	verified.Method = cm.Method
 	verified.Provider = cm.Provider
 
-	var err error
-	if err = cm.Credentials.Validate(); err != nil {
-		return verified, nerror.Wrap(err, "claim credentials are invalid")
+	if credentialErr := cm.Credentials.Validate(); credentialErr != nil {
+		return verified, nerror.Wrap(credentialErr, "claim credentials are invalid")
 	}
 
 	var credential, ok = cm.Credentials.(EmailCredential)
@@ -130,25 +179,25 @@ func (eu InhouseEmailAuth) VerifyClaim(cm nauth.Claim) (nauth.VerifiedClaim, err
 		return verified, nerror.New("claim has unsupported/invalid credentials")
 	}
 
-	var userdata UserData
+	var userIdentifier string
 	if credential.Email != "" {
-		userdata, err = eu.UserStore.GetEmail(credential.Email)
+		userIdentifier = credential.Email
 	}
 	if credential.Username != "" {
-		userdata, err = eu.UserStore.GetUsername(credential.Username)
+		userIdentifier = credential.Username
 	}
 
+	var userdata, getUserErr = eu.UserStore.GetEmail(userIdentifier)
+	if getUserErr != nil {
+		return verified, nerror.Wrap(getUserErr, "Failed to find user")
+	}
+
+	var err = eu.UserValidator.Verify(credential, userdata)
 	if err != nil {
 		return verified, err
 	}
 
-	var attached interface{}
-	attached, err = eu.UserValidator.Verify(credential, userdata)
-	if err != nil {
-		return verified, err
-	}
-
-	verified.Data = attached
+	verified.Attached = userdata
 	verified.Roles = userdata.Roles
 	verified.User = userdata.PublicID
 	return verified, nil
@@ -167,11 +216,15 @@ func (eu InhouseEmailAuth) GetVerifiedClaim(req *http.Request) (nauth.VerifiedCl
 		return verified, nerror.Wrap(err, "http.Request has no existing auth session")
 	}
 
+	var userData UserBaseData
+	if userErr := userData.FromMap(session.Data); userErr != nil {
+		return verified, nerror.Wrap(userErr, "Failed to convert user session data to UserBaseData")
+	}
+
+	verified.Attached = userData
 	verified.Method = session.Method
 	verified.Provider = session.Provider
-	verified.Data = session.Userdata
-
-	panic("implement me")
+	return verified, nil
 }
 
 // Refresh implements the nauth.AuthenticationProvider interface.

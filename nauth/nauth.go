@@ -88,11 +88,7 @@ type WebSafeData interface {
 type Data interface {
 	WebSafeData
 
-	// Type returns the type of Data.
 	Type() string
-
-	// ToMap returns a map of data values representing content.
-	ToMap() map[string]string
 }
 
 // VerifiedClaim represents the response received back from the

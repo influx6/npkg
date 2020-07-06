@@ -1,1 +1,0 @@
-package nauth_test
