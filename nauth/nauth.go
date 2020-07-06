@@ -151,6 +151,11 @@ type ClaimVerifier interface {
 	Verify(Claim) (VerifiedClaim, error)
 }
 
+// SessionClaim retrieves verified claim from incoming request.
+type SessionClaim interface {
+	GetSessionClaim(req *http.Request) (VerifiedClaim, error)
+}
+
 // Handles the initial response to a request to initiate/begin
 // a authentication procedure e.g to redirect to
 // a page for user-name and password login or google oauth page with
@@ -169,13 +174,13 @@ type AuthInitiator interface {
 // should decide for it'self as it sees fit to match on how this two should
 // be managed.
 type Authenticator interface {
-	Authenticate(req *http.Request) (VerifiedClaim, error)
+	Authenticate(res http.ResponseWriter, req *http.Request) error
 }
 
 // Finalization procedure required by the authentication
 // provider which may be required.
 type AuthFinalizer interface {
-	Finalize(req *http.Request) error
+	Finalize(res http.ResponseWriter, req *http.Request) error
 }
 
 // Handles the refreshing of an authentication session, useful
@@ -184,12 +189,7 @@ type AuthFinalizer interface {
 // This is based on protocols and a protocol may not implement it
 // and hence return a 501 (NOT Implemented) status
 type AuthRefresh interface {
-	Refresh(req *http.Request) (VerifiedClaim, error)
-}
-
-// GetVerifiedClaim retrieves verified claim from incoming request.
-type AuthClaims interface {
-	GetVerifiedClaim(req *http.Request) (VerifiedClaim, error)
+	Refresh(res http.ResponseWriter, req *http.Request) error
 }
 
 // AuthenticationProvider defines what the Authentication should be as,
@@ -200,7 +200,7 @@ type AuthClaims interface {
 // Exposes such a final form allows us to swap in, any form of authentication
 // be it email, facebook, google or oauth based without much work.
 type AuthenticationProvider interface {
-	AuthClaims
+	SessionClaim
 	AuthRefresh
 	AuthInitiator
 	Authenticator

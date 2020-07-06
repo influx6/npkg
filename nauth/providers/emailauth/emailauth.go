@@ -3,10 +3,16 @@ package emailauth
 import (
 	"github.com/influx6/npkg/nauth/providers"
 	"net/http"
+	"time"
 
 	"github.com/influx6/npkg/nauth"
 	"github.com/influx6/npkg/nerror"
 	"github.com/influx6/npkg/nxid"
+)
+
+const (
+	// CLAIM_TYPE is the type of claim authentication implemented by emailauth.
+	CLAIM_TYPE = "email_username_password"
 )
 
 //***************************************************************************
@@ -53,7 +59,7 @@ const (
 	MethodName = "email-password"
 )
 
-var _ nauth.AuthenticationProvider = (*InhouseEmailAuth)(nil)
+var _ nauth.AuthenticationProvider = (*EmailAuth)(nil)
 
 // VerifiedEmail contains the verified token delivered to by a verified client login.
 type VerifiedEmail struct {
@@ -132,33 +138,21 @@ type UserValidator interface {
 	Verify(credential EmailCredential, data UserData) error
 }
 
-// InhouseEmailAuth provides an implementation of a AuthenticationProvider,
+// EmailAuth provides an implementation of a AuthenticationProvider,
 // which provides email and password authentication and authorization.
-type InhouseEmailAuth struct {
+type EmailAuth struct {
+	SessionDuration time.Duration
+
+	AuthInitiator http.Handler
+	AuthFinalizer http.Handler
+
 	UserStore     UserStore
 	UserValidator UserValidator
-	AuthInitiator http.Handler
 	Sessions      providers.HTTPSession
 }
 
-func (eu InhouseEmailAuth) Finalize(req *http.Request) error {
-	panic("implement me")
-}
-
-// Initiate implements the nauth.AuthenticationProvider interface.
-//
-// Initiate runs the provided User http.handler which handles the rendering of
-// necessary login form for the user to input defined credentials for authentication.
-func (eu InhouseEmailAuth) Initiate(res http.ResponseWriter, req *http.Request) {
-	if eu.AuthInitiator != nil {
-		eu.AuthInitiator.ServeHTTP(res, req)
-		return
-	}
-	res.WriteHeader(http.StatusNotImplemented)
-}
-
-// VerifyClaim implements the nauth.Authenticator interface.
-func (eu InhouseEmailAuth) VerifyClaim(cm nauth.Claim) (nauth.VerifiedClaim, error) {
+// Verify implements the nauth.Authenticator interface.
+func (eu EmailAuth) Verify(cm nauth.Claim) (nauth.VerifiedClaim, error) {
 	var verified nauth.VerifiedClaim
 	if cm.Method != MethodName {
 		return verified, nerror.New("claim.Method does not matched supported")
@@ -203,11 +197,11 @@ func (eu InhouseEmailAuth) VerifyClaim(cm nauth.Claim) (nauth.VerifiedClaim, err
 	return verified, nil
 }
 
-// GetVerifiedClaim implements the nauth.AuthenticationProvider interface.
+// GetSessionClaim implements the nauth.AuthenticationProvider interface.
 //
 // Verify exists for the purpose of verifying  an authenticated session with
 // an existing bearer token.
-func (eu InhouseEmailAuth) GetVerifiedClaim(req *http.Request) (nauth.VerifiedClaim, error) {
+func (eu EmailAuth) GetSessionClaim(req *http.Request) (nauth.VerifiedClaim, error) {
 	var verified nauth.VerifiedClaim
 
 	// Retrieve user session from request.
@@ -232,11 +226,33 @@ func (eu InhouseEmailAuth) GetVerifiedClaim(req *http.Request) (nauth.VerifiedCl
 // for giving user. This allows you to set a default session deadline and have
 // your UI implement some inactivity checker which calls this to update session
 // expiry and allow user have longer access to your site.
-func (eu InhouseEmailAuth) Refresh(res http.ResponseWriter, req *http.Request) {
+func (eu EmailAuth) Refresh(res http.ResponseWriter, req *http.Request) error {
 	panic("implement me")
+	return nil
 }
 
-// Authenticate implements the nauth.AuthenticationProvider interface.
-func (eu InhouseEmailAuth) Authenticate(res http.ResponseWriter, req *http.Request) {
-	panic("implement me")
+// Initiate implements the nauth.AuthenticationProvider interface.
+//
+// Initiate runs the provided User http.handler which handles the rendering of
+// necessary login form for the user to input defined credentials for authentication.
+func (eu EmailAuth) Initiate(res http.ResponseWriter, req *http.Request) error {
+	if eu.AuthInitiator != nil {
+		eu.AuthInitiator.ServeHTTP(res, req)
+		return nil
+	}
+	res.WriteHeader(http.StatusNotImplemented)
+	return nil
 }
+
+
+// Authenticate implements the nauth.AuthenticationProvider interface.
+func (eu EmailAuth) Authenticate(res http.ResponseWriter, req *http.Request) error {
+	panic("implement me")
+	return nil
+}
+
+func (eu EmailAuth) Finalize(res http.ResponseWriter, req *http.Request) error {
+	panic("implement me")
+	return nil
+}
+
