@@ -99,6 +99,23 @@ func BenchmarkGetJSON(b *testing.B) {
 		}
 	})
 
+	b.Run("with Entry fields for Embed", func(b *testing.B) {
+		b.ResetTimer()
+		b.ReportAllocs()
+
+		for i := b.N; i > 0; i-- {
+			event := njson.MessageObjectWithEmbed("My log", "data", func(event npkg.ObjectEncoder) error {
+				return event.Bool("w", true)
+			})
+			event.String("name", "thunder")
+			event.Int("id", 234)
+			event.ObjectFor("data", func(event npkg.ObjectEncoder) error {
+				return event.Int("id", 23)
+			})
+			event.Message()
+		}
+	})
+
 	b.Run("with Entry fields", func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()

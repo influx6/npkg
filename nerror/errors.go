@@ -185,6 +185,16 @@ func UnwrapDeep(e error) error {
 	return e
 }
 
+// Forward wraps giving error, recording where it was
+// created and attaches the frames of call.
+func Forward(err error) error {
+	next := wrapOnly(err)
+	next.Parent = err
+	next.Message = err.Error()
+	next.Frames = nframes.GetFrameDetails(3, 32)
+	return next
+}
+
 // Wrap returns a new error which wraps existing error value if
 // present. It formats message accordingly with arguments from
 // variadic list v.

@@ -40,8 +40,11 @@ type HTTPSession interface {
 	// nxid ID.
 	GetByID(ctx context.Context, id nxid.ID) (sessions.Session, error)
 
-	// Delete removes giving session from underline store.
-	Delete(ctx context.Context, id nxid.ID) (sessions.Session, error)
+	// DeleteByUserId removes giving session from underline store.
+	DeleteByUserId(ctx context.Context, userId nxid.ID) error
+
+	// DeleteBySid removes giving session from underline store.
+	DeleteBySid(ctx context.Context, sid nxid.ID) error
 
 	// Extend extends giving session underline lifetime to
 	// extend giving session time.

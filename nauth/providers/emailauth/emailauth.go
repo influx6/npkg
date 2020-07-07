@@ -2,6 +2,7 @@ package emailauth
 
 import (
 	"github.com/influx6/npkg/nauth/providers"
+	"github.com/influx6/npkg/nauth/sessions"
 	"net/http"
 	"time"
 
@@ -197,17 +198,23 @@ func (eu EmailAuth) Verify(cm nauth.Claim) (nauth.VerifiedClaim, error) {
 	return verified, nil
 }
 
-// GetSessionClaim implements the nauth.AuthenticationProvider interface.
-//
-// Verify exists for the purpose of verifying  an authenticated session with
-// an existing bearer token.
+func (eu EmailAuth) GetSession(req *http.Request) (sessions.Session, error) {
+	var verified sessions.Session
+	var session, err = eu.Sessions.Get(req)
+	if err != nil {
+		return verified, nerror.Wrap(err, "http.Request has no existing auth session")
+	}
+	return session, nil
+}
+
+
 func (eu EmailAuth) GetSessionClaim(req *http.Request) (nauth.VerifiedClaim, error) {
 	var verified nauth.VerifiedClaim
 
 	// Retrieve user session from request.
-	var session, err = eu.Sessions.Get(req)
+	var session, err = eu.GetSession(req)
 	if err != nil {
-		return verified, nerror.Wrap(err, "http.Request has no existing auth session")
+		return verified, nerror.Forward(err)
 	}
 
 	var userData UserBaseData
@@ -227,7 +234,20 @@ func (eu EmailAuth) GetSessionClaim(req *http.Request) (nauth.VerifiedClaim, err
 // your UI implement some inactivity checker which calls this to update session
 // expiry and allow user have longer access to your site.
 func (eu EmailAuth) Refresh(res http.ResponseWriter, req *http.Request) error {
-	panic("implement me")
+	var userSession, getSessionErr = eu.GetSession(req)
+	if getSessionErr != nil {
+		return nerror.Forward(getSessionErr)
+	}
+
+	var timeLeft = userSession.Expiring.Sub(time.Now())
+
+	// has this expired?
+	if timeLeft < 0 {
+		if deleteSessionErr := eu.Sessions.DeleteBySid(req.Context(), userSession.ID); deleteSessionErr != nil {
+
+		}
+		return nerror.New("Expired user session")
+	}
 	return nil
 }
 
