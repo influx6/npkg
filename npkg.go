@@ -215,6 +215,17 @@ type EncodableList interface {
 	EncodeList(encoder ListEncoder)
 }
 
+type Error interface {
+	Err() error
+}
+
+// ObjectEncoder embodies what is expected from a encoding type
+// implementing key-value pair encoding.
+type ObjectEncoder interface {
+	Error
+	ObjectEncoderMethods
+}
+
 type ObjectEncoderMethods interface {
 	Int(k string, v int)
 	UInt(k string, v uint)
@@ -239,23 +250,14 @@ type ObjectEncoderMethods interface {
 	ListFor(k string, fx func(ListEncoder))
 }
 
-// ObjectEncoder embodies what is expected from a encoding type
-// implementing key-value pair encoding.
-type ObjectEncoder interface {
-	ObjectEncoderMethods
-
-	Err() error
-}
-
 // ListEncoder defines an interface which defines methods for items into
 // a underline list encoding.
 type ListEncoder interface {
-	ListEncoderMethod
-
-	Err() error
+	Error
+	ListEncoderMethods
 }
 
-type ListEncoderMethod interface {
+type ListEncoderMethods interface {
 	AddInt(v int)
 	AddBool(v bool)
 	AddUInt(v uint)
@@ -279,7 +281,7 @@ type ListEncoderMethod interface {
 }
 
 // EncodeKV encodes a giving key-value pair into provided encoder based
-func EncodeKV(enc ObjectEncoder, k string, v interface{}) {
+func EncodeKV(enc ObjectEncoder, k string, v interface{}) error {
 	switch vt := v.(type) {
 	case EncodableObject:
 		enc.Object(k, vt)
@@ -316,6 +318,7 @@ func EncodeKV(enc ObjectEncoder, k string, v interface{}) {
 	case float32:
 		enc.Float32(k, vt)
 	}
+	return enc.Err()
 }
 
 // EncodeList encodes a giving key-value pair into provided encoder based
@@ -379,6 +382,6 @@ type EncodableMap map[string]interface{}
 // EncodableMap implements the EncodableObject interface.
 func (enc EncodableMap) EncodeObject(encoder ObjectEncoder) {
 	for key, value := range enc {
-		EncodeKV(encoder, key, value)
+		_ = EncodeKV(encoder, key, value)
 	}
 }
