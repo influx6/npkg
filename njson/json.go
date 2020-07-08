@@ -1,8 +1,8 @@
 package njson
 
 import (
+	"io"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"unsafe"
@@ -26,75 +26,38 @@ var (
 	}
 )
 
-// List requests allocation for a *JSON from the internal pool returning a *JSON
-// object for encoding a json list.
-func List(inherits ...func(event npkg.Encoder) error) *JSON {
+// JSONL creates a json list.
+func JSONL(inherits ...func(event npkg.Encoder)) *JSON {
 	event := logEventPool.Get().(*JSON)
 	event.l = 1
 	event.reset()
 
 	for _, op := range inherits {
-		if err := op(event); err != nil {
-			panic(err)
+		op(event)
+		if event.err != nil {
+			return event
 		}
 	}
 	return event
 }
 
-// Object requests allocation for a *JSON from the internal pool returning a *JSON
-// object for encoding a json object.
-func Object(inherits ...func(event npkg.Encoder) error) *JSON {
+// JSONB creates a json hash.
+func JSONB(inherits ...func(event npkg.Encoder)) *JSON {
 	event := logEventPool.Get().(*JSON)
 	event.l = 0
 	event.reset()
 
 	for _, op := range inherits {
-		if err := op(event); err != nil {
-			panic(err)
-		}
-	}
-
-	return event
-}
-
-// ObjectWithEmbed returns a new Object which will embed all encoded key-value pairs into a object with the `ctx` value
-// as key name.
-func ObjectWithEmbed(ctx string, hook func(npkg.ObjectEncoder) error, inherits ...func(event npkg.Encoder) error) *JSON {
-	event := logEventPool.Get().(*JSON)
-	event.l = 0
-
-	event.reset()
-	event.onRelease = func(s []byte) []byte {
-		newEvent := logEventPool.Get().(*JSON)
-		newEvent.l = 0
-		newEvent.reset()
-
-		if hook != nil {
-			if err := hook(newEvent); err != nil {
-				panic(err)
-			}
-		}
-
-		newEvent.addBytes(ctx, s)
-		newEvent.end()
-
-		content := newEvent.content
-		newEvent.content = make([]byte, 0, 512)
-		newEvent.release()
-		return content
-	}
-
-	for _, op := range inherits {
-		if err := op(event); err != nil {
-			panic(err)
+		op(event)
+		if event.err != nil {
+			return event
 		}
 	}
 	return event
 }
 
-// MessageObject requests allocation for a *JSON from the internal pool returning a *JSON
-// object for encoding a json object.
-func MessageObject(message string, inherits ...func(event npkg.Encoder) error) *JSON {
+// MJSON creates a json object with a message field with provided message.
+func MJSON(message string, inherits ...func(event npkg.Encoder)) *JSON {
 	event := logEventPool.Get().(*JSON)
 	event.l = 0
 
@@ -103,47 +66,9 @@ func MessageObject(message string, inherits ...func(event npkg.Encoder) error) *
 	event.endEntry()
 
 	for _, op := range inherits {
-		if err := op(event); err != nil {
-			panic(err)
-		}
-	}
-
-	return event
-}
-
-// MessageObjectWithEmbed returns a new Object which will embed all encoded key-value pairs into a object with the `ctx` value
-// as key name.
-func MessageObjectWithEmbed(message string, ctx string, hook func(npkg.ObjectEncoder) error, inherits ...func(npkg.ObjectEncoder) error) *JSON {
-	event := logEventPool.Get().(*JSON)
-	event.l = 0
-
-	event.reset()
-	event.onRelease = func(s []byte) []byte {
-		newEvent := logEventPool.Get().(*JSON)
-		newEvent.l = 0
-		newEvent.reset()
-
-		newEvent.addQuotedString("message", message)
-		newEvent.endEntry()
-
-		if hook != nil {
-			if err := hook(newEvent); err != nil {
-				panic(err)
-			}
-		}
-
-		newEvent.addBytes(ctx, s)
-		newEvent.end()
-
-		content := newEvent.content
-		newEvent.content = make([]byte, 0, 512)
-		newEvent.release()
-		return content
-	}
-
-	for _, op := range inherits {
-		if err := op(event); err != nil {
-			panic(err)
+		op(event)
+		if event.err != nil {
+			return event
 		}
 	}
 	return event
@@ -163,26 +88,31 @@ var (
 //
 // Each JSON iss retrieved from a pool and will panic if after release/write it is used.
 type JSON struct {
+	err       error
 	l         int8
 	r         uint32
 	content   []byte
 	onRelease func([]byte) []byte
 }
 
-func (l *JSON) AddList(list npkg.EncodableList) error {
-	return l.AddListWith(list.EncodeList)
+func (l *JSON) AddList(list npkg.EncodableList) {
+	l.AddListWith(list.EncodeList)
 }
 
-func (l *JSON) AddObject(object npkg.EncodableObject) error {
-	return l.AddObjectWith(object.EncodeObject)
+func (l *JSON) AddObject(object npkg.EncodableObject) {
+	l.AddObjectWith(object.EncodeObject)
 }
 
-func (l *JSON) List(k string, list npkg.EncodableList) error {
-	return l.ListFor(k, list.EncodeList)
+func (l *JSON) List(k string, list npkg.EncodableList) {
+	l.ListFor(k, list.EncodeList)
 }
 
-func (l *JSON) Object(k string, object npkg.EncodableObject) error {
-	return l.ObjectFor(k, object.EncodeObject)
+func (l *JSON) Object(k string, object npkg.EncodableObject) {
+	l.ObjectFor(k, object.EncodeObject)
+}
+
+func (l *JSON) Err() error {
+	return l.err
 }
 
 // Message returns the generated JSON of giving *JSON.
@@ -215,15 +145,15 @@ func (l *JSON) Release() {
 	l.release()
 }
 
-// WriteTo makes no attempt like JSON.Message to preserve the byte slice
-// data, as it will reuse the byte slice for future writes, it owns it for
-// optimization reasons.
-//
-// It is expected that the writer will adequately copy or write out contents
-// of passed in slice before when it's Write method is called.
-func (l *JSON) WriteTo(builder *strings.Builder) (int64, error) {
+// WriteTo implements io.WriterTo interface.
+func (l *JSON) WriteTo(w io.Writer) (int64, error) {
 	if l.released() {
 		panic("Re-using released *JSON")
+	}
+
+	// if there is an error then talk about it.
+	if l.err != nil {
+		return -1, l.err
 	}
 
 	// remove last comma and space
@@ -236,14 +166,15 @@ func (l *JSON) WriteTo(builder *strings.Builder) (int64, error) {
 		l.onRelease = nil
 	}
 
-	var n, err = builder.Write(l.content)
+	var n, err = w.Write(l.content)
+	l.err = err
 	l.resetContent()
 	l.release()
 	return int64(n), err
 }
 
 // ObjectFor adds a field name with object value.
-func (l *JSON) ObjectFor(name string, handler func(event npkg.ObjectEncoder) error) error {
+func (l *JSON) ObjectFor(name string, handler func(event npkg.ObjectEncoder)) {
 	l.panicIfList()
 
 	newEvent := logEventPool.Get().(*JSON)
@@ -251,7 +182,7 @@ func (l *JSON) ObjectFor(name string, handler func(event npkg.ObjectEncoder) err
 	newEvent.reset()
 
 	lastLen := len(newEvent.Buf())
-	var err = handler(newEvent)
+	handler(newEvent)
 	afterLen := len(newEvent.Buf())
 
 	if afterLen > lastLen {
@@ -265,11 +196,13 @@ func (l *JSON) ObjectFor(name string, handler func(event npkg.ObjectEncoder) err
 
 	newEvent.resetContent()
 	newEvent.release()
-	return err
+	if newEvent.err != nil {
+		l.err = newEvent.err
+	}
 }
 
 // ListFor adds a field name with list value.
-func (l *JSON) ListFor(name string, handler func(event npkg.ListEncoder) error) error {
+func (l *JSON) ListFor(name string, handler func(event npkg.ListEncoder)) {
 	l.panicIfList()
 
 	newEvent := logEventPool.Get().(*JSON)
@@ -277,7 +210,7 @@ func (l *JSON) ListFor(name string, handler func(event npkg.ListEncoder) error) 
 	newEvent.reset()
 
 	lastLen := len(newEvent.Buf())
-	var err = handler(newEvent)
+	handler(newEvent)
 	afterLen := len(newEvent.Buf())
 
 	if afterLen > lastLen {
@@ -291,12 +224,14 @@ func (l *JSON) ListFor(name string, handler func(event npkg.ListEncoder) error) 
 
 	newEvent.resetContent()
 	newEvent.release()
-	return err
+	if newEvent.err != nil {
+		l.err = newEvent.err
+	}
 }
 
 // AddList adds new list object with provided properties from provided function into
 // a new json list format. It will panic if you use it for a object format call.
-func (l *JSON) AddListWith(handler func(event npkg.ListEncoder) error) error {
+func (l *JSON) AddListWith(handler func(event npkg.ListEncoder)) {
 	l.panicIfObject()
 
 	newEvent := logEventPool.Get().(*JSON)
@@ -304,7 +239,7 @@ func (l *JSON) AddListWith(handler func(event npkg.ListEncoder) error) error {
 	newEvent.reset()
 
 	lastLen := len(newEvent.Buf())
-	var err = handler(newEvent)
+	handler(newEvent)
 	afterLen := len(newEvent.Buf())
 
 	if afterLen > lastLen {
@@ -318,12 +253,15 @@ func (l *JSON) AddListWith(handler func(event npkg.ListEncoder) error) error {
 
 	newEvent.resetContent()
 	newEvent.release()
-	return err
+
+	if newEvent.err != nil {
+		l.err = newEvent.err
+	}
 }
 
 // AddObject adds new object with provided properties from provided function into
 // a new json list format. It will panic if you use it for a object format call.
-func (l *JSON) AddObjectWith(handler func(event npkg.ObjectEncoder) error) error {
+func (l *JSON) AddObjectWith(handler func(event npkg.ObjectEncoder)) {
 	l.panicIfObject()
 
 	newEvent := logEventPool.Get().(*JSON)
@@ -331,7 +269,7 @@ func (l *JSON) AddObjectWith(handler func(event npkg.ObjectEncoder) error) error
 	newEvent.reset()
 
 	lastLen := len(newEvent.Buf())
-	var err = handler(newEvent)
+	handler(newEvent)
 	afterLen := len(newEvent.Buf())
 
 	if afterLen > lastLen {
@@ -345,234 +283,206 @@ func (l *JSON) AddObjectWith(handler func(event npkg.ObjectEncoder) error) error
 
 	newEvent.resetContent()
 	newEvent.release()
-	return err
+
+	if newEvent.err != nil {
+		l.err = newEvent.err
+	}
 }
 
 // AddString adds a string list item into encoding.
-func (l *JSON) AddString(value string) error {
+func (l *JSON) AddString(value string) {
 	l.panicIfObject()
 	l.addQuotedBytesListItem(string2Bytes(value))
 	l.endEntry()
-	return nil
 }
 
 // AddHex adds a hexed string list item into encoding.
-func (l *JSON) AddHex(value string) error {
+func (l *JSON) AddHex(value string) {
 	l.panicIfObject()
 	l.addQuotedBytesListItem(string2Bytes(value))
 	l.endEntry()
-	return nil
 }
 
 // AddBool adds a bool value.
-func (l *JSON) AddBool(value bool) error {
+func (l *JSON) AddBool(value bool) {
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
 		return strconv.AppendBool(content, value)
 	})
 	l.endEntry()
-	return nil
 }
 
 // AddInt adds a int value.
-func (l *JSON) AddInt(value int) error {
+func (l *JSON) AddInt(value int) {
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
-		content = convertIntToString(content, int64(value), 10)
-		return content
+		return convertIntToString(content, int64(value), 10)
 	})
 	l.endEntry()
-	return nil
 }
 
 // AddInt8 adds a int8 value.
-func (l *JSON) AddInt8(value int8) error {
+func (l *JSON) AddInt8(value int8) {
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
-		content = convertIntToString(content, int64(value), 10)
-		return content
+		return convertIntToString(content, int64(value), 10)
 	})
 	l.endEntry()
-	return nil
 }
 
 // AddInt16 adds a int16 value.
-func (l *JSON) AddInt16(value int16) error {
+func (l *JSON) AddInt16(value int16) {
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
-		content = convertIntToString(content, int64(value), 10)
-		return content
+		return convertIntToString(content, int64(value), 10)
 	})
 	l.endEntry()
-	return nil
 }
 
 // AddInt32 adds a int32 value.
-func (l *JSON) AddInt32(value int32) error {
+func (l *JSON) AddInt32(value int32) {
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
-		content = convertIntToString(content, int64(value), 10)
-		return content
+		return convertIntToString(content, int64(value), 10)
 	})
 	l.endEntry()
-	return nil
 }
 
 // AddInt64 adds a int64 value.
-func (l *JSON) AddInt64(value int64) error {
+func (l *JSON) AddInt64(value int64) {
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
-		content = convertIntToString(content, value, 10)
-		return content
+		return convertIntToString(content, value, 10)
 	})
 	l.endEntry()
-	return nil
 }
 
 // AddUInt adds a int value.
-func (l *JSON) AddUInt(value uint) error {
+func (l *JSON) AddUInt(value uint) {
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
-		content = convertUIntToString(content, uint64(value), 10)
-		return content
+		return convertUIntToString(content, uint64(value), 10)
 	})
 	l.endEntry()
-	return nil
 }
 
 // AddUInt8 adds a int8 value.
-func (l *JSON) AddUInt8(value uint8) error {
+func (l *JSON) AddUInt8(value uint8) {
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
-		content = convertUIntToString(content, uint64(value), 10)
-		return content
+		return convertUIntToString(content, uint64(value), 10)
 	})
 	l.endEntry()
-	return nil
 }
 
 // AddUInt16 adds a int16 value.
-func (l *JSON) AddUInt16(value uint16) error {
+func (l *JSON) AddUInt16(value uint16) {
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
-		content = convertUIntToString(content, uint64(value), 10)
-		return content
+		return convertUIntToString(content, uint64(value), 10)
 	})
 	l.endEntry()
-	return nil
 }
 
 // AddUInt32 adds a int32 value.
-func (l *JSON) AddUInt32(value uint32) error {
+func (l *JSON) AddUInt32(value uint32) {
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
-		content = convertUIntToString(content, uint64(value), 10)
-		return content
+		return convertUIntToString(content, uint64(value), 10)
 	})
 	l.endEntry()
-	return nil
 }
 
 // AddUInt64 adds a int64 value.
-func (l *JSON) AddUInt64(value uint64) error {
+func (l *JSON) AddUInt64(value uint64) {
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
-		content = convertUIntToString(content, value, 10)
-		return content
+		return convertUIntToString(content, value, 10)
 	})
 	l.endEntry()
-	return nil
 }
 
 // AddBase64 adds a int64 value.
-func (l *JSON) AddBase64(value int64, base int) error {
+func (l *JSON) AddBase64(value int64, base int) {
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
-		content = convertIntToString(content, value, base)
-		return content
+		return convertIntToString(content, value, base)
 	})
 	l.endEntry()
-	return nil
 }
 
 // AddFloat64 adds a float64 value.
-func (l *JSON) AddFloat64(value float64) error {
+func (l *JSON) AddFloat64(value float64) {
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
-		content = convertFloatToString(content, value, 32)
-		return content
+		return convertFloatToString(content, value, 32)
 	})
 	l.endEntry()
-	return nil
 }
 
 // AddFloat32 adds a float32 value.
-func (l *JSON) AddFloat32(value float32) error {
+func (l *JSON) AddFloat32(value float32) {
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
-		content = convertFloatToString(content, float64(value), 32)
-		return content
+		return convertFloatToString(content, float64(value), 32)
 	})
 	l.endEntry()
-	return nil
 }
 
 // AddBytes adds a bytes value. The byte is expected to be
 // valid JSON, no checks are made to ensure this, you can mess up your JSON
 // if you do not use this correctly.
-func (l *JSON) AddBytes(value []byte) error {
+func (l *JSON) AddBytes(value []byte) {
 	l.panicIfObject()
 	l.addBytesListItem(value)
 	l.endEntry()
-	return nil
 }
 
 // AddQBytes adds a bytes value. The byte is expected to be
 // will be wrapped with quotation.
-func (l *JSON) AddQBytes(value []byte) error {
+func (l *JSON) AddQBytes(value []byte) {
 	l.panicIfObject()
 	l.addQuotedBytesListItem(value)
 	l.endEntry()
-	return nil
 }
 
 // String adds a field name with string value.
-func (l *JSON) String(name string, value string) error {
+func (l *JSON) String(name string, value string) {
 	l.panicIfList()
 	l.addQuotedBytes(name, string2Bytes(value))
 	l.endEntry()
-	return nil
+
 }
 
 // Hex adds a field name with hex converted string value.
-func (l *JSON) Hex(name string, value string) error {
+func (l *JSON) Hex(name string, value string) {
 	l.panicIfList()
 	l.addQuotedBytes(name, string2Bytes(value))
 	l.endEntry()
-	return nil
+
 }
 
 // Bytes adds a field name with bytes value. The byte is expected to be
 // valid JSON, no checks are made to ensure this, you can mess up your JSON
 // if you do not use this correctly.
-func (l *JSON) Bytes(name string, value []byte) error {
+func (l *JSON) Bytes(name string, value []byte) {
 	l.panicIfList()
 	l.addBytes(name, value)
 	l.endEntry()
-	return nil
+
 }
 
 // QBytes adds a field name with bytes value. The byte is expected to be
 // will be wrapped with quotation.
-func (l *JSON) QBytes(name string, value []byte) error {
+func (l *JSON) QBytes(name string, value []byte) {
 	l.panicIfList()
 	l.addQuotedBytes(name, value)
 	l.endEntry()
-	return nil
+
 }
 
 // Bool adds a field name with bool value.
-func (l *JSON) Bool(name string, value bool) error {
+func (l *JSON) Bool(name string, value bool) {
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -584,11 +494,11 @@ func (l *JSON) Bool(name string, value bool) error {
 		return content
 	})
 	l.endEntry()
-	return nil
+
 }
 
 // Base64 adds a field name with int value formatted to base n.
-func (l *JSON) Base64(name string, value int64, base int) error {
+func (l *JSON) Base64(name string, value int64, base int) {
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -600,11 +510,11 @@ func (l *JSON) Base64(name string, value int64, base int) error {
 		return content
 	})
 	l.endEntry()
-	return nil
+
 }
 
 // Int adds a field name with int value.
-func (l *JSON) Int(name string, value int) error {
+func (l *JSON) Int(name string, value int) {
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -616,11 +526,11 @@ func (l *JSON) Int(name string, value int) error {
 		return content
 	})
 	l.endEntry()
-	return nil
+
 }
 
 // UInt adds a field name with int value.
-func (l *JSON) UInt(name string, value uint) error {
+func (l *JSON) UInt(name string, value uint) {
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -632,11 +542,11 @@ func (l *JSON) UInt(name string, value uint) error {
 		return content
 	})
 	l.endEntry()
-	return nil
+
 }
 
 // Int8 adds a field name with int8 value.
-func (l *JSON) Int8(name string, value int8) error {
+func (l *JSON) Int8(name string, value int8) {
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -648,11 +558,11 @@ func (l *JSON) Int8(name string, value int8) error {
 		return content
 	})
 	l.endEntry()
-	return nil
+
 }
 
 // Int16 adds a field name with int16 value.
-func (l *JSON) Int16(name string, value int16) error {
+func (l *JSON) Int16(name string, value int16) {
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -664,11 +574,11 @@ func (l *JSON) Int16(name string, value int16) error {
 		return content
 	})
 	l.endEntry()
-	return nil
+
 }
 
 // Int32 adds a field name with int32 value.
-func (l *JSON) Int32(name string, value int32) error {
+func (l *JSON) Int32(name string, value int32) {
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -680,11 +590,11 @@ func (l *JSON) Int32(name string, value int32) error {
 		return content
 	})
 	l.endEntry()
-	return nil
+
 }
 
 // Int64 adds a field name with int64 value.
-func (l *JSON) Int64(name string, value int64) error {
+func (l *JSON) Int64(name string, value int64) {
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -696,11 +606,11 @@ func (l *JSON) Int64(name string, value int64) error {
 		return content
 	})
 	l.endEntry()
-	return nil
+
 }
 
 // UInt8 adds a field name with uint8 value.
-func (l *JSON) UInt8(name string, value uint8) error {
+func (l *JSON) UInt8(name string, value uint8) {
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -712,11 +622,11 @@ func (l *JSON) UInt8(name string, value uint8) error {
 		return content
 	})
 	l.endEntry()
-	return nil
+
 }
 
 // UInt16 adds a field name with uint16 value.
-func (l *JSON) UInt16(name string, value uint16) error {
+func (l *JSON) UInt16(name string, value uint16) {
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -728,11 +638,11 @@ func (l *JSON) UInt16(name string, value uint16) error {
 		return content
 	})
 	l.endEntry()
-	return nil
+
 }
 
 // UInt32 adds a field name with uint32 value.
-func (l *JSON) UInt32(name string, value uint32) error {
+func (l *JSON) UInt32(name string, value uint32) {
 	l.panicIfList()
 
 	l.appendItem(func(content []byte) []byte {
@@ -745,11 +655,11 @@ func (l *JSON) UInt32(name string, value uint32) error {
 		return content
 	})
 	l.endEntry()
-	return nil
+
 }
 
 // UInt64 adds a field name with uint64 value.
-func (l *JSON) UInt64(name string, value uint64) error {
+func (l *JSON) UInt64(name string, value uint64) {
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -761,11 +671,11 @@ func (l *JSON) UInt64(name string, value uint64) error {
 		return content
 	})
 	l.endEntry()
-	return nil
+
 }
 
 // Float64 adds a field name with float64 value.
-func (l *JSON) Float64(name string, value float64) error {
+func (l *JSON) Float64(name string, value float64) {
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -777,11 +687,11 @@ func (l *JSON) Float64(name string, value float64) error {
 		return content
 	})
 	l.endEntry()
-	return nil
+
 }
 
 // Float32 adds a field name with float32 value.
-func (l *JSON) Float32(name string, value float32) error {
+func (l *JSON) Float32(name string, value float32) {
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -793,7 +703,7 @@ func (l *JSON) Float32(name string, value float32) error {
 		return content
 	})
 	l.endEntry()
-	return nil
+
 }
 
 // Buf returns the current content of the *JSON.

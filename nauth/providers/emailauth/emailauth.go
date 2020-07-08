@@ -1,10 +1,14 @@
 package emailauth
 
 import (
-	"github.com/influx6/npkg/nauth/providers"
-	"github.com/influx6/npkg/nauth/sessions"
 	"net/http"
 	"time"
+
+	"github.com/influx6/npkg"
+	"github.com/influx6/npkg/njson"
+
+	"github.com/influx6/npkg/nauth/providers"
+	"github.com/influx6/npkg/nauth/sessions"
 
 	"github.com/influx6/npkg/nauth"
 	"github.com/influx6/npkg/nerror"
@@ -69,9 +73,9 @@ type VerifiedEmail struct {
 }
 
 type UserBaseData struct {
-	Email          string
-	Username       string
-	PublicID       nxid.ID
+	Email    string
+	Username string
+	PublicID nxid.ID
 }
 
 func (u UserBaseData) Type() string {
@@ -80,8 +84,8 @@ func (u UserBaseData) Type() string {
 
 func (u UserBaseData) WebSafe() map[string]string {
 	return map[string]string{
-		"email": u.Email,
-		"username": u.Username,
+		"email":     u.Email,
+		"username":  u.Username,
 		"public_id": u.PublicID.String(),
 	}
 }
@@ -149,6 +153,7 @@ type EmailAuth struct {
 
 	UserStore     UserStore
 	UserValidator UserValidator
+	Logs          nauth.Logs
 	Sessions      providers.HTTPSession
 }
 
@@ -207,7 +212,6 @@ func (eu EmailAuth) GetSession(req *http.Request) (sessions.Session, error) {
 	return session, nil
 }
 
-
 func (eu EmailAuth) GetSessionClaim(req *http.Request) (nauth.VerifiedClaim, error) {
 	var verified nauth.VerifiedClaim
 
@@ -244,7 +248,10 @@ func (eu EmailAuth) Refresh(res http.ResponseWriter, req *http.Request) error {
 	// has this expired?
 	if timeLeft < 0 {
 		if deleteSessionErr := eu.Sessions.DeleteBySid(req.Context(), userSession.ID); deleteSessionErr != nil {
-
+			eu.Logs.Write(njson.MJSON("failed to delete session", func(event npkg.Encoder) error {
+				event.String("session_id", userSession.ID.String())
+				event.String("session_user_id", userSession.User.String())
+			}))
 		}
 		return nerror.New("Expired user session")
 	}
@@ -264,6 +271,11 @@ func (eu EmailAuth) Initiate(res http.ResponseWriter, req *http.Request) error {
 	return nil
 }
 
+type LoginDTO struct {
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
 
 // Authenticate implements the nauth.AuthenticationProvider interface.
 func (eu EmailAuth) Authenticate(res http.ResponseWriter, req *http.Request) error {
@@ -275,4 +287,3 @@ func (eu EmailAuth) Finalize(res http.ResponseWriter, req *http.Request) error {
 	panic("implement me")
 	return nil
 }
-

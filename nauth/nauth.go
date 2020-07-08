@@ -3,6 +3,7 @@ package nauth
 import (
 	"encoding/base64"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -19,6 +20,11 @@ const (
 // ErrNoCredentials is returned when giving claim fails to provide
 // a credential.
 var ErrNoCredentials = errors.New("Claim has no attached credentail")
+
+// LogWriter handles writing log facts from a write provider.
+type Logs interface {
+	Write(w io.WriterTo)
+}
 
 // Roles exposes an interface to retrieve roles information for
 // a giving identity id.
