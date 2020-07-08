@@ -195,8 +195,8 @@ func Decode(dec Decoder, v interface{}) error {
 
 // Encoder defines what we expect from a encoder of object and list elements .
 type Encoder interface {
-	objectEncoder
-	listEncoder
+	ObjectEncoderMethods
+	ListEncoderMethods
 }
 
 // Encodable defines a type which exposes a method to encode it's internals
@@ -215,7 +215,7 @@ type EncodableList interface {
 	EncodeList(encoder ListEncoder)
 }
 
-type objectEncoder interface {
+type ObjectEncoderMethods interface {
 	Int(k string, v int)
 	UInt(k string, v uint)
 	Bool(k string, v bool)
@@ -242,7 +242,7 @@ type objectEncoder interface {
 // ObjectEncoder embodies what is expected from a encoding type
 // implementing key-value pair encoding.
 type ObjectEncoder interface {
-	objectEncoder
+	ObjectEncoderMethods
 
 	Err() error
 }
@@ -250,12 +250,12 @@ type ObjectEncoder interface {
 // ListEncoder defines an interface which defines methods for items into
 // a underline list encoding.
 type ListEncoder interface {
-	listEncoder
+	ListEncoderMethod
 
 	Err() error
 }
 
-type listEncoder interface {
+type ListEncoderMethod interface {
 	AddInt(v int)
 	AddBool(v bool)
 	AddUInt(v uint)
