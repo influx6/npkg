@@ -205,6 +205,11 @@ func (l *JSON) ObjectFor(name string, handler func(event npkg.ObjectEncoder)) {
 func (l *JSON) ListFor(name string, handler func(event npkg.ListEncoder)) {
 	l.panicIfList()
 
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	newEvent := logEventPool.Get().(*JSON)
 	newEvent.l = 1
 	newEvent.reset()
@@ -233,6 +238,10 @@ func (l *JSON) ListFor(name string, handler func(event npkg.ListEncoder)) {
 // a new json list format. It will panic if you use it for a object format call.
 func (l *JSON) AddListWith(handler func(event npkg.ListEncoder)) {
 	l.panicIfObject()
+	// stop if error
+	if l.err != nil {
+		return
+	}
 
 	newEvent := logEventPool.Get().(*JSON)
 	newEvent.l = 1
@@ -263,6 +272,10 @@ func (l *JSON) AddListWith(handler func(event npkg.ListEncoder)) {
 // a new json list format. It will panic if you use it for a object format call.
 func (l *JSON) AddObjectWith(handler func(event npkg.ObjectEncoder)) {
 	l.panicIfObject()
+	// stop if error
+	if l.err != nil {
+		return
+	}
 
 	newEvent := logEventPool.Get().(*JSON)
 	newEvent.l = 0
@@ -291,6 +304,11 @@ func (l *JSON) AddObjectWith(handler func(event npkg.ObjectEncoder)) {
 
 // AddString adds a string list item into encoding.
 func (l *JSON) AddString(value string) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.addQuotedBytesListItem(string2Bytes(value))
 	l.endEntry()
@@ -298,6 +316,11 @@ func (l *JSON) AddString(value string) {
 
 // AddHex adds a hexed string list item into encoding.
 func (l *JSON) AddHex(value string) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.addQuotedBytesListItem(string2Bytes(value))
 	l.endEntry()
@@ -305,6 +328,11 @@ func (l *JSON) AddHex(value string) {
 
 // AddBool adds a bool value.
 func (l *JSON) AddBool(value bool) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
 		return strconv.AppendBool(content, value)
@@ -314,6 +342,11 @@ func (l *JSON) AddBool(value bool) {
 
 // AddInt adds a int value.
 func (l *JSON) AddInt(value int) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
 		return convertIntToString(content, int64(value), 10)
@@ -323,6 +356,11 @@ func (l *JSON) AddInt(value int) {
 
 // AddInt8 adds a int8 value.
 func (l *JSON) AddInt8(value int8) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
 		return convertIntToString(content, int64(value), 10)
@@ -332,6 +370,11 @@ func (l *JSON) AddInt8(value int8) {
 
 // AddInt16 adds a int16 value.
 func (l *JSON) AddInt16(value int16) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
 		return convertIntToString(content, int64(value), 10)
@@ -341,6 +384,11 @@ func (l *JSON) AddInt16(value int16) {
 
 // AddInt32 adds a int32 value.
 func (l *JSON) AddInt32(value int32) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
 		return convertIntToString(content, int64(value), 10)
@@ -350,6 +398,11 @@ func (l *JSON) AddInt32(value int32) {
 
 // AddInt64 adds a int64 value.
 func (l *JSON) AddInt64(value int64) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
 		return convertIntToString(content, value, 10)
@@ -359,6 +412,11 @@ func (l *JSON) AddInt64(value int64) {
 
 // AddUInt adds a int value.
 func (l *JSON) AddUInt(value uint) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
 		return convertUIntToString(content, uint64(value), 10)
@@ -368,6 +426,11 @@ func (l *JSON) AddUInt(value uint) {
 
 // AddUInt8 adds a int8 value.
 func (l *JSON) AddUInt8(value uint8) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
 		return convertUIntToString(content, uint64(value), 10)
@@ -377,6 +440,11 @@ func (l *JSON) AddUInt8(value uint8) {
 
 // AddUInt16 adds a int16 value.
 func (l *JSON) AddUInt16(value uint16) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
 		return convertUIntToString(content, uint64(value), 10)
@@ -386,6 +454,11 @@ func (l *JSON) AddUInt16(value uint16) {
 
 // AddUInt32 adds a int32 value.
 func (l *JSON) AddUInt32(value uint32) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
 		return convertUIntToString(content, uint64(value), 10)
@@ -395,6 +468,11 @@ func (l *JSON) AddUInt32(value uint32) {
 
 // AddUInt64 adds a int64 value.
 func (l *JSON) AddUInt64(value uint64) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
 		return convertUIntToString(content, value, 10)
@@ -404,6 +482,11 @@ func (l *JSON) AddUInt64(value uint64) {
 
 // AddBase64 adds a int64 value.
 func (l *JSON) AddBase64(value int64, base int) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
 		return convertIntToString(content, value, base)
@@ -413,6 +496,11 @@ func (l *JSON) AddBase64(value int64, base int) {
 
 // AddFloat64 adds a float64 value.
 func (l *JSON) AddFloat64(value float64) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
 		return convertFloatToString(content, value, 32)
@@ -422,6 +510,11 @@ func (l *JSON) AddFloat64(value float64) {
 
 // AddFloat32 adds a float32 value.
 func (l *JSON) AddFloat32(value float32) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.appendItem(func(content []byte) []byte {
 		return convertFloatToString(content, float64(value), 32)
@@ -433,6 +526,11 @@ func (l *JSON) AddFloat32(value float32) {
 // valid JSON, no checks are made to ensure this, you can mess up your JSON
 // if you do not use this correctly.
 func (l *JSON) AddBytes(value []byte) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.addBytesListItem(value)
 	l.endEntry()
@@ -441,6 +539,11 @@ func (l *JSON) AddBytes(value []byte) {
 // AddQBytes adds a bytes value. The byte is expected to be
 // will be wrapped with quotation.
 func (l *JSON) AddQBytes(value []byte) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfObject()
 	l.addQuotedBytesListItem(value)
 	l.endEntry()
@@ -448,6 +551,11 @@ func (l *JSON) AddQBytes(value []byte) {
 
 // String adds a field name with string value.
 func (l *JSON) String(name string, value string) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.addQuotedBytes(name, string2Bytes(value))
 	l.endEntry()
@@ -456,6 +564,11 @@ func (l *JSON) String(name string, value string) {
 
 // Hex adds a field name with hex converted string value.
 func (l *JSON) Hex(name string, value string) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.addQuotedBytes(name, string2Bytes(value))
 	l.endEntry()
@@ -466,6 +579,11 @@ func (l *JSON) Hex(name string, value string) {
 // valid JSON, no checks are made to ensure this, you can mess up your JSON
 // if you do not use this correctly.
 func (l *JSON) Bytes(name string, value []byte) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.addBytes(name, value)
 	l.endEntry()
@@ -475,6 +593,11 @@ func (l *JSON) Bytes(name string, value []byte) {
 // QBytes adds a field name with bytes value. The byte is expected to be
 // will be wrapped with quotation.
 func (l *JSON) QBytes(name string, value []byte) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.addQuotedBytes(name, value)
 	l.endEntry()
@@ -483,6 +606,11 @@ func (l *JSON) QBytes(name string, value []byte) {
 
 // Bool adds a field name with bool value.
 func (l *JSON) Bool(name string, value bool) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -499,6 +627,11 @@ func (l *JSON) Bool(name string, value bool) {
 
 // Base64 adds a field name with int value formatted to base n.
 func (l *JSON) Base64(name string, value int64, base int) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -515,6 +648,11 @@ func (l *JSON) Base64(name string, value int64, base int) {
 
 // Int adds a field name with int value.
 func (l *JSON) Int(name string, value int) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -531,6 +669,11 @@ func (l *JSON) Int(name string, value int) {
 
 // UInt adds a field name with int value.
 func (l *JSON) UInt(name string, value uint) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -547,6 +690,11 @@ func (l *JSON) UInt(name string, value uint) {
 
 // Int8 adds a field name with int8 value.
 func (l *JSON) Int8(name string, value int8) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -563,6 +711,11 @@ func (l *JSON) Int8(name string, value int8) {
 
 // Int16 adds a field name with int16 value.
 func (l *JSON) Int16(name string, value int16) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -579,6 +732,11 @@ func (l *JSON) Int16(name string, value int16) {
 
 // Int32 adds a field name with int32 value.
 func (l *JSON) Int32(name string, value int32) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -595,6 +753,11 @@ func (l *JSON) Int32(name string, value int32) {
 
 // Int64 adds a field name with int64 value.
 func (l *JSON) Int64(name string, value int64) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -611,6 +774,11 @@ func (l *JSON) Int64(name string, value int64) {
 
 // UInt8 adds a field name with uint8 value.
 func (l *JSON) UInt8(name string, value uint8) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -627,6 +795,11 @@ func (l *JSON) UInt8(name string, value uint8) {
 
 // UInt16 adds a field name with uint16 value.
 func (l *JSON) UInt16(name string, value uint16) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -643,6 +816,11 @@ func (l *JSON) UInt16(name string, value uint16) {
 
 // UInt32 adds a field name with uint32 value.
 func (l *JSON) UInt32(name string, value uint32) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 
 	l.appendItem(func(content []byte) []byte {
@@ -660,6 +838,11 @@ func (l *JSON) UInt32(name string, value uint32) {
 
 // UInt64 adds a field name with uint64 value.
 func (l *JSON) UInt64(name string, value uint64) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -676,6 +859,11 @@ func (l *JSON) UInt64(name string, value uint64) {
 
 // Float64 adds a field name with float64 value.
 func (l *JSON) Float64(name string, value float64) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)
@@ -692,6 +880,11 @@ func (l *JSON) Float64(name string, value float64) {
 
 // Float32 adds a field name with float32 value.
 func (l *JSON) Float32(name string, value float32) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
 	l.panicIfList()
 	l.appendItem(func(content []byte) []byte {
 		content = append(content, doubleQuote...)

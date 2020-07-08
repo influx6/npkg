@@ -5,11 +5,12 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"encoding/json"
-	"github.com/influx6/npkg/nauth"
 	"io"
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/influx6/npkg/nauth"
 
 	"github.com/gorilla/securecookie"
 	"github.com/influx6/npkg"
@@ -85,7 +86,7 @@ func (s *Session) EncodeToCookie(signer *securecookie.SecureCookie) (*http.Cooki
 	cookie.HttpOnly = true
 	cookie.Name = SessionCookieName
 
-	var sessionJSON = njson.Object()
+	var sessionJSON = njson.JSONB()
 	if err := s.EncodeForCookie(sessionJSON); err != nil {
 		return nil, err
 	}
@@ -125,51 +126,31 @@ func (s *Session) EncodeForCookie(encoder npkg.ObjectEncoder) error {
 	if err := s.Validate(); err != nil {
 		return nerror.WrapOnly(err)
 	}
-	if err := encoder.String("id", s.ID.String()); err != nil {
-		return nerror.WrapOnly(err)
-	}
+
+	encoder.String("id", s.ID.String())
 	if len(s.IP) != 0 {
-		if err := encoder.String("ip", s.IP.String()); err != nil {
-			return nerror.WrapOnly(err)
-		}
+		encoder.String("ip", s.IP.String())
 	}
-	if err := encoder.String("browser", s.Browser); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	if err := encoder.String("method", s.Method); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	if err := encoder.String("provider", s.Provider); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	if err := encoder.String("user", s.User.String()); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	if err := encoder.Int64("created", s.Created.Unix()); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	if err := encoder.Int64("updated", s.Updated.Unix()); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	if err := encoder.Int64("expiring", s.Expiring.Unix()); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	if err := encoder.Int64("expiring_nano", s.Expiring.UnixNano()); err != nil {
-		return nerror.WrapOnly(err)
-	}
+	encoder.String("browser", s.Browser)
+	encoder.String("method", s.Method)
+	encoder.String("provider", s.Provider)
+	encoder.String("user", s.User.String())
+	encoder.Int64("created", s.Created.Unix())
+	encoder.Int64("updated", s.Updated.Unix())
+	encoder.Int64("expiring", s.Expiring.Unix())
+	encoder.Int64("expiring_nano", s.Expiring.UnixNano())
+
 	if s.Data != nil && len(s.Data) != 0 {
-		if err := encoder.ObjectFor("data", func(mapEncoder npkg.ObjectEncoder) error {
+		encoder.ObjectFor("data", func(mapEncoder npkg.ObjectEncoder) {
 			for k, v := range s.Data {
-				if mapErr := mapEncoder.String(k, v); mapErr != nil {
-					return mapErr
+				mapEncoder.String(k, v)
+				if mapEncoder.Err() != nil {
+					return
 				}
 			}
-			return nil
-		}); err != nil {
-			return nerror.WrapOnly(err)
-		}
+		})
 	}
-	return nil
+	return encoder.Err()
 }
 
 // EncodeObject implements the npkg.EncodableObject interface.
@@ -177,49 +158,28 @@ func (s *Session) EncodeObject(encoder npkg.ObjectEncoder) error {
 	if err := s.Validate(); err != nil {
 		return nerror.WrapOnly(err)
 	}
-	if err := encoder.String("browser", s.Browser); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	if err := encoder.String("method", s.Method); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	if err := encoder.String("id", s.ID.String()); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	if err := encoder.String("user", s.User.String()); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	if err := encoder.String("provider", s.Provider); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	if err := encoder.Int64("created", s.Created.Unix()); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	if err := encoder.Int64("updated", s.Updated.Unix()); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	if err := encoder.Int64("expiring", s.Expiring.Unix()); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	if err := encoder.Int64("expiring_nano", s.Expiring.UnixNano()); err != nil {
-		return nerror.WrapOnly(err)
-	}
+	encoder.String("browser", s.Browser)
+	encoder.String("method", s.Method)
+	encoder.String("id", s.ID.String())
+	encoder.String("user", s.User.String())
+	encoder.String("provider", s.Provider)
+	encoder.Int64("created", s.Created.Unix())
+	encoder.Int64("updated", s.Updated.Unix())
+	encoder.Int64("expiring", s.Expiring.Unix())
+	encoder.Int64("expiring_nano", s.Expiring.UnixNano())
+
 	if s.Data != nil && len(s.Data) != 0 {
-		if err := encoder.ObjectFor("data", func(mapEncoder npkg.ObjectEncoder) error {
+		encoder.ObjectFor("data", func(mapEncoder npkg.ObjectEncoder) {
 			for k, v := range s.Data {
-				if mapErr := mapEncoder.String(k, v); mapErr != nil {
-					return mapErr
+				mapEncoder.String(k, v)
+				if mapEncoder.Err() != nil {
+					return
 				}
 			}
-			return nil
-		}); err != nil {
-			return nerror.WrapOnly(err)
-		}
+		})
 	}
 	if len(s.IP) != 0 {
-		if err := encoder.String("method", s.IP.String()); err != nil {
-			return nerror.WrapOnly(err)
-		}
+		encoder.String("method", s.IP.String())
 	}
 	return nil
 }

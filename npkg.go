@@ -16,9 +16,6 @@ const (
 )
 
 var (
-	// ErrUnencodable is returned when type can not be encoded automatically.
-	ErrUnencodable = errors.New("value can not be encodable and does not implement Encodable interface")
-
 	// ErrUndecodable is returned when type can not be encoded automatically.
 	ErrUndecodable = errors.New("value can not be decoded to and does not implement DecodableObject/List interface")
 )
