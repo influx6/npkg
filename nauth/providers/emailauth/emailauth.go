@@ -1,8 +1,15 @@
 package emailauth
 
 import (
+	"encoding/json"
+	"net"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/securecookie"
+
+	"github.com/influx6/npkg/ntrace"
+	openTracing "github.com/opentracing/opentracing-go"
 
 	"github.com/influx6/npkg"
 	"github.com/influx6/npkg/njson"
@@ -155,6 +162,7 @@ type EmailAuth struct {
 	UserValidator UserValidator
 	Logs          nauth.Logs
 	Sessions      providers.HTTPSession
+	CookieSigner  *securecookie.SecureCookie
 }
 
 // Verify implements the nauth.Authenticator interface.
@@ -204,6 +212,11 @@ func (eu EmailAuth) Verify(cm nauth.Claim) (nauth.VerifiedClaim, error) {
 }
 
 func (eu EmailAuth) GetSession(req *http.Request) (sessions.Session, error) {
+	var ctx = req.Context()
+	var span openTracing.Span
+	if ctx, span = ntrace.NewSpanFromContext(ctx, "EmailAuth.GetSession"); span != nil {
+		defer span.Finish()
+	}
 	var verified sessions.Session
 	var session, err = eu.Sessions.Get(req)
 	if err != nil {
@@ -213,6 +226,12 @@ func (eu EmailAuth) GetSession(req *http.Request) (sessions.Session, error) {
 }
 
 func (eu EmailAuth) GetSessionClaim(req *http.Request) (nauth.VerifiedClaim, error) {
+	var ctx = req.Context()
+	var span openTracing.Span
+	if ctx, span = ntrace.NewSpanFromContext(ctx, "EmailAuth.GetSessionClaim"); span != nil {
+		defer span.Finish()
+	}
+
 	var verified nauth.VerifiedClaim
 
 	// Retrieve user session from request.
@@ -238,6 +257,11 @@ func (eu EmailAuth) GetSessionClaim(req *http.Request) (nauth.VerifiedClaim, err
 // your UI implement some inactivity checker which calls this to update session
 // expiry and allow user have longer access to your site.
 func (eu EmailAuth) Refresh(res http.ResponseWriter, req *http.Request) error {
+	var ctx = req.Context()
+	var span openTracing.Span
+	if ctx, span = ntrace.NewSpanFromContext(ctx, "EmailAuth.Refresh"); span != nil {
+		defer span.Finish()
+	}
 	var userSession, getSessionErr = eu.GetSession(req)
 	if getSessionErr != nil {
 		return nerror.Forward(getSessionErr)
@@ -248,13 +272,19 @@ func (eu EmailAuth) Refresh(res http.ResponseWriter, req *http.Request) error {
 	// has this expired?
 	if timeLeft < 0 {
 		if deleteSessionErr := eu.Sessions.DeleteBySid(req.Context(), userSession.ID); deleteSessionErr != nil {
-			eu.Logs.Write(njson.MJSON("failed to delete session", func(event npkg.Encoder) error {
+			eu.Logs.Write(njson.MJSON("failed to delete session", func(event npkg.Encoder) {
 				event.String("session_id", userSession.ID.String())
 				event.String("session_user_id", userSession.User.String())
 			}))
 		}
 		return nerror.New("Expired user session")
 	}
+
+	var _, extendLifetimeErr = eu.Sessions.Extend(ctx, userSession.ID, eu.SessionDuration)
+	if extendLifetimeErr != nil {
+		return nerror.Wrap(extendLifetimeErr, "Failed to extend user session lifetim")
+	}
+
 	return nil
 }
 
@@ -263,6 +293,11 @@ func (eu EmailAuth) Refresh(res http.ResponseWriter, req *http.Request) error {
 // Initiate runs the provided User http.handler which handles the rendering of
 // necessary login form for the user to input defined credentials for authentication.
 func (eu EmailAuth) Initiate(res http.ResponseWriter, req *http.Request) error {
+	var ctx = req.Context()
+	var span openTracing.Span
+	if ctx, span = ntrace.NewSpanFromContext(ctx, "EmailAuth.Initiate"); span != nil {
+		defer span.Finish()
+	}
 	if eu.AuthInitiator != nil {
 		eu.AuthInitiator.ServeHTTP(res, req)
 		return nil
@@ -271,19 +306,84 @@ func (eu EmailAuth) Initiate(res http.ResponseWriter, req *http.Request) error {
 	return nil
 }
 
-type LoginDTO struct {
+type LoginCredentialDTO struct {
 	Email    string `json:"email"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
+func (l LoginCredentialDTO) User() string {
+	if l.Email != "" {
+		return l.Email
+	}
+	return l.Username
+}
+
+func (l LoginCredentialDTO) Validate() error {
+	if l.Email == "" && l.Username == "" {
+		return nerror.New("invalid login credentials")
+	}
+	if l.Password == "" {
+		return nerror.New("password not provided")
+	}
+	return nil
+}
+
+const (
+	USER_CLAIME_VALIDATION_ERROR_MESSAGE = "username/email or password is incorrect"
+	USER_SESSION_CREATION_ERROR_MESSAGE  = "Failed to create sessions for user validated claim"
+)
+
 // Authenticate implements the nauth.AuthenticationProvider interface.
 func (eu EmailAuth) Authenticate(res http.ResponseWriter, req *http.Request) error {
-	panic("implement me")
+	var ctx = req.Context()
+	var span openTracing.Span
+	if ctx, span = ntrace.NewSpanFromContext(ctx, "EmailAuth.Authenticate"); span != nil {
+		defer span.Finish()
+	}
+
+	var credentials LoginCredentialDTO
+	if decodedErr := json.NewDecoder(req.Body).Decode(&credentials); decodedErr != nil {
+		return nerror.Wrap(decodedErr, "Failed to decode request body into LoginCredentialDTO")
+	}
+
+	ntrace.WithTag(span, "user", credentials.User())
+
+	var claim nauth.Claim
+	claim.Method = CLAIM_TYPE
+	claim.Provider = "InHouse"
+	claim.Credentials = credentials
+	claim.IP = net.ParseIP(req.RemoteAddr)
+	claim.Agent = req.Header.Get("User-Agent")
+
+	var validatedClaim, validatedClaimErr = eu.Verify(claim)
+	if validatedClaimErr != nil {
+		return nerror.Wrap(validatedClaimErr, USER_CLAIME_VALIDATION_ERROR_MESSAGE)
+	}
+
+	ntrace.WithTag(span, "validated_data", validatedClaim)
+
+	var newUserSession, newSessionErr = eu.Sessions.Create(ctx, validatedClaim)
+	if newSessionErr != nil {
+		return nerror.Wrap(newSessionErr, USER_SESSION_CREATION_ERROR_MESSAGE)
+	}
+
+	var userSessionCookie, userSessionCookieErr = newUserSession.EncodeToCookie(eu.CookieSigner)
+	if userSessionCookieErr != nil {
+		return nerror.Wrap(newSessionErr, "failed to write cookie to request")
+	}
+
+	http.SetCookie(res, userSessionCookie)
 	return nil
 }
 
 func (eu EmailAuth) Finalize(res http.ResponseWriter, req *http.Request) error {
-	panic("implement me")
+	var ctx = req.Context()
+	var span openTracing.Span
+	if ctx, span = ntrace.NewSpanFromContext(ctx, "EmailAuth.Finalize"); span != nil {
+		defer span.Finish()
+	}
+
+	res.WriteHeader(http.StatusNoContent)
 	return nil
 }

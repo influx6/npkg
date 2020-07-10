@@ -19,7 +19,7 @@ const (
 
 // ErrNoCredentials is returned when giving claim fails to provide
 // a credential.
-var ErrNoCredentials = errors.New("Claim has no attached credentail")
+var ErrNoCredentials = errors.New("claim has no attached credential")
 
 // LogWriter handles writing log facts from a write provider.
 type Logs interface {

@@ -23,6 +23,24 @@ const (
 
 type contextKey string
 
+// WithBaggage as new key-value pair into the spans baggage store.
+//
+// This values get propagated down to child spans from this span.
+func WithBaggage(span opentracing.Span, key string, value string) {
+	if span == nil {
+		return
+	}
+	span.SetBaggageItem(key, value)
+}
+
+// WithTag adds a new tag into a giving span.
+func WithTag(span opentracing.Span, key string, value interface{}) {
+	if span == nil {
+		return
+	}
+	span.SetTag(key, value)
+}
+
 // WithTrace returns a new context.Context and a function which can be used to finish the
 // opentracing.Span attached to giving context.
 //
@@ -32,7 +50,7 @@ func WithTrace(ctx context.Context, methodName string) (context.Context, func())
 	ctx, span = NewSpanFromContext(ctx, methodName)
 
 	return ctx, func() {
-		if span == nil  {
+		if span == nil {
 			return
 		}
 		span.Finish()
