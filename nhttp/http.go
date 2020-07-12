@@ -96,22 +96,16 @@ func GetFileMimeType(path string) string {
 func JSONError(w http.ResponseWriter, statusCode int, errorCode string, message string, err error) error {
 	w.WriteHeader(statusCode)
 
-	var encoder = njson.Object()
-	encoder.ObjectFor("error", func(enc npkg.ObjectEncoder) error {
-		if err := enc.String("message", message); err != nil {
-			return err
-		}
-		if err := enc.Int("status_code", statusCode); err != nil {
-			return err
-		}
-		if err := enc.String("error_code", errorCode); err != nil {
-			return err
-		}
+	var encoder = njson.JSONB()
+	encoder.ObjectFor("error", func(enc npkg.ObjectEncoder) {
+		enc.String("message", message)
+		enc.Int("status_code", statusCode)
+		enc.String("error_code", errorCode)
 
 		if encodableErr, ok := err.(npkg.EncodableObject); ok {
-			return enc.Object("incident", encodableErr)
+			enc.Object("incident", encodableErr)
 		}
-		return enc.String("incident", err.Error())
+		enc.String("incident", err.Error())
 	})
 
 	var _, werr = encoder.WriteTo(w)

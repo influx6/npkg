@@ -9,6 +9,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// Handler exposes a method to handle a giving http request
+// but allowing the exposure of any error occuring.
+type Handler interface {
+	Handle(res http.ResponseWriter, req *http.Request) error
+}
+
 // HandlerMW defines a function which wraps a provided http.handlerFunc
 // which encapsulates the original for a underline operation.
 type HandlerMW func(http.Handler, ...Middleware) http.Handler

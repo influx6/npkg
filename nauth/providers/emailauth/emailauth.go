@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/influx6/npkg/nhttp"
+
 	"github.com/gorilla/securecookie"
 
 	"github.com/influx6/npkg/ntrace"
@@ -155,8 +157,8 @@ type UserValidator interface {
 type EmailAuth struct {
 	SessionDuration time.Duration
 
-	AuthInitiator http.Handler
-	AuthFinalizer http.Handler
+	AuthInitiator nhttp.Handler
+	AuthFinalizer nhttp.Handler
 
 	UserStore     UserStore
 	UserValidator UserValidator
@@ -299,8 +301,9 @@ func (eu EmailAuth) Initiate(res http.ResponseWriter, req *http.Request) error {
 		defer span.Finish()
 	}
 	if eu.AuthInitiator != nil {
-		eu.AuthInitiator.ServeHTTP(res, req)
-		return nil
+		if initErr := eu.AuthInitiator.Handle(res, req.WithContext(ctx)); initErr != nil {
+			return nerror.Wrap(initErr, "Failed to initialize authentication")
+		}
 	}
 	res.WriteHeader(http.StatusNotImplemented)
 	return nil
@@ -384,6 +387,5 @@ func (eu EmailAuth) Finalize(res http.ResponseWriter, req *http.Request) error {
 		defer span.Finish()
 	}
 
-	res.WriteHeader(http.StatusNoContent)
-	return nil
+	return eu.AuthFinalizer.ServeHTTP(res, req.WithContext(ctx))
 }
