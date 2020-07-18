@@ -14,7 +14,7 @@ import (
 // GzipServe returns a Handler which handles the necessary bits to gzip or ungzip
 // file resonses from a http.FileSystem.
 func GzipServe(fs filesystem.FileSystem, gzipped bool) ContextHandler {
-	return func(ctx *NContext) error {
+	return func(ctx *Ctx) error {
 		reqURL := path.Clean(ctx.Path())
 		if reqURL == "./" || reqURL == "." {
 			ctx.Redirect(http.StatusMovedPermanently, "/")
@@ -94,7 +94,7 @@ func HTTPGzipServer(fs http.FileSystem, gzipped bool) http.Handler {
 // HTTPGzipServe returns a Handler which handles the necessary bits to gzip or ungzip
 // file resonses from a http.FileSystem.
 func HTTPGzipServe(fs http.FileSystem, gzipped bool) ContextHandler {
-	return func(ctx *NContext) error {
+	return func(ctx *Ctx) error {
 		reqURL := path.Clean(ctx.Path())
 		if reqURL == "./" || reqURL == "." {
 			ctx.Redirect(http.StatusMovedPermanently, "/")

@@ -71,7 +71,7 @@ func (h handlerImpl) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // HTTPFunc returns a http.HandleFunc which wraps the Handler for usage
 // with a server.
 func HTTPFunc(nx ContextHandler, befores ...func()) http.HandlerFunc {
-	return handlerImpl{ContextHandler: func(ctx *NContext) error {
+	return handlerImpl{ContextHandler: func(ctx *Ctx) error {
 		ctx.response.beforeFuncs = append(ctx.response.beforeFuncs, befores...)
 		return nx(ctx)
 	}}.ServeHTTP

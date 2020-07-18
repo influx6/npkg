@@ -7,7 +7,7 @@ import (
 
 // TextContextFunctions returns a map of tempalte funcs for usage
 // with text/template.Template.
-func TextContextFunctions(c *NContext) template.FuncMap {
+func TextContextFunctions(c *Ctx) template.FuncMap {
 	return template.FuncMap{
 		"flash":         c.Flash,
 		"flashMessages": c.FlashMessages,
@@ -28,7 +28,7 @@ func TextContextFunctions(c *NContext) template.FuncMap {
 
 // HTMLContextFunctions returns a map of tempalte funcs for usage
 // with text/template.Template.
-func HTMLContextFunctions(c *NContext) htemplate.FuncMap {
+func HTMLContextFunctions(c *Ctx) htemplate.FuncMap {
 	return htemplate.FuncMap{
 		"flash":         c.Flash,
 		"flashMessages": c.FlashMessages,

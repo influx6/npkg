@@ -32,12 +32,12 @@ type Render interface {
 	Render(io.Writer, string, interface{}) error
 }
 
-// Options defines a function type which receives a NContext pointer and
+// Options defines a function type which receives a Ctx pointer and
 // sets/modifiers it's internal state values.
-type Options func(*NContext)
+type Options func(*Ctx)
 
-// Apply applies giving options against NContext instance returning context again.
-func Apply(c *NContext, ops ...Options) *NContext {
+// Apply applies giving options against Ctx instance returning context again.
+func Apply(c *Ctx, ops ...Options) *Ctx {
 	for _, op := range ops {
 		op(c)
 	}
@@ -47,35 +47,35 @@ func Apply(c *NContext, ops ...Options) *NContext {
 
 // SetID sets the id of the giving context.
 func SetID(id nxid.ID) Options {
-	return func(c *NContext) {
+	return func(c *Ctx) {
 		c.id = id
 	}
 }
 
 // SetMultipartFormSize sets the expected size for any multipart data.
 func SetMultipartFormSize(size int64) Options {
-	return func(c *NContext) {
+	return func(c *Ctx) {
 		c.multipartFormSize = size
 	}
 }
 
 // SetPath sets the path of the giving context.
 func SetPath(p string) Options {
-	return func(c *NContext) {
+	return func(c *Ctx) {
 		c.path = p
 	}
 }
 
 // SetRenderer will returns a function to set the render used by a giving context.
 func SetRenderer(r Render) Options {
-	return func(c *NContext) {
+	return func(c *Ctx) {
 		c.render = r
 	}
 }
 
-// SetResponseWriter returns a option function to set the response of a NContext.
+// SetResponseWriter returns a option function to set the response of a Ctx.
 func SetResponseWriter(w http.ResponseWriter, befores ...func()) Options {
-	return func(c *NContext) {
+	return func(c *Ctx) {
 		c.response = &Response{
 			beforeFuncs: befores,
 			Writer:      w,
@@ -83,16 +83,16 @@ func SetResponseWriter(w http.ResponseWriter, befores ...func()) Options {
 	}
 }
 
-// SetResponse returns a option function to set the response of a NContext.
+// SetResponse returns a option function to set the response of a Ctx.
 func SetResponse(r *Response) Options {
-	return func(c *NContext) {
+	return func(c *Ctx) {
 		c.response = r
 	}
 }
 
-// SetRequest returns a option function to set the request of a NContext.
+// SetRequest returns a option function to set the request of a Ctx.
 func SetRequest(r *http.Request) Options {
-	return func(c *NContext) {
+	return func(c *Ctx) {
 		c.request = r
 		c.ctx = r.Context()
 		c.InitForms()
@@ -101,16 +101,16 @@ func SetRequest(r *http.Request) Options {
 
 // SetNotFound will return a function to set the NotFound handler for a giving context.
 func SetNotFound(r ContextHandler) Options {
-	return func(c *NContext) {
+	return func(c *Ctx) {
 		c.notfoundHandler = r
 	}
 }
 
 //=========================================================================================
 
-// NContext defines a http related context object for a request session
+// Ctx defines a http related context object for a request session
 // which is to be served.
-type NContext struct {
+type Ctx struct {
 	ctx context.Context
 
 	multipartFormSize int64
@@ -125,9 +125,9 @@ type NContext struct {
 	notfoundHandler   ContextHandler
 }
 
-// NewContext returns a new NContext with the Options slice applied.
-func NewContext(ops ...Options) *NContext {
-	c := &NContext{
+// NewContext returns a new Ctx with the Options slice applied.
+func NewContext(ops ...Options) *Ctx {
+	c := &Ctx{
 		id:     nxid.New(),
 		flash:  map[string][]string{},
 		params: map[string]string{},
@@ -149,22 +149,22 @@ func NewContext(ops ...Options) *NContext {
 }
 
 // ID returns the unique id of giving request context.
-func (c *NContext) ID() nxid.ID {
+func (c *Ctx) ID() nxid.ID {
 	return c.id
 }
 
-// Context returns the underline context.NContext for the request.
-func (c *NContext) Context() context.Context {
+// Context returns the underline context.Ctx for the request.
+func (c *Ctx) Context() context.Context {
 	return c.ctx
 }
 
 // Header returns the header associated with the giving request.
-func (c *NContext) Header() http.Header {
+func (c *Ctx) Header() http.Header {
 	return c.request.Header
 }
 
 // GetHeader returns associated value of key from request headers.
-func (c *NContext) GetHeader(key string) string {
+func (c *Ctx) GetHeader(key string) string {
 	if c.request == nil {
 		return ""
 	}
@@ -173,7 +173,7 @@ func (c *NContext) GetHeader(key string) string {
 }
 
 // AddHeader adds te value into the giving key into the response object header.
-func (c *NContext) AddHeader(key string, value string) {
+func (c *Ctx) AddHeader(key string, value string) {
 	if c.response == nil {
 		return
 	}
@@ -181,22 +181,22 @@ func (c *NContext) AddHeader(key string, value string) {
 	c.response.Header().Add(key, value)
 }
 
-// AddParam adds a new parameter value into the NContext.
+// AddParam adds a new parameter value into the Ctx.
 //
 // This is not safe for concurrent use.
-func (c *NContext) AddParam(key string, value string) {
+func (c *Ctx) AddParam(key string, value string) {
 	c.params[key] = value
 }
 
-// AddForm adds a new form value into the NContext.
+// AddForm adds a new form value into the Ctx.
 //
 // This is not safe for concurrent use.
-func (c *NContext) Param(key string) string {
+func (c *Ctx) Param(key string) string {
 	return c.params[key]
 }
 
 // SetHeader sets te key-value pair into the response object header.
-func (c *NContext) SetHeader(key string, value string) {
+func (c *Ctx) SetHeader(key string, value string) {
 	if c.response == nil {
 		return
 	}
@@ -208,7 +208,7 @@ func (c *NContext) SetHeader(key string, value string) {
 // has value within string of the request header.
 // if value is an empty string, then method only validates that you
 // have key in headers.
-func (c *NContext) HasHeader(key string, value string) bool {
+func (c *Ctx) HasHeader(key string, value string) bool {
 	if c.request == nil {
 		return false
 	}
@@ -221,33 +221,33 @@ func (c *NContext) HasHeader(key string, value string) bool {
 }
 
 // Request returns the associated request.
-func (c *NContext) Request() *http.Request {
+func (c *Ctx) Request() *http.Request {
 	return c.request
 }
 
 // Body returns the associated io.ReadCloser which is the body of the Request.
-func (c *NContext) Body() io.ReadCloser {
+func (c *Ctx) Body() io.ReadCloser {
 	return c.request.Body
 }
 
 // Response returns the associated response object for this context.
-func (c *NContext) Response() *Response {
+func (c *Ctx) Response() *Response {
 	return c.response
 }
 
 // IsTLS returns true/false if the giving reqest is a tls connection.
-func (c *NContext) IsTLS() bool {
+func (c *Ctx) IsTLS() bool {
 	return c.request.TLS != nil
 }
 
 // IsWebSocket returns true/false if the giving reqest is a websocket connection.
-func (c *NContext) IsWebSocket() bool {
+func (c *Ctx) IsWebSocket() bool {
 	upgrade := c.request.Header.Get(HeaderUpgrade)
 	return upgrade == "websocket" || upgrade == "Websocket"
 }
 
 // Scheme attempts to return the exact url scheme of the request.
-func (c *NContext) Scheme() string {
+func (c *Ctx) Scheme() string {
 	// Can't use `r.Request.URL.Scheme`
 	// See: https://groups.google.com/forum/#!topic/golang-nuts/pMUkBlQBDF0
 	if c.IsTLS() {
@@ -269,7 +269,7 @@ func (c *NContext) Scheme() string {
 }
 
 // RealIP attempts to return the ip of the giving request.
-func (c *NContext) RealIP() string {
+func (c *Ctx) RealIP() string {
 	ra := c.request.RemoteAddr
 	if ip := c.request.Header.Get(HeaderXForwardedFor); ip != "" {
 		ra = strings.Split(ip, ", ")[0]
@@ -282,7 +282,7 @@ func (c *NContext) RealIP() string {
 }
 
 // Path returns the request path associated with the context.
-func (c *NContext) Path() string {
+func (c *Ctx) Path() string {
 	if c.path == "" && c.request != nil {
 		c.path = c.request.URL.Path
 	}
@@ -291,7 +291,7 @@ func (c *NContext) Path() string {
 }
 
 // QueryParam finds the giving value for the giving name in the querie set.
-func (c *NContext) QueryParam(name string) string {
+func (c *Ctx) QueryParam(name string) string {
 	if c.query == nil {
 		c.query = c.request.URL.Query()
 	}
@@ -300,7 +300,7 @@ func (c *NContext) QueryParam(name string) string {
 }
 
 // QueryParams returns the context url.Values object.
-func (c *NContext) QueryParams() url.Values {
+func (c *Ctx) QueryParams() url.Values {
 	if c.query == nil {
 		c.query = c.request.URL.Query()
 	}
@@ -308,23 +308,23 @@ func (c *NContext) QueryParams() url.Values {
 }
 
 // QueryString returns the raw query portion of the request path.
-func (c *NContext) QueryString() string {
+func (c *Ctx) QueryString() string {
 	return c.request.URL.RawQuery
 }
 
 // Form returns the url.Values of the giving request.
-func (c *NContext) Form() url.Values {
+func (c *Ctx) Form() url.Values {
 	return c.request.Form
 }
 
 // FormValue returns the value of the giving item from the form fields.
-func (c *NContext) FormValue(name string) string {
+func (c *Ctx) FormValue(name string) string {
 	return c.request.FormValue(name)
 }
 
 // FormParams returns a url.Values which contains the parse form values for
 // multipart or wwww-urlencoded forms.
-func (c *NContext) FormParams() (url.Values, error) {
+func (c *Ctx) FormParams() (url.Values, error) {
 	if strings.HasPrefix(c.request.Header.Get(HeaderContentType), MIMEMultipartForm) {
 		if err := c.request.ParseMultipartForm(c.multipartFormSize); err != nil {
 			return nil, err
@@ -338,40 +338,40 @@ func (c *NContext) FormParams() (url.Values, error) {
 }
 
 // FormFile returns the giving FileHeader for the giving name.
-func (c *NContext) FormFile(name string) (*multipart.FileHeader, error) {
+func (c *Ctx) FormFile(name string) (*multipart.FileHeader, error) {
 	_, fh, err := c.request.FormFile(name)
 	return fh, err
 }
 
 // MultipartForm returns the multipart form of the giving request if its a multipart
 // request.
-func (c *NContext) MultipartForm() (*multipart.Form, error) {
+func (c *Ctx) MultipartForm() (*multipart.Form, error) {
 	err := c.request.ParseMultipartForm(defaultMemory)
 	return c.request.MultipartForm, err
 }
 
 // Cookie returns the associated cookie by the giving name.
-func (c *NContext) Cookie(name string) (*http.Cookie, error) {
+func (c *Ctx) Cookie(name string) (*http.Cookie, error) {
 	return c.request.Cookie(name)
 }
 
 // SetCookie sets the cookie into the response object.
-func (c *NContext) SetCookie(cookie *http.Cookie) {
+func (c *Ctx) SetCookie(cookie *http.Cookie) {
 	http.SetCookie(c.response, cookie)
 }
 
 // Cookies returns the associated cookies slice of the http request.
-func (c *NContext) Cookies() []*http.Cookie {
+func (c *Ctx) Cookies() []*http.Cookie {
 	return c.request.Cookies()
 }
 
 // ErrNoRenderInitiated defines the error returned when a renderer is not set
-// but NContext.Render() is called.
+// but Ctx.Render() is called.
 var ErrNoRenderInitiated = errors.New("Renderer was not set or is uninitiated")
 
 // Render renders the giving string with data binding using the provided Render
 // of the context.
-func (c *NContext) Render(code int, tmpl string, data interface{}) (err error) {
+func (c *Ctx) Render(code int, tmpl string, data interface{}) (err error) {
 	if c.render == nil {
 		return ErrNoRenderInitiated
 	}
@@ -386,40 +386,40 @@ func (c *NContext) Render(code int, tmpl string, data interface{}) (err error) {
 }
 
 // Template renders provided template.Template object into the response object.
-func (c *NContext) Template(code int, tmpl *template.Template, data interface{}) error {
+func (c *Ctx) Template(code int, tmpl *template.Template, data interface{}) error {
 	c.Status(code)
 	return tmpl.Funcs(TextContextFunctions(c)).Execute(c.response, data)
 }
 
 // HTMLTemplate renders provided template.Template object into the response object.
-func (c *NContext) HTMLTemplate(code int, tmpl *htemplate.Template, data interface{}) error {
+func (c *Ctx) HTMLTemplate(code int, tmpl *htemplate.Template, data interface{}) error {
 	c.Status(code)
 	return tmpl.Funcs(HTMLContextFunctions(c)).Execute(c.response, data)
 }
 
 // HTML renders giving html into response.
-func (c *NContext) HTML(code int, html string) (err error) {
+func (c *Ctx) HTML(code int, html string) (err error) {
 	return c.HTMLBlob(code, []byte(html))
 }
 
 // HTMLBlob renders giving html into response.
-func (c *NContext) HTMLBlob(code int, b []byte) (err error) {
+func (c *Ctx) HTMLBlob(code int, b []byte) (err error) {
 	return c.Blob(code, MIMETextHTMLCharsetUTF8, b)
 }
 
 // Error renders giving error response into response.
-func (c *NContext) Error(statusCode int, errorCode string, message string, err error) error {
+func (c *Ctx) Error(statusCode int, errorCode string, message string, err error) error {
 	c.response.Header().Set(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
 	return JSONError(c.Response(), statusCode, errorCode, message, err)
 }
 
 // String renders giving string into response.
-func (c *NContext) String(code int, s string) (err error) {
+func (c *Ctx) String(code int, s string) (err error) {
 	return c.Blob(code, MIMETextPlainCharsetUTF8, []byte(s))
 }
 
 // JSON renders giving json data into response.
-func (c *NContext) JSON(code int, i interface{}) (err error) {
+func (c *Ctx) JSON(code int, i interface{}) (err error) {
 	_, pretty := c.QueryParams()["pretty"]
 	if pretty {
 		return c.JSONPretty(code, i, "  ")
@@ -432,7 +432,7 @@ func (c *NContext) JSON(code int, i interface{}) (err error) {
 }
 
 // JSONPretty renders giving json data as indented into response.
-func (c *NContext) JSONPretty(code int, i interface{}, indent string) (err error) {
+func (c *Ctx) JSONPretty(code int, i interface{}, indent string) (err error) {
 	b, err := json.MarshalIndent(i, "", indent)
 	if err != nil {
 		return
@@ -441,12 +441,12 @@ func (c *NContext) JSONPretty(code int, i interface{}, indent string) (err error
 }
 
 // JSONBlob renders giving json data into response with proper mime type.
-func (c *NContext) JSONBlob(code int, b []byte) (err error) {
+func (c *Ctx) JSONBlob(code int, b []byte) (err error) {
 	return c.Blob(code, MIMEApplicationJSONCharsetUTF8, b)
 }
 
 // JSONP renders giving jsonp as response with proper mime type.
-func (c *NContext) JSONP(code int, callback string, i interface{}) (err error) {
+func (c *Ctx) JSONP(code int, callback string, i interface{}) (err error) {
 	b, err := json.Marshal(i)
 	if err != nil {
 		return
@@ -455,7 +455,7 @@ func (c *NContext) JSONP(code int, callback string, i interface{}) (err error) {
 }
 
 // JSONPBlob renders giving jsonp as response with proper mime type.
-func (c *NContext) JSONPBlob(code int, callback string, b []byte) (err error) {
+func (c *Ctx) JSONPBlob(code int, callback string, b []byte) (err error) {
 	c.response.Header().Set(HeaderContentType, MIMEApplicationJavaScriptCharsetUTF8)
 	c.response.WriteHeader(code)
 	if _, err = c.response.Write([]byte(callback + "(")); err != nil {
@@ -469,7 +469,7 @@ func (c *NContext) JSONPBlob(code int, callback string, b []byte) (err error) {
 }
 
 // XML renders giving xml as response with proper mime type.
-func (c *NContext) XML(code int, i interface{}) (err error) {
+func (c *Ctx) XML(code int, i interface{}) (err error) {
 	_, pretty := c.QueryParams()["pretty"]
 	if pretty {
 		return c.XMLPretty(code, i, "  ")
@@ -482,7 +482,7 @@ func (c *NContext) XML(code int, i interface{}) (err error) {
 }
 
 // XMLPretty renders giving xml as indent as response with proper mime type.
-func (c *NContext) XMLPretty(code int, i interface{}, indent string) (err error) {
+func (c *Ctx) XMLPretty(code int, i interface{}, indent string) (err error) {
 	b, err := xml.MarshalIndent(i, "", indent)
 	if err != nil {
 		return
@@ -491,7 +491,7 @@ func (c *NContext) XMLPretty(code int, i interface{}, indent string) (err error)
 }
 
 // XMLBlob renders giving xml as response with proper mime type.
-func (c *NContext) XMLBlob(code int, b []byte) (err error) {
+func (c *Ctx) XMLBlob(code int, b []byte) (err error) {
 	c.response.Header().Set(HeaderContentType, MIMEApplicationXMLCharsetUTF8)
 	c.response.WriteHeader(code)
 	if _, err = c.response.Write([]byte(xml.Header)); err != nil {
@@ -502,7 +502,7 @@ func (c *NContext) XMLBlob(code int, b []byte) (err error) {
 }
 
 // Blob write giving byte slice as response with proper mime type.
-func (c *NContext) Blob(code int, contentType string, b []byte) (err error) {
+func (c *Ctx) Blob(code int, contentType string, b []byte) (err error) {
 	c.response.Header().Set(HeaderContentType, contentType)
 	c.response.WriteHeader(code)
 	_, err = c.response.Write(b)
@@ -510,7 +510,7 @@ func (c *NContext) Blob(code int, contentType string, b []byte) (err error) {
 }
 
 // Stream copies giving io.Readers content into response.
-func (c *NContext) Stream(code int, contentType string, r io.Reader) (err error) {
+func (c *Ctx) Stream(code int, contentType string, r io.Reader) (err error) {
 	c.response.Header().Set(HeaderContentType, contentType)
 	c.response.WriteHeader(code)
 	_, err = io.Copy(c.response, r)
@@ -518,7 +518,7 @@ func (c *NContext) Stream(code int, contentType string, r io.Reader) (err error)
 }
 
 // File streams file content into response.
-func (c *NContext) File(file string) (err error) {
+func (c *Ctx) File(file string) (err error) {
 	f, err := os.Open(file)
 	if err != nil {
 		return err
@@ -545,30 +545,30 @@ func (c *NContext) File(file string) (err error) {
 }
 
 // Attachment attempts to attach giving file details.
-func (c *NContext) Attachment(file, name string) (err error) {
+func (c *Ctx) Attachment(file, name string) (err error) {
 	return c.contentDisposition(file, name, "attachment")
 }
 
 // Inline attempts to inline file content.
-func (c *NContext) Inline(file, name string) (err error) {
+func (c *Ctx) Inline(file, name string) (err error) {
 	return c.contentDisposition(file, name, "inline")
 }
 
 // SetFlash sets giving message/messages into the slice bucket of the
 // given name list.
-func (c *NContext) SetFlash(name string, message string) {
+func (c *Ctx) SetFlash(name string, message string) {
 	c.flash[name] = append(c.flash[name], message)
 }
 
 // ClearFlashMessages clears all available message items within
 // the flash map.
-func (c *NContext) ClearFlashMessages() {
+func (c *Ctx) ClearFlashMessages() {
 	c.flash = make(map[string][]string)
 }
 
 // FlashMessages returns available map of all flash messages.
 // A copy is sent not the context currently used instance.
-func (c *NContext) FlashMessages() map[string][]string {
+func (c *Ctx) FlashMessages() map[string][]string {
 	copy := make(map[string][]string)
 	for name, messages := range c.flash {
 		copy[name] = append([]string{}, messages...)
@@ -578,7 +578,7 @@ func (c *NContext) FlashMessages() map[string][]string {
 
 // ClearFlash removes all available message items from the context flash message
 // map.
-func (c *NContext) ClearFlash(name string) {
+func (c *Ctx) ClearFlash(name string) {
 	if _, ok := c.flash[name]; ok {
 		c.flash[name] = nil
 	}
@@ -586,17 +586,17 @@ func (c *NContext) ClearFlash(name string) {
 
 // Flash returns an associated slice of messages/string, for giving
 // flash name/key.
-func (c *NContext) Flash(name string) []string {
+func (c *Ctx) Flash(name string) []string {
 	messages := c.flash[name]
 	return messages
 }
 
 // ModContext executes provided function against current context
 // modifying the current context with the returned and updating
-// underlying request with new context NContext.
+// underlying request with new context Ctx.
 //
 // It is not safe for concurrent use.
-func (c *NContext) ModContext(modder func(ctx context.Context) context.Context) {
+func (c *Ctx) ModContext(modder func(ctx context.Context) context.Context) {
 	if c.ctx == nil {
 		return
 	}
@@ -608,7 +608,7 @@ func (c *NContext) ModContext(modder func(ctx context.Context) context.Context) 
 
 // NotFound writes calls the giving response against the NotFound handler
 // if present, else uses a http.StatusMovedPermanently status code.
-func (c *NContext) NotFound() error {
+func (c *Ctx) NotFound() error {
 	if c.notfoundHandler != nil {
 		return c.notfoundHandler(c)
 	}
@@ -618,12 +618,12 @@ func (c *NContext) NotFound() error {
 }
 
 // Status writes status code without writing content to response.
-func (c *NContext) Status(code int) {
+func (c *Ctx) Status(code int) {
 	c.response.WriteHeader(code)
 }
 
 // NoContent writes status code without writing content to response.
-func (c *NContext) NoContent(code int) error {
+func (c *Ctx) NoContent(code int) error {
 	c.response.WriteHeader(code)
 	return nil
 }
@@ -632,7 +632,7 @@ func (c *NContext) NoContent(code int) error {
 var ErrInvalidRedirectCode = errors.New("Invalid redirect code")
 
 // Redirect redirects context response.
-func (c *NContext) Redirect(code int, url string) error {
+func (c *Ctx) Redirect(code int, url string) error {
 	if code < 300 || code > 308 {
 		return ErrInvalidRedirectCode
 	}
@@ -644,7 +644,7 @@ func (c *NContext) Redirect(code int, url string) error {
 
 // InitForms will call the appropriate function to parse the necessary form values
 // within the giving request context.
-func (c *NContext) InitForms() error {
+func (c *Ctx) InitForms() error {
 	if c.request == nil {
 		return nil
 	}
@@ -656,7 +656,7 @@ func (c *NContext) InitForms() error {
 }
 
 // Reset resets context internal fields
-func (c *NContext) Reset(r *http.Request, w http.ResponseWriter) error {
+func (c *Ctx) Reset(r *http.Request, w http.ResponseWriter) error {
 	if r == nil && w == nil {
 		c.request = nil
 		c.response = nil
@@ -685,7 +685,7 @@ func (c *NContext) Reset(r *http.Request, w http.ResponseWriter) error {
 	return c.InitForms()
 }
 
-func (c *NContext) contentDisposition(file, name, dispositionType string) (err error) {
+func (c *Ctx) contentDisposition(file, name, dispositionType string) (err error) {
 	c.response.Header().Set(HeaderContentDisposition, fmt.Sprintf("%s; filename=%s", dispositionType, name))
 	c.File(file)
 	return
