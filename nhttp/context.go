@@ -18,6 +18,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/influx6/npkg/njson"
+
 	"github.com/influx6/npkg/nxid"
 )
 
@@ -416,6 +418,14 @@ func (c *Ctx) Error(statusCode int, errorCode string, message string, err error)
 // String renders giving string into response.
 func (c *Ctx) String(code int, s string) (err error) {
 	return c.Blob(code, MIMETextPlainCharsetUTF8, []byte(s))
+}
+
+// NJSON renders njson object as json response.
+func (c *Ctx) NJSON(code int, data *njson.JSON) (err error) {
+	c.response.Header().Set(HeaderContentType, MIMEApplicationJSON)
+	c.response.WriteHeader(code)
+	_, err = data.WriteTo(c.response)
+	return
 }
 
 // JSON renders giving json data into response.
