@@ -120,19 +120,16 @@ func (f Frames) Details() []FrameDetail {
 }
 
 // Encode encodes all Frames within slice into provided object encoder with keyname "_stack_frames".
-func (f Frames) Encode(encoder npkg.ObjectEncoder) error {
-	return encoder.ListFor("_stack_frames", f.EncodeList)
+func (f Frames) Encode(encoder npkg.ObjectEncoder) {
+	encoder.ListFor("_stack_frames", f.EncodeList)
 }
 
 // EncodeList encodes all Frames within slice into provided list encoder.
-func (f Frames) EncodeList(encoder npkg.ListEncoder) error {
+func (f Frames) EncodeList(encoder npkg.ListEncoder) {
 	for _, frame := range f {
 		var fr = Frame(frame)
-		if err := encoder.AddObject(fr); err != nil {
-			return err
-		}
+		encoder.AddObject(fr)
 	}
-	return nil
 }
 
 // Frame represents a program counter inside a stack frame.
@@ -153,37 +150,26 @@ type FrameDetail struct {
 const srcSub = "/src/"
 
 // EncodeObject encodes giving frame into provided encoder.
-func (f Frame) EncodeObject(encode npkg.ObjectEncoder) error {
+func (f Frame) EncodeObject(encode npkg.ObjectEncoder) {
 	fn := runtime.FuncForPC(f.Pc())
 	if fn == nil {
-		return nil
+		return
 	}
 
-	if err := encode.String("method", fn.Name()); err != nil {
-		return err
-	}
+	encode.String("method", fn.Name())
 
 	var file, line = fn.FileLine(f.Pc())
 	if line >= 0 {
-		if err := encode.Int("line", line); err != nil {
-			return err
-		}
+		encode.Int("line", line)
 	}
 
 	if file != "" && file != "???" {
-		if err := encode.String("file", file); err != nil {
-			return err
-		}
+		encode.String("file", file)
 
 		var fileName, pkgName = fileToPackageAndFilename(file)
-		if err := encode.String("file_name", fileName); err != nil {
-			return err
-		}
-		if err := encode.String("package", pkgName); err != nil {
-			return err
-		}
+		encode.String("file_name", fileName)
+		encode.String("package", pkgName)
 	}
-	return nil
 }
 
 const winSlash = '\\'
