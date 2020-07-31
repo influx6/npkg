@@ -221,7 +221,7 @@ func wrapOnly(err error) *PointingError {
 func wrapOnlyBy(err error, depth int, stack int) *PointingError {
 	var next PointingError
 	next.Parent = err
-	next.Frames = nframes.GetFrameDetails(3, 32)
+	next.Frames = nframes.GetFrameDetails(depth, stack)
 	return &next
 }
 
