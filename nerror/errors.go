@@ -157,7 +157,7 @@ func WrapBy(n int, err error, message string, v ...interface{}) error {
 // WrapOnly returns a new error which wraps existing error value if
 // present.
 func WrapOnly(err error) error {
-	return wrapOnlyBy(err,3, 32)
+	return wrapOnlyBy(err,4, 32)
 }
 
 // Unwrap returns the underline error of giving PointingError.
