@@ -157,7 +157,7 @@ func WrapBy(n int, err error, message string, v ...interface{}) error {
 // WrapOnly returns a new error which wraps existing error value if
 // present.
 func WrapOnly(err error) error {
-	return wrapOnly(err)
+	return wrapOnlyBy(err,3, 32)
 }
 
 // Unwrap returns the underline error of giving PointingError.
@@ -221,6 +221,7 @@ func wrapOnly(err error) *PointingError {
 func wrapOnlyBy(err error, depth int, stack int) *PointingError {
 	var next PointingError
 	next.Parent = err
+	next.Frames = nframes.GetFrameDetails(3, 32)
 	return &next
 }
 
