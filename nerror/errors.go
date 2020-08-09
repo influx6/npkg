@@ -157,6 +157,9 @@ func WrapBy(n int, err error, message string, v ...interface{}) error {
 // WrapOnly returns a new error which wraps existing error value if
 // present.
 func WrapOnly(err error) error {
+	if tm, ok := err.(*PointingError); ok {
+		return tm
+	}
 	return wrapOnlyBy(err,4, 32)
 }
 
@@ -235,6 +238,7 @@ func unwrapAs(e error) *PointingError {
 }
 
 var _ ErrorMessage = (*PointingError)(nil)
+var _ HasMessage = (*PointingError)(nil)
 
 // PointingError defines a custom error type which points to
 // both an originating point of return and a parent error if
@@ -251,13 +255,21 @@ func (pe PointingError) Error() string {
 	return pe.String()
 }
 
+type HasMessage interface {
+	HasMessage() bool
+}
+
+func (pe PointingError) HasMessage() bool {
+	return len(pe.Message) > 0
+}
+
 type ErrorMessage interface {
 	GetMessage() string
 }
 
 func (pe PointingError) GetMessage() string {
 	if len(pe.Message) == 0 && pe.Parent != nil {
-		if pep, ok := pe.Parent.(*PointingError); ok {
+		if pep, ok := pe.Parent.(ErrorMessage); ok {
 			return pep.GetMessage()
 		}
 	}
@@ -286,7 +298,9 @@ func (pe *PointingError) FormatMessage(buf *bytes.Buffer) {
 	}
 
 	if pe.Parent != nil {
-		buf.WriteString(": ")
+		if peHas, ok := pe.Parent.(HasMessage); ok && peHas.HasMessage() {
+			buf.WriteString(": ")
+		}
 		if pem, ok := pe.Parent.(*PointingError); ok {
 			pem.FormatMessage(buf)
 		} else {

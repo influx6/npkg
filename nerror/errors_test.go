@@ -1,6 +1,7 @@
 package nerror_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,8 +28,17 @@ func TestErrorWithWrapOnly(t *testing.T) {
 	assert.True(t, ok)
 	assert.NotNil(t, newErr.Frames)
 	assert.Equal(t, "Very bad error", nerror.ErrorMessage(newErr).GetMessage())
+	fmt.Println(newErr.String())
 }
 
 func doBad() error {
+	return nerror.WrapOnly(doBad2())
+}
+
+func doBad2() error {
+	return nerror.WrapOnly(doBad3())
+}
+
+func doBad3() error {
 	return nerror.New("Very bad error")
 }
