@@ -213,7 +213,7 @@ func Wrap(err error, message string, v ...interface{}) error {
 // wrapOnly returns a new error which wraps existing error value if
 // present.
 func wrapOnly(err error) *PointingError {
-	return wrapOnlyBy(err, 4, 9)
+	return wrapOnlyBy(err, 4, 32)
 }
 
 // WrapOnlyBy returns a new error which wraps existing error value if
@@ -231,7 +231,7 @@ func unwrapAs(e error) *PointingError {
 	if tm, ok := e.(*PointingError); ok {
 		return tm
 	}
-	return wrapOnlyBy(e, 4, 9)
+	return wrapOnlyBy(e, 4, 32)
 }
 
 // PointingError defines a custom error type which points to
