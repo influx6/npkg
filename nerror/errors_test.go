@@ -1,7 +1,6 @@
 package nerror_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,7 +26,7 @@ func TestErrorWithWrapOnly(t *testing.T) {
 	newErr, ok := (nerror.WrapOnly(doBad())).(*nerror.PointingError)
 	assert.True(t, ok)
 	assert.NotNil(t, newErr.Frames)
-	fmt.Printf("Stacks: \n%s\n", newErr.Error())
+	assert.Equal(t, newErr.Message, "Very bad error")
 }
 
 func doBad() error {
