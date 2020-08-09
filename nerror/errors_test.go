@@ -26,7 +26,7 @@ func TestErrorWithWrapOnly(t *testing.T) {
 	newErr, ok := (nerror.WrapOnly(doBad())).(*nerror.PointingError)
 	assert.True(t, ok)
 	assert.NotNil(t, newErr.Frames)
-	assert.Equal(t, newErr.Message, "Very bad error")
+	assert.Equal(t, "Very bad error", nerror.ErrorMessage(newErr).GetMessage())
 }
 
 func doBad() error {

@@ -234,6 +234,8 @@ func unwrapAs(e error) *PointingError {
 	return wrapOnlyBy(e, 4, 32)
 }
 
+var _ ErrorMessage = (*PointingError)(nil)
+
 // PointingError defines a custom error type which points to
 // both an originating point of return and a parent error if
 // wrapped.
@@ -247,6 +249,19 @@ type PointingError struct {
 // Error implements the error interface.
 func (pe PointingError) Error() string {
 	return pe.String()
+}
+
+type ErrorMessage interface {
+	GetMessage() string
+}
+
+func (pe PointingError) GetMessage() string {
+	if len(pe.Message) == 0 && pe.Parent != nil {
+		if pep, ok := pe.Parent.(*PointingError); ok {
+			return pep.GetMessage()
+		}
+	}
+	return pe.Message
 }
 
 // String returns formatted string.
