@@ -380,8 +380,8 @@ type DelimitedStreamReader struct {
 	unit      bool
 	unitLen   int
 
-	buffer *bufio.Reader
-	//cached  *bytes.Buffer
+	buffer  *bufio.Reader
+	cached  *bytes.Buffer
 	builder *BuildReader
 }
 
