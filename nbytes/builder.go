@@ -117,6 +117,11 @@ func (r *BuildReader) WriteByte(b byte) error {
 	return r.builder.WriteByte(b)
 }
 
+// WriteString writes new data into reader.
+func (r *BuildReader) WriteString(b string) error {
+	return r.builder.WriteString(b)
+}
+
 func (r *BuildReader) String() string {
 	return r.builder.String()
 }
