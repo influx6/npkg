@@ -1,6 +1,7 @@
 package nbytes
 
 import (
+	"io"
 	"unicode/utf8"
 	"unsafe"
 )
@@ -12,7 +13,7 @@ type BuildReader struct {
 	i       int
 }
 
-// NewBuilderReader returns a new instance of BuildReader.
+// NewBuildReader returns a new instance of BuildReader.
 func NewBuildReader() *BuildReader {
 	var br Builder
 	br.copyCheck()
@@ -22,7 +23,7 @@ func NewBuildReader() *BuildReader {
 	}
 }
 
-// BuilderReaderWith returns a new instance of BuildReader using the Builder.
+// BuildReaderWith returns a new instance of BuildReader using the Builder.
 func BuildReaderWith(bm *Builder) *BuildReader {
 	return &BuildReader{
 		builder: bm,
@@ -30,7 +31,7 @@ func BuildReaderWith(bm *Builder) *BuildReader {
 	}
 }
 
-// BuilderReaderFor returns a new instance of BuildReader using the byte slice.
+// BuildReaderFor returns a new instance of BuildReader using the byte slice.
 func BuildReaderFor(bm []byte) *BuildReader {
 	var br Builder
 	br.buf = bm
@@ -63,7 +64,7 @@ func (r *BuildReader) Reset(dontReuse bool) {
 // Read provides a Read method wrapper around a provided Builder.
 func (r *BuildReader) Read(b []byte) (n int, err error) {
 	if r.i >= r.builder.Len() {
-		return 0, ErrEOS
+		return 0, io.EOF
 	}
 
 	if r.i <= 0 {
@@ -89,11 +90,11 @@ func (r *BuildReader) Len() int {
 // ReadByte returns a single byte from the underline byte slice.
 func (r *BuildReader) ReadByte() (byte, error) {
 	if r.i >= r.builder.Len() {
-		return 0, ErrEOS
+		return 0, io.EOF
 	}
 
 	if r.i >= r.builder.Len() {
-		return 0, ErrEOS
+		return 0, io.EOF
 	}
 
 	nextByte := r.builder.buf[r.i]
