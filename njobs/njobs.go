@@ -99,7 +99,7 @@ func Mkdir(dir string, mod os.FileMode) JobFunction {
 			return nil, nerror.New("Expected rootDir path string as input")
 		}
 		var targetDir = path.Join(rootDir, dir)
-		if err := os.Mkdir(targetDir, mod); err != nil {
+		if err := os.MkdirAll(targetDir, mod); err != nil && err != os.ErrExist {
 			return nil, nerror.WrapOnly(err)
 		}
 		return targetDir, nil
@@ -168,7 +168,7 @@ func NewFile(name string, mod os.FileMode, r io.Reader) JobFunction {
 			return nil, nerror.New("Expected rootDir path string as input")
 		}
 		var targetFile = path.Join(rootDir, name)
-		var createdFile, err = os.OpenFile(targetFile, os.O_CREATE|os.O_WRONLY, mod)
+		var createdFile, err = os.OpenFile(targetFile, os.O_CREATE|os.O_RDWR, mod)
 		if err != nil {
 			return nil, nerror.WrapOnly(err)
 		}
