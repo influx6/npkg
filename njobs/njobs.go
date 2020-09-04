@@ -160,6 +160,24 @@ func DeleteFileFrom(name string) JobFunction {
 	}
 }
 
+// JoinPath expects to receive a string which is path which it applies a the
+// join string to.
+func JoinPath(join string) JobFunction {
+	return func(dir interface{}) (interface{}, error) {
+		var rootDir, ok = dir.(string)
+		if !ok {
+			return nil, nerror.New("Expected rootDir path string as input")
+		}
+		return path.Join(rootDir, join), nil
+	}
+}
+
+// BackupPath expects to receive a string which is path which it applies a '..' to
+// to backup to the root directory.
+func BackupPath() JobFunction {
+	return JoinPath("..")
+}
+
 // NewFile returns a new function to create a file within directory passed to function.
 func NewFile(name string, mod os.FileMode, r io.Reader) JobFunction {
 	return func(dir interface{}) (interface{}, error) {
