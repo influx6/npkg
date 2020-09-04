@@ -168,7 +168,7 @@ func NewFile(name string, mod os.FileMode, r io.Reader) JobFunction {
 			return nil, nerror.New("Expected rootDir path string as input")
 		}
 		var targetFile = path.Join(rootDir, name)
-		var createdFile, err = os.OpenFile(targetFile, os.O_CREATE|os.O_RDWR, mod)
+		var createdFile, err = os.OpenFile(targetFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mod)
 		if err != nil {
 			return nil, nerror.WrapOnly(err)
 		}
