@@ -19,6 +19,18 @@ func (fn JobFunction) Do(data interface{}) (interface{}, error) {
 	return fn(data)
 }
 
+// MoveLastForward moves the last result forward compared to the result
+// from this doer.
+func MoveLastForward(doer JobFunction) JobFunction {
+	return func(lastResult interface{}) (interface{}, error) {
+		var _, newErr = doer(lastResult)
+		if newErr != nil {
+			return nil, nerror.WrapOnly(newErr)
+		}
+		return lastResult, nil
+	}
+}
+
 // ReadDir creates a new directory with giving mode.
 func ReadDir(dir string) JobFunction {
 	return func(rootDirData interface{}) (interface{}, error) {
