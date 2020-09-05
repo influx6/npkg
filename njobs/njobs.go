@@ -1,6 +1,7 @@
 package njobs
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -103,6 +104,36 @@ func Mkdir(dir string, mod os.FileMode) JobFunction {
 			return nil, nerror.WrapOnly(err)
 		}
 		return targetDir, nil
+	}
+}
+
+// Println deletes incoming path string
+func Println(format string, writer io.Writer) JobFunction {
+	return Printf(format+"\n", writer)
+}
+
+// Printf deletes incoming path string
+func Printf(format string, writer io.Writer) JobFunction {
+	return func(dir interface{}) (interface{}, error) {
+		if _, err := fmt.Fprintf(writer, format, dir); err != nil {
+			return dir, err
+		}
+		return dir, nil
+	}
+}
+
+// DeletePath deletes incoming path string
+func DeletePath() JobFunction {
+	return func(dir interface{}) (interface{}, error) {
+		var rootDir, ok = dir.(string)
+		if !ok {
+			return nil, nerror.New("Expected rootDir path string as input")
+		}
+		var err = os.RemoveAll(rootDir)
+		if err != nil {
+			return rootDir, nerror.WrapOnly(err)
+		}
+		return rootDir, nil
 	}
 }
 
