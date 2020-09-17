@@ -64,6 +64,15 @@ func ValidateFuncArea(fn interface{}, conditions ...AreaValidation) error {
 	return nil
 }
 
+// TypeName returns the original typename of giving target.
+func TypeName(t interface{}) string {
+	var ref = reflect.ValueOf(t)
+	if ref.Kind() == reflect.Ptr {
+		ref = ref.Elem()
+	}
+	return ref.Type().Name()
+}
+
 // ValidateFunc validates giving function arguments and returns types against TypeValidation
 // functions.
 func ValidateFunc(fn interface{}, argRules, returnRules []TypeValidation) error {

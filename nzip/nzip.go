@@ -146,7 +146,7 @@ func UnzipInt16(val []byte) (int16, error) {
 	return int16(dl), nil
 }
 
-// ZipInt converts provided value in the range of {int, uint} types 
+// ZipInt converts provided value in the range of {int, uint} types
 // in all supported arch of 8,16,32,64 into a byte slice.
 func ZipInt(b interface{}, c []byte) ([]byte, error) {
 	switch val := b.(type) {
@@ -428,7 +428,7 @@ func DecodeVarInt64(buf []byte) (x uint64, n int) {
 }
 
 //*******************************************************************
-// Text Zipping : Code taken from https://github.com/linkedin/goavro
+// Name Zipping : Code taken from https://github.com/linkedin/goavro
 //*******************************************************************
 
 // While slices in Go are never constants, we can initialize them once and reuse
