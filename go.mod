@@ -1,8 +1,9 @@
 module github.com/influx6/npkg
 
-go 1.14
+go 1.15
 
 require (
+	github.com/HdrHistogram/hdrhistogram-go v0.9.0 // indirect
 	github.com/alicebob/gopher-json v0.0.0-20200520072559-a9ecdc9d1d3a // indirect
 	github.com/alicebob/miniredis v2.5.0+incompatible
 	github.com/codahale/hdrhistogram v0.9.0 // indirect
@@ -19,7 +20,7 @@ require (
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/stretchr/testify v1.6.1
 	github.com/uber/jaeger-client-go v2.25.0+incompatible
-	github.com/uber/jaeger-lib v2.2.0+incompatible // indirect
+	github.com/uber/jaeger-lib v2.3.0+incompatible // indirect
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
