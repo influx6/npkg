@@ -221,7 +221,9 @@ func NewFile(name string, mod os.FileMode, r io.Reader) JobFunction {
 		if err != nil {
 			return nil, nerror.WrapOnly(err)
 		}
-		defer createdFile.Close()
+		defer func() {
+			_ = createdFile.Close()
+		}()
 		if _, err := io.Copy(createdFile, r); err != nil {
 			return nil, nerror.WrapOnly(err)
 		}
