@@ -19,10 +19,12 @@ var (
 )
 
 func Log(log Logger) *LogStack {
+	var writer = &writeLogger{log}
 	var newStack, isStack = logPool.Get().(*LogStack)
 	if !isStack {
-		newStack = &LogStack{npkg.NewWriteStack(jsonMaker, writeLogger{log})}
+		newStack = &LogStack{npkg.NewWriteStack(jsonMaker, nil)}
 	}
+	newStack.SetWriter(writer)
 	return newStack
 }
 
@@ -42,7 +44,7 @@ type writeLogger struct {
 	Logger
 }
 
-func (l writeLogger) Write(v npkg.Encoded) {
+func (l *writeLogger) Write(v npkg.Encoded) {
 	if vjson, ok := v.(*JSON); ok {
 		l.Log(vjson)
 	}

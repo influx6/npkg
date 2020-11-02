@@ -449,6 +449,11 @@ func NewWriteStack(fn EncodableObjectFunc, writer Writer) *WriteStack {
 	}
 }
 
+func (l *WriteStack) SetWriter(w Writer) *WriteStack {
+	l.writer = w
+	return l
+}
+
 func (l *WriteStack) New() *WriteStack {
 	l.End()
 	l.base = l.maker()
