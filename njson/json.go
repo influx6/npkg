@@ -1,6 +1,7 @@
 package njson
 
 import (
+	"fmt"
 	"io"
 	"strconv"
 	"sync"
@@ -97,6 +98,14 @@ type JSON struct {
 	r         uint32
 	content   []byte
 	onRelease func([]byte) []byte
+}
+
+func (l *JSON) AddFormatted(format string, m interface{}) {
+	l.AddString(fmt.Sprintf(format, m))
+}
+
+func (l *JSON) Formatted(k string, format string, m interface{}) {
+	l.String(k, fmt.Sprintf(format, m))
 }
 
 func (l *JSON) AddStringMap(m map[string]string) {
