@@ -20,7 +20,6 @@ func GetWriteList(w Writer) *WriteStack {
 		newStack = &WriteStack{}
 	}
 	newStack.writer = w
-	newStack.base = JSONL()
 	return newStack
 }
 
@@ -30,7 +29,6 @@ func GetWriteObject(w Writer) *WriteStack {
 		newStack = &WriteStack{}
 	}
 	newStack.writer = w
-	newStack.base = JSONB()
 	return newStack
 }
 

@@ -20,7 +20,6 @@ func GetLogList(log Logger) *LogStack {
 		newStack = &LogStack{}
 	}
 	newStack.logger = log
-	newStack.base = JSONL()
 	return newStack
 }
 
@@ -30,7 +29,6 @@ func GetLogObject(log Logger) *LogStack {
 		newStack = &LogStack{logger: log}
 	}
 	newStack.logger = log
-	newStack.base = JSONB()
 	return newStack
 }
 
