@@ -479,13 +479,18 @@ type LogLevel int
 const (
 	DEBUG    LogLevel = 10
 	INFO     LogLevel = 20
-	WARN     LogLevel = 40
-	CRITICAL LogLevel = 60
-	PANIC    LogLevel = 79
+	ERROR    LogLevel = 40
+	WARN     LogLevel = 60
+	CRITICAL LogLevel = 80
+	PANIC    LogLevel = 120
 )
 
 func (l *WriteStack) Info() *WriteStack {
 	return l.Level(INFO)
+}
+
+func (l *WriteStack) Error() *WriteStack {
+	return l.Level(ERROR)
 }
 
 func (l *WriteStack) Debug() *WriteStack {
