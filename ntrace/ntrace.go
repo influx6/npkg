@@ -177,7 +177,7 @@ func OpenTracingMW(tracingKey string, getter npkg.Getter) func(http.Handler) htt
 }
 
 // InitZipkinTracer inits the jaeger client
-// Service Name in Jaeger Query - edit accordingly to the Kubernetes service name (ask us if you don't know)
+// Service PageName in Jaeger Query - edit accordingly to the Kubernetes service name (ask us if you don't know)
 func InitZipkinTracer(srvName string, samplingServerURL, localAgentHost string) (io.Closer, error) {
 	// Standard option for starting Zipkin based Tracing, please include.
 	var jLogger = jaegerlog.StdLogger

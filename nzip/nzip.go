@@ -428,7 +428,7 @@ func DecodeVarInt64(buf []byte) (x uint64, n int) {
 }
 
 //*******************************************************************
-// Name Zipping : Code taken from https://github.com/linkedin/goavro
+// PageName Zipping : Code taken from https://github.com/linkedin/goavro
 //*******************************************************************
 
 // While slices in Go are never constants, we can initialize them once and reuse

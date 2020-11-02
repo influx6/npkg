@@ -26,6 +26,10 @@ var (
 	}
 )
 
+var _ npkg.Error = (*JSON)(nil)
+var _ npkg.ObjectEncoder = (*JSON)(nil)
+var _ npkg.ListEncoder = (*JSON)(nil)
+
 // JSONL creates a json list.
 func JSONL(inherits ...func(event npkg.Encoder)) *JSON {
 	event := logEventPool.Get().(*JSON)
@@ -86,13 +90,37 @@ var (
 // using a underline non-strict json format to transform log key-value pairs into
 // a LogMessage.
 //
-// Each JSON iss retrieved from a pool and will panic if after release/write it is used.
+// Each JSON iss retrieved from a logPool and will panic if after release/write it is used.
 type JSON struct {
 	err       error
 	l         int8
 	r         uint32
 	content   []byte
 	onRelease func([]byte) []byte
+}
+
+func (l *JSON) AddStringMap(m map[string]string) {
+	l.AddObjectWith(func(event npkg.ObjectEncoder) {
+		npkg.EncodableStringMap(m).EncodeObject(event)
+	})
+}
+
+func (l *JSON) AddMap(m map[string]interface{}) {
+	l.AddObjectWith(func(event npkg.ObjectEncoder) {
+		npkg.EncodableMap(m).EncodeObject(event)
+	})
+}
+
+func (l *JSON) StringMap(key string, m map[string]string) {
+	l.ObjectFor(key, func(event npkg.ObjectEncoder) {
+		npkg.EncodableStringMap(m).EncodeObject(event)
+	})
+}
+
+func (l *JSON) Map(k string, m map[string]interface{}) {
+	l.ObjectFor(k, func(event npkg.ObjectEncoder) {
+		npkg.EncodableMap(m).EncodeObject(event)
+	})
 }
 
 func (l *JSON) AddList(list npkg.EncodableList) {
@@ -139,7 +167,7 @@ func (l *JSON) Message() string {
 	return bytes2String(cn)
 }
 
-// Release releases the JSON object back into the pool.
+// Release releases the JSON object back into the logPool.
 func (l *JSON) Release() {
 	l.resetContent()
 	l.release()
@@ -587,7 +615,6 @@ func (l *JSON) Bytes(name string, value []byte) {
 	l.panicIfList()
 	l.addBytes(name, value)
 	l.endEntry()
-
 }
 
 // QBytes adds a field name with bytes value. The byte is expected to be
@@ -769,7 +796,6 @@ func (l *JSON) Int64(name string, value int64) {
 		return content
 	})
 	l.endEntry()
-
 }
 
 // UInt8 adds a field name with uint8 value.
@@ -812,6 +838,31 @@ func (l *JSON) UInt16(name string, value uint16) {
 	})
 	l.endEntry()
 
+}
+
+func (l *JSON) Byte(name string, value byte) {
+	l.panicIfList()
+
+	l.appendItem(func(content []byte) []byte {
+		content = append(content, doubleQuote...)
+		content = append(content, name...)
+		content = append(content, doubleQuote...)
+		content = append(content, colon...)
+		content = append(content, space...)
+		content = append(content, value)
+		return content
+	})
+	l.endEntry()
+}
+
+func (l *JSON) AddByte(value byte) {
+	l.panicIfList()
+
+	l.appendItem(func(content []byte) []byte {
+		content = append(content, value)
+		return content
+	})
+	l.endEntry()
 }
 
 // UInt32 adds a field name with uint32 value.

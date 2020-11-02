@@ -32,7 +32,7 @@ func get(t *testing.T, sm speaker) {
 	if err != nil {
 		t.Fatalf("Should be able to retrieve field names arguments lists\n")
 	}
-	t.Logf("Name: %s", name)
+	t.Logf("PageName: %s", name)
 	t.Logf("Fields: %+q", embedded)
 	t.Logf("Should be able to retrieve function arguments lists")
 }
@@ -437,9 +437,9 @@ func TestStructMapper(t *testing.T) {
 	t.Logf("Mapped Struct: %+q", profile2)
 
 	if profile2.Name != profile.Name {
-		t.Fatalf("Mapped struct should have same %q value", "Name")
+		t.Fatalf("Mapped struct should have same %q value", "PageName")
 	}
-	t.Logf("Mapped struct should have same %q value", "Name")
+	t.Logf("Mapped struct should have same %q value", "PageName")
 
 	if profile2.Date.Format(layout) != profile.Date.Format(layout) {
 		t.Fatalf("Mapped struct should have same %q value", "Date")
@@ -474,7 +474,7 @@ func TestGetArgumentsType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Should be able to retrieve field names arguments lists")
 	}
-	t.Logf("Name: %s", name)
+	t.Logf("PageName: %s", name)
 	t.Logf("Fields: %+q", embedded)
 	t.Logf("Should be able to retrieve function arguments lists")
 
