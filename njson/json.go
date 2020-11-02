@@ -219,7 +219,7 @@ func (l *JSON) ObjectFor(name string, handler func(event npkg.ObjectEncoder)) {
 	}
 	newEvent.end()
 
-	l.addBytes(name, newEvent.Buf())
+	l.appendBytes(name, newEvent.Buf())
 	l.endEntry()
 
 	newEvent.resetContent()
@@ -252,7 +252,7 @@ func (l *JSON) ListFor(name string, handler func(event npkg.ListEncoder)) {
 	}
 	newEvent.end()
 
-	l.addBytes(name, newEvent.Buf())
+	l.appendBytes(name, newEvent.Buf())
 	l.endEntry()
 
 	newEvent.resetContent()
@@ -285,7 +285,7 @@ func (l *JSON) AddListWith(handler func(event npkg.ListEncoder)) {
 	}
 	newEvent.end()
 
-	l.addBytesListItem(newEvent.Buf())
+	l.appendBytesList(newEvent.Buf())
 	l.endEntry()
 
 	newEvent.resetContent()
@@ -319,7 +319,7 @@ func (l *JSON) AddObjectWith(handler func(event npkg.ObjectEncoder)) {
 	}
 	newEvent.end()
 
-	l.addBytesListItem(newEvent.Buf())
+	l.appendBytesList(newEvent.Buf())
 	l.endEntry()
 
 	newEvent.resetContent()
@@ -560,7 +560,18 @@ func (l *JSON) AddBytes(value []byte) {
 	}
 
 	l.panicIfObject()
-	l.addBytesListItem(value)
+	l.addListBytes(value)
+	l.endEntry()
+}
+
+func (l *JSON) AppendBytes(value []byte) {
+	// stop if error
+	if l.err != nil {
+		return
+	}
+
+	l.panicIfObject()
+	l.appendBytesList(value)
 	l.endEntry()
 }
 
@@ -613,7 +624,7 @@ func (l *JSON) Bytes(name string, value []byte) {
 	}
 
 	l.panicIfList()
-	l.addBytes(name, value)
+	l.addListBytesKV(name, value)
 	l.endEntry()
 }
 
@@ -1063,6 +1074,37 @@ func (l *JSON) addStringListItem(v string) {
 	})
 }
 
+func (l *JSON) addListBytes(v []byte) {
+	if l.released() {
+		panic("Re-using released *JSON")
+	}
+
+	l.appendItem(func(content []byte) []byte {
+		content = append(content, '[')
+		content = append(content, v...)
+		content = append(content, ']')
+		return content
+	})
+}
+
+func (l *JSON) addListBytesKV(k string, v []byte) {
+	if l.released() {
+		panic("Re-using released *JSON")
+	}
+
+	l.appendItem(func(content []byte) []byte {
+		content = append(content, doubleQuote...)
+		content = append(content, k...)
+		content = append(content, doubleQuote...)
+		content = append(content, colon...)
+		content = append(content, space...)
+		content = append(content, '[')
+		content = append(content, v...)
+		content = append(content, ']')
+		return content
+	})
+}
+
 func (l *JSON) addQuotedBytes(k string, v []byte) {
 	if l.released() {
 		panic("Re-using released *JSON")
@@ -1094,7 +1136,7 @@ func (l *JSON) addQuotedBytesListItem(v []byte) {
 	})
 }
 
-func (l *JSON) addBytes(k string, v []byte) {
+func (l *JSON) appendBytes(k string, v []byte) {
 	if l.released() {
 		panic("Re-using released *JSON")
 	}
@@ -1110,7 +1152,7 @@ func (l *JSON) addBytes(k string, v []byte) {
 	})
 }
 
-func (l *JSON) addBytesListItem(v []byte) {
+func (l *JSON) appendBytesList(v []byte) {
 	if l.released() {
 		panic("Re-using released *JSON")
 	}
