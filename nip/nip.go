@@ -9,7 +9,34 @@ import (
 	"github.com/influx6/npkg/nerror"
 )
 
-//IpRange - a structure that holds the start and end of a range of ip addresses
+var DefaultSubnet = PrivateSubnets{
+	IpRange{
+		Start: net.ParseIP("10.0.0.0"),
+		End:   net.ParseIP("10.255.255.255"),
+	},
+	IpRange{
+		Start: net.ParseIP("100.64.0.0"),
+		End:   net.ParseIP("100.127.255.255"),
+	},
+	IpRange{
+		Start: net.ParseIP("172.16.0.0"),
+		End:   net.ParseIP("172.31.255.255"),
+	},
+	IpRange{
+		Start: net.ParseIP("192.0.0.0"),
+		End:   net.ParseIP("192.0.0.255"),
+	},
+	IpRange{
+		Start: net.ParseIP("192.168.0.0"),
+		End:   net.ParseIP("192.168.255.255"),
+	},
+	IpRange{
+		Start: net.ParseIP("198.18.0.0"),
+		End:   net.ParseIP("198.19.255.255"),
+	},
+}
+
+//IpRange - a structure that holds the Start and End of a range of ip addresses
 type IpRange struct {
 	Start net.IP
 	End   net.IP
