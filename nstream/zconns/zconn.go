@@ -324,8 +324,8 @@ func (s *Server) spawnConnectionRoutine(conn net.Conn) {
 }
 
 //*********************************************************************************************
-// Next Message Format: NX {MAX_64_INT}\r\n\r\n
-// Data Message Format: DX {HEADER} {DATA_BYTES}\r\n\r\n
+// Next messages Format: NX {MAX_64_INT}\r\n\r\n
+// Data messages Format: DX {HEADER} {DATA_BYTES}\r\n\r\n
 // Delimiter Format: \r\n
 //**********************************************************************************************
 
