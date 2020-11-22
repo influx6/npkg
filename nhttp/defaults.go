@@ -89,7 +89,7 @@ const (
 	HeaderAccessControlMaxAge           = "Access-Control-Max-Age"
 
 	// Security
-	HeaderStrictTransportSecurity = "Strict-Transport-Security"
+	HeaderStrictTransportSecurity = "Strict-transport-Security"
 	HeaderXContentTypeOptions     = "X-Content-Type-Options"
 	HeaderXXSSProtection          = "X-XSS-Protection"
 	HeaderXFrameOptions           = "X-Frame-Options"

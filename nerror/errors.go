@@ -8,13 +8,6 @@ import (
 	"github.com/influx6/npkg/nframes"
 )
 
-// vars
-const (
-	stackSize   = 1 << 13
-	unknownName = "Unknown()"
-	unknownFile = "???"
-)
-
 // IsAny returns true/false any of giving error matches set of error.
 func IsAny(err error, set ...error) bool {
 	err = UnwrapDeep(err)
@@ -151,7 +144,7 @@ func WrapBy(n int, err error, message string, v ...interface{}) error {
 	next.Parent = err
 	next.Message = message
 	next.Frames = nframes.GetFrameDetails(3, n)
-	return next
+	return &next
 }
 
 // WrapOnly returns a new error which wraps existing error value if
@@ -160,7 +153,7 @@ func WrapOnly(err error) error {
 	if tm, ok := err.(*PointingError); ok {
 		return tm
 	}
-	return wrapOnlyBy(err,4, 32)
+	return wrapOnlyBy(err, 4, 32)
 }
 
 // Unwrap returns the underline error of giving PointingError.
@@ -251,7 +244,7 @@ type PointingError struct {
 }
 
 // Error implements the error interface.
-func (pe PointingError) Error() string {
+func (pe *PointingError) Error() string {
 	return pe.String()
 }
 
@@ -267,7 +260,7 @@ type ErrorMessage interface {
 	GetMessage() string
 }
 
-func (pe PointingError) GetMessage() string {
+func (pe *PointingError) GetMessage() string {
 	if len(pe.Message) == 0 && pe.Parent != nil {
 		if pep, ok := pe.Parent.(ErrorMessage); ok {
 			return pep.GetMessage()
@@ -277,7 +270,7 @@ func (pe PointingError) GetMessage() string {
 }
 
 // String returns formatted string.
-func (pe PointingError) String() string {
+func (pe *PointingError) String() string {
 	var buf = bufPool.Get().(*bytes.Buffer)
 	defer bufPool.Put(buf)
 
@@ -314,7 +307,7 @@ func (pe *PointingError) FormatStack(buf *bytes.Buffer) {
 	buf.WriteString("-------------------------------------------")
 	buf.WriteString("\n")
 	for _, frame := range pe.Frames {
-		fmt.Fprintf(buf, "- [%s] %s:%d", frame.Package, frame.File, frame.Line)
+		_, _ = fmt.Fprintf(buf, "- [%s] %s:%d", frame.Package, frame.File, frame.Line)
 		buf.WriteString("\n")
 	}
 	if po, ok := pe.Parent.(*PointingError); ok {
