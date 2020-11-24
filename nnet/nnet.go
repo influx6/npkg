@@ -311,26 +311,13 @@ func TCPListener(addr string, conf *tls.Config) (net.Listener, error) {
 		return nil, err
 	}
 
-	tpcl, ok := l.(*net.TCPListener)
-	if !ok {
-		return nil, errors.New("Expected net.TCPListener type")
-	}
-
-	return NewKeepAliveListener(tpcl), nil
+	return NewKeepAliveListener(l), nil
 }
 
 //NewHTTPServer returns a new http.Server using the provided listener
 func NewHTTPServer(l net.Listener, handle http.Handler, c *tls.Config) (*http.Server, net.Listener, error) {
-	tl, ok := l.(*net.TCPListener)
-
-	if !ok {
-		return nil, nil, fmt.Errorf("Listener is not type *net.TCPListener")
-	}
-
-	tls := NewKeepAliveListener(tl)
-
 	s := &http.Server{
-		Addr:           tl.Addr().String(),
+		Addr:           l.Addr().String(),
 		Handler:        handle,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
@@ -339,31 +326,44 @@ func NewHTTPServer(l net.Listener, handle http.Handler, c *tls.Config) (*http.Se
 	}
 
 	log.Printf("Serving http connection on: %+q\n", s.Addr)
-	go s.Serve(tls)
+	go func() {
+		if err := s.Serve(l); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
-	return s, tls, nil
+	return s, l, nil
 }
 
 type keepAliveListener struct {
-	*net.TCPListener
+	net.Listener
 }
 
 // NewKeepAliveListener returns a new net.Listener from underline net.TCPListener
-// where produced net.Conns respect keep alive regualations.
-func NewKeepAliveListener(tl *net.TCPListener) net.Listener {
+// where produced net.Conns respect keep alive regulations.
+func NewKeepAliveListener(tl net.Listener) net.Listener {
 	return &keepAliveListener{
-		TCPListener: tl,
+		Listener: tl,
 	}
 }
 
 func (kl *keepAliveListener) Accept() (net.Conn, error) {
-	conn, err := kl.TCPListener.AcceptTCP()
+	var tl, isTL = kl.Listener.(*net.TCPListener)
+	if !isTL {
+		return kl.Listener.Accept()
+	}
+
+	conn, err := tl.AcceptTCP()
 	if err != nil {
 		return nil, err
 	}
 
-	conn.SetKeepAlive(true)
-	conn.SetKeepAlivePeriod(2 * time.Minute)
+	if err := conn.SetKeepAlive(true); err != nil {
+		return conn, err
+	}
+	if err := conn.SetKeepAlivePeriod(2 * time.Minute); err != nil {
+		return conn, err
+	}
 
 	return conn, nil
 }
