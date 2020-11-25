@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -12,6 +13,8 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"github.com/influx6/npkg/nerror"
 
 	netutils "github.com/influx6/npkg/nnet"
 	"golang.org/x/crypto/acme/autocert"
@@ -131,14 +134,9 @@ func (s *Server) Listen(ctx context.Context, addr string) error {
 		tlsConfig.NextProtos = append(tlsConfig.NextProtos, "h2")
 	}
 
-	listener, err := netutils.MakeListener("tcp", addr, tlsConfig)
+	var listener, err = netutils.MakeListener("tcp", addr, tlsConfig)
 	if err != nil {
 		return err
-	}
-
-	tlsListener, ok := listener.(*net.TCPListener)
-	if !ok {
-		return errors.New("not tcp listener")
 	}
 
 	var server = &http.Server{
@@ -156,14 +154,21 @@ func (s *Server) Listen(ctx context.Context, addr string) error {
 	s.waiter.Add(1)
 	go func() {
 		defer s.waiter.Done()
-		if err := server.Serve(netutils.NewKeepAliveListener(tlsListener)); err != nil {
+		if err := server.Serve(netutils.NewKeepAliveListener(listener)); err != nil {
 			s.health.setUnhealthy()
 			errs <- err
 		}
 	}()
 
 	var signals = make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGTERM, os.Interrupt, syscall.SIGSTOP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(signals,
+		syscall.SIGTERM,
+		os.Interrupt,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT,
+		syscall.SIGKILL,
+	)
 
 	s.waiter.Add(1)
 	go func() {
@@ -188,7 +193,9 @@ func (s *Server) gracefulShutdown(server *http.Server) {
 	s.health.setUnhealthy()
 	time.Sleep(20 * time.Second)
 	var ctx, cancel = context.WithTimeout(context.Background(), s.shutdownTimeout)
-	server.Shutdown(ctx)
+	if err := server.Shutdown(ctx); err != nil {
+		log.Printf("Close server returned error: %+q", nerror.WrapOnly(err))
+	}
 	cancel()
 }
 

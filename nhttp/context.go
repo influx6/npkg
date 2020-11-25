@@ -9,6 +9,7 @@ import (
 	"fmt"
 	htemplate "html/template"
 	"io"
+	"log"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/influx6/npkg/nerror"
 	"github.com/influx6/npkg/njson"
 
 	"github.com/influx6/npkg/nxid"
@@ -76,10 +78,10 @@ func SetRenderer(r Render) Options {
 }
 
 // SetResponseWriter returns a option function to set the response of a Ctx.
-func SetResponseWriter(w http.ResponseWriter, befores ...func()) Options {
+func SetResponseWriter(w http.ResponseWriter, beforeFuncs ...func()) Options {
 	return func(c *Ctx) {
 		c.response = &Response{
-			beforeFuncs: befores,
+			beforeFuncs: beforeFuncs,
 			Writer:      w,
 		}
 	}
@@ -97,7 +99,10 @@ func SetRequest(r *http.Request) Options {
 	return func(c *Ctx) {
 		c.request = r
 		c.ctx = r.Context()
-		c.InitForms()
+		if err := c.InitForms(); err != nil {
+			var wrapErr = nerror.WrapOnly(err)
+			log.Printf("Failed to initialize forms: %+q", wrapErr)
+		}
 	}
 }
 
@@ -564,6 +569,12 @@ func (c *Ctx) Inline(file, name string) (err error) {
 	return c.contentDisposition(file, name, "inline")
 }
 
+func (c *Ctx) contentDisposition(file, name, dispositionType string) (err error) {
+	c.response.Header().Set(HeaderContentDisposition, fmt.Sprintf("%s; filename=%s", dispositionType, name))
+	c.File(file)
+	return
+}
+
 // SetFlash sets giving message/messages into the slice bucket of the
 // given name list.
 func (c *Ctx) SetFlash(name string, message string) {
@@ -693,10 +704,4 @@ func (c *Ctx) Reset(r *http.Request, w http.ResponseWriter) error {
 	c.request = r
 	c.response = &Response{Writer: w}
 	return c.InitForms()
-}
-
-func (c *Ctx) contentDisposition(file, name, dispositionType string) (err error) {
-	c.response.Header().Set(HeaderContentDisposition, fmt.Sprintf("%s; filename=%s", dispositionType, name))
-	c.File(file)
-	return
 }
