@@ -238,6 +238,7 @@ type ObjectEncoderMethods interface {
 	Int64(k string, v int64)
 	UInt64(k string, v uint64)
 	String(k string, v string)
+	Error(k string, v error)
 	Bytes(k string, v []byte)
 	Float64(k string, v float64)
 	Float32(k string, v float32)
@@ -267,6 +268,7 @@ type ListEncoderMethods interface {
 	AddInt16(v int16)
 	AddInt32(v int32)
 	AddByte(v byte)
+	AddError(v error)
 	AddInt64(v int64)
 	AddUInt8(v uint8)
 	AddUInt16(v uint16)
@@ -325,6 +327,8 @@ func EncodeKV(enc ObjectEncoder, k string, v interface{}) error {
 		enc.Float64(k, vt)
 	case float32:
 		enc.Float32(k, vt)
+	case error:
+		enc.Error(k, vt)
 	}
 	return enc.Err()
 }
@@ -368,6 +372,8 @@ func EncodeList(enc ListEncoder, v interface{}) error {
 		enc.AddFloat64(vt)
 	case float32:
 		enc.AddFloat32(vt)
+	case error:
+		enc.AddError(vt)
 	}
 	return enc.Err()
 }
@@ -490,27 +496,27 @@ const (
 	PANIC    LogLevel = 120
 )
 
-func (l *WriteStack) Info() *WriteStack {
+func (l *WriteStack) LInfo() *WriteStack {
 	return l.Level(INFO)
 }
 
-func (l *WriteStack) Error() *WriteStack {
+func (l *WriteStack) LError() *WriteStack {
 	return l.Level(ERROR)
 }
 
-func (l *WriteStack) Debug() *WriteStack {
+func (l *WriteStack) LDebug() *WriteStack {
 	return l.Level(DEBUG)
 }
 
-func (l *WriteStack) Critical() *WriteStack {
+func (l *WriteStack) LCritical() *WriteStack {
 	return l.Level(CRITICAL)
 }
 
-func (l *WriteStack) Panic() *WriteStack {
+func (l *WriteStack) LPanic() *WriteStack {
 	return l.Level(PANIC)
 }
 
-func (l *WriteStack) Warn() *WriteStack {
+func (l *WriteStack) LWarn() *WriteStack {
 	return l.Level(WARN)
 }
 
@@ -581,6 +587,11 @@ func (l *WriteStack) AddUInt32(v uint32) *WriteStack {
 
 func (l *WriteStack) AddUInt64(v uint64) *WriteStack {
 	l.base.AddUInt64(v)
+	return l
+}
+
+func (l *WriteStack) AddError(v error) *WriteStack {
+	l.base.AddError(v)
 	return l
 }
 
@@ -703,6 +714,11 @@ func (l *WriteStack) UInt64(k string, v uint64) *WriteStack {
 
 func (l *WriteStack) String(k string, v string) *WriteStack {
 	l.base.String(k, v)
+	return l
+}
+
+func (l *WriteStack) Error(k string, v error) *WriteStack {
+	l.base.Error(k, v)
 	return l
 }
 

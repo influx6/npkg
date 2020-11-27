@@ -339,6 +339,11 @@ func (l *JSON) AddObjectWith(handler func(event npkg.ObjectEncoder)) {
 	}
 }
 
+// AddError adds a string list item into encoding.
+func (l *JSON) AddError(value error) {
+	l.AddString(value.Error())
+}
+
 // AddString adds a string list item into encoding.
 func (l *JSON) AddString(value string) {
 	// stop if error
@@ -597,6 +602,11 @@ func (l *JSON) AddQBytes(value []byte) {
 	l.endEntry()
 }
 
+// Error adds a field name with error value.
+func (l *JSON) Error(name string, value error) {
+	l.String(name, value.Error())
+}
+
 // String adds a field name with string value.
 func (l *JSON) String(name string, value string) {
 	// stop if error
@@ -607,7 +617,6 @@ func (l *JSON) String(name string, value string) {
 	l.panicIfList()
 	l.addQuotedBytes(name, string2Bytes(value))
 	l.endEntry()
-
 }
 
 // Hex adds a field name with hex converted string value.
@@ -669,7 +678,6 @@ func (l *JSON) Bool(name string, value bool) {
 		return content
 	})
 	l.endEntry()
-
 }
 
 // Base64 adds a field name with int value formatted to base n.

@@ -45,10 +45,10 @@ func ErrorGroupForWithSignal(signalChan chan os.Signal, ctx context.Context) (*e
 	return group, groupContext
 }
 
-// WaiterForCtxSignal returns a new sync.WaitGroup which will be completed
+// ErrGroupForCtxSignal returns a new sync.WaitGroup which will be completed
 // once either the context gets closed due to another goroutine closing the
 // cancel function or the signal from the os to kill the operation.
-func WaiterForCtxSignal(ctx context.Context, canceler context.CancelFunc) (*errgroup.Group, context.Context) {
+func ErrGroupForCtxSignal(ctx context.Context, canceler context.CancelFunc) (*errgroup.Group, context.Context) {
 	var signalChan = WaitForKillChan()
 	var group, groupContext = errgroup.WithContext(ctx)
 	go func() {
@@ -63,10 +63,10 @@ func WaiterForCtxSignal(ctx context.Context, canceler context.CancelFunc) (*errg
 	return group, groupContext
 }
 
-// ErrGroupForCtxSignal returns a new sync.WaitGroup which will be completed
+// WaiterForCtxSignal returns a new sync.WaitGroup which will be completed
 // once either the context gets closed due to another goroutine closing the
 // cancel function or the signal from the os to kill the operation.
-func ErrGroupForCtxSignal(ctx context.Context, canceler context.CancelFunc) *sync.WaitGroup {
+func WaiterForCtxSignal(ctx context.Context, canceler context.CancelFunc) *sync.WaitGroup {
 	var signalChan = WaitForKillChan()
 	var waiter sync.WaitGroup
 	waiter.Add(1)
