@@ -95,7 +95,7 @@ func CronDaemon(
 		if err != nil {
 			var wrapErr = nerror.WrapOnly(err)
 			logStack.New().
-				Error().
+				LError().
 				Message("failed to parse cron expression").
 				String("error", wrapErr.Error()).
 				End()
@@ -214,7 +214,7 @@ func (c *ServiceDaemon) Run(args []string) (string, error) {
 		if err := serviceDaemon.SetTemplate(c.DaemonTemplate); err != nil {
 			var wrapErr = nerror.WrapOnly(err)
 			logStack.New().
-				Error().
+				LError().
 				Message("failed to set daemon template").
 				String("error", wrapErr.Error()).
 				End()
@@ -228,7 +228,7 @@ func (c *ServiceDaemon) Run(args []string) (string, error) {
 		if opErr != nil {
 			var wrapErr = nerror.WrapOnly(opErr)
 			logStack.New().
-				Error().
+				LError().
 				Message("failed to complete install operation").
 				String("message", message).
 				String("error", wrapErr.Error()).
@@ -236,7 +236,7 @@ func (c *ServiceDaemon) Run(args []string) (string, error) {
 			return "", wrapErr
 		}
 		logStack.New().
-			Info().
+			LInfo().
 			Message("installed daemon").
 			String("message", message).
 			End()
@@ -246,7 +246,7 @@ func (c *ServiceDaemon) Run(args []string) (string, error) {
 		if opErr != nil {
 			var wrapErr = nerror.WrapOnly(opErr)
 			logStack.New().
-				Error().
+				LError().
 				Message("failed to complete remove operation").
 				String("message", message).
 				String("error", wrapErr.Error()).
@@ -254,7 +254,7 @@ func (c *ServiceDaemon) Run(args []string) (string, error) {
 			return "", wrapErr
 		}
 		logStack.New().
-			Info().
+			LInfo().
 			Message("removed daemon").
 			String("message", message).
 			End()
@@ -264,7 +264,7 @@ func (c *ServiceDaemon) Run(args []string) (string, error) {
 		if opErr != nil {
 			var wrapErr = nerror.WrapOnly(opErr)
 			logStack.New().
-				Error().
+				LError().
 				Message("failed to complete start operation").
 				String("message", message).
 				String("error", wrapErr.Error()).
@@ -272,7 +272,7 @@ func (c *ServiceDaemon) Run(args []string) (string, error) {
 			return "", wrapErr
 		}
 		logStack.New().
-			Info().
+			LInfo().
 			Message("started daemon").
 			String("message", message).
 			End()
@@ -282,7 +282,7 @@ func (c *ServiceDaemon) Run(args []string) (string, error) {
 		if opErr != nil {
 			var wrapErr = nerror.WrapOnly(opErr)
 			logStack.New().
-				Error().
+				LError().
 				Message("failed to complete start operation").
 				String("message", message).
 				String("error", wrapErr.Error()).
@@ -290,7 +290,7 @@ func (c *ServiceDaemon) Run(args []string) (string, error) {
 			return "", wrapErr
 		}
 		logStack.New().
-			Info().
+			LInfo().
 			Message("started daemon").
 			String("message", message).
 			End()
@@ -300,7 +300,7 @@ func (c *ServiceDaemon) Run(args []string) (string, error) {
 		if opErr != nil {
 			var wrapErr = nerror.WrapOnly(opErr)
 			logStack.New().
-				Error().
+				LError().
 				Message("failed to complete start operation").
 				String("message", message).
 				String("error", wrapErr.Error()).
@@ -308,7 +308,7 @@ func (c *ServiceDaemon) Run(args []string) (string, error) {
 			return "", wrapErr
 		}
 		logStack.New().
-			Info().
+			LInfo().
 			Message("started daemon").
 			String("message", message).
 			End()
