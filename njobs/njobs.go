@@ -1,6 +1,8 @@
 package njobs
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -8,6 +10,7 @@ import (
 	"reflect"
 
 	"github.com/influx6/npkg/nerror"
+	"github.com/influx6/npkg/nexec"
 )
 
 type Job interface {
@@ -20,8 +23,8 @@ func (fn JobFunction) Do(data interface{}) (interface{}, error) {
 	return fn(data)
 }
 
-// MoveLastForward moves the last result forward compared to the result
-// from this doer.
+// MoveLastForward moves the last result forward instead of the result
+// from this job.
 func MoveLastForward(doer JobFunction) JobFunction {
 	return func(lastResult interface{}) (interface{}, error) {
 		var _, newErr = doer(lastResult)
@@ -209,12 +212,65 @@ func BackupPath() JobFunction {
 	return JoinPath("..")
 }
 
+func WhenFileExists(job JobFunction) JobFunction {
+	return func(targetPath interface{}) (interface{}, error) {
+		var targetPathString, isString = targetPath.(string)
+		if !isString {
+			return nil, nerror.New("Expected value to be a string")
+		}
+		var _, statErr = os.Stat(targetPathString)
+		if statErr != nil && statErr != os.ErrNotExist {
+			return nil, nerror.WrapOnly(statErr)
+		}
+		return job(targetPathString)
+	}
+}
+
+func ExecuteCommand(ctx context.Context, cmd string, args []string, in io.Reader, envs map[string]string) JobFunction {
+	return func(targetPath interface{}) (interface{}, error) {
+		var result bytes.Buffer
+		var errBuf bytes.Buffer
+
+		var cmd = nexec.New(
+			nexec.Command(cmd),
+			nexec.SubCommands(args...),
+			nexec.Input(in),
+			nexec.Output(&result),
+			nexec.Err(&errBuf),
+			nexec.Envs(envs),
+			nexec.Async(),
+		)
+
+		if _, cmdErr := cmd.Exec(ctx); cmdErr != nil {
+			return nil, nerror.Wrap(cmdErr, "ErrorMessage: %q", errBuf.String())
+		}
+		return result.String(), nil
+	}
+}
+
+func WhenFileNotExists(job JobFunction) JobFunction {
+	return func(targetPath interface{}) (interface{}, error) {
+		var targetPathString, isString = targetPath.(string)
+		if !isString {
+			return nil, nerror.New("Expected value to be a string")
+		}
+		var _, statErr = os.Stat(targetPathString)
+		if statErr != nil && statErr != os.ErrNotExist {
+			return nil, nerror.WrapOnly(statErr)
+		}
+		if statErr != nil && statErr == os.ErrNotExist {
+			return job(targetPathString)
+		}
+		return targetPathString, nil
+	}
+}
+
 // NewFile returns a new function to create a file within directory passed to function.
 func NewFile(name string, mod os.FileMode, r io.Reader) JobFunction {
 	return func(dir interface{}) (interface{}, error) {
 		var rootDir, ok = dir.(string)
 		if !ok {
-			return nil, nerror.New("Expected rootDir path string as input")
+			return nil, nerror.New("Expected value to be a string")
 		}
 		var targetFile = path.Join(rootDir, name)
 		var createdFile, err = os.OpenFile(targetFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mod)

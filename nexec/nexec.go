@@ -24,16 +24,16 @@ type Log interface {
 type CommanderOption func(*Commander)
 
 // Command sets the command for the Commander.
-func Command(c string, m ...interface{}) CommanderOption {
+func Command(format string, m ...interface{}) CommanderOption {
 	return func(cm *Commander) {
-		cm.Command = fmt.Sprintf(c, m...)
+		cm.Command = fmt.Sprintf(format, m...)
 	}
 }
 
-// Commands sets the subcommands for the Commander exec call.
+// SubCommands sets the subcommands for the Commander exec call.
 // If subcommands are set then the Binary, Flag and Command are ignored
 // and the values of the subcommand is used.
-func Commands(p ...string) CommanderOption {
+func SubCommands(p ...string) CommanderOption {
 	return func(cm *Commander) {
 		cm.SubCommands = p
 	}
