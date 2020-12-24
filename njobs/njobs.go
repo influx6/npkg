@@ -296,6 +296,33 @@ func WhenNextPathNotExists(job JobFunction) JobFunction {
 	}
 }
 
+// File returns a new function to create a file within directory if not exsiting
+// passed to function.
+func File(name string, mod os.FileMode, r io.Reader) JobFunction {
+	return func(dir interface{}) (interface{}, error) {
+		var rootDir, ok = dir.(string)
+		if !ok {
+			return nil, nerror.New("Expected value to be a string")
+		}
+		var targetFile = path.Join(rootDir, name)
+		var _, statErr = os.Stat(targetFile)
+		if statErr != nil && statErr == os.ErrExist {
+			return targetFile, nil
+		}
+		var createdFile, err = os.OpenFile(targetFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mod)
+		if err != nil {
+			return nil, nerror.WrapOnly(err)
+		}
+		defer func() {
+			_ = createdFile.Close()
+		}()
+		if _, err := io.Copy(createdFile, r); err != nil {
+			return nil, nerror.WrapOnly(err)
+		}
+		return targetFile, nil
+	}
+}
+
 // NewFile returns a new function to create a file within directory passed to function.
 func NewFile(name string, mod os.FileMode, r io.Reader) JobFunction {
 	return func(dir interface{}) (interface{}, error) {
