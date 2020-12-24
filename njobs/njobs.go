@@ -248,7 +248,38 @@ func ExecuteCommand(ctx context.Context, cmd string, args []string, in io.Reader
 	}
 }
 
-func WhenFileNotExists(job JobFunction) JobFunction {
+func WhenFilePathNotExists(targetFile string, job JobFunction) JobFunction {
+	return func(dir interface{}) (interface{}, error) {
+		var _, statErr = os.Stat(targetFile)
+		if statErr != nil && statErr != os.ErrNotExist {
+			return nil, nerror.WrapOnly(statErr)
+		}
+		if statErr != nil && statErr == os.ErrNotExist {
+			return job(targetFile)
+		}
+		return targetFile, nil
+	}
+}
+
+func WhenDirFileNotExists(targetPath string, job JobFunction) JobFunction {
+	return func(dir interface{}) (interface{}, error) {
+		var rootDir, ok = dir.(string)
+		if !ok {
+			return nil, nerror.New("Expected value to be a string")
+		}
+		var targetFile = path.Join(rootDir, targetPath)
+		var _, statErr = os.Stat(targetFile)
+		if statErr != nil && statErr != os.ErrNotExist {
+			return nil, nerror.WrapOnly(statErr)
+		}
+		if statErr != nil && statErr == os.ErrNotExist {
+			return job(targetFile)
+		}
+		return targetFile, nil
+	}
+}
+
+func WhenNextPathNotExists(job JobFunction) JobFunction {
 	return func(targetPath interface{}) (interface{}, error) {
 		var targetPathString, isString = targetPath.(string)
 		if !isString {
