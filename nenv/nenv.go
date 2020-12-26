@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/influx6/npkg/npair"
 )
@@ -179,6 +180,13 @@ func (env *EnvStore) GetString(key string) (string, bool) {
 	env.fl.RLock()
 	defer env.fl.RUnlock()
 	return env.cache.GetString(getHash(env.prefix, key))
+}
+
+// GetDuration collects the string value of a key if it exists.
+func (env *EnvStore) GetDuration(key string) (time.Duration, bool) {
+	env.fl.RLock()
+	defer env.fl.RUnlock()
+	return env.cache.GetDuration(getHash(env.prefix, key))
 }
 
 // Get collects the value of a key if it exists.

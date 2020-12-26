@@ -1,5 +1,9 @@
 package npair
 
+import (
+	"time"
+)
+
 // NilPair defines a nil starting pair.
 var NilPair = (*Pair)(nil)
 
@@ -92,6 +96,27 @@ func (p Field) GetInt(key string) (int, bool) {
 
 	value, ok := val.(int)
 	return value, ok
+}
+
+// GetDuration collects the string value of a key if it exists.
+func (p Field) GetDuration(key string) (time.Duration, bool) {
+	val, found := p.Get(key)
+	if !found {
+		return 0, false
+	}
+
+	switch item := val.(type) {
+	case string:
+		var dur, err = time.ParseDuration(item)
+		if err != nil {
+			return 0, false
+		}
+		return dur, true
+	case time.Duration:
+		return item, true
+	}
+
+	return 0, false
 }
 
 // GetString collects the string value of a key if it exists.
