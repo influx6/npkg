@@ -1,11 +1,13 @@
 package nenv
 
 import (
+	"io"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/influx6/npkg/nerror"
 	"github.com/influx6/npkg/npair"
 )
 
@@ -32,6 +34,38 @@ func (el ListLoader) Register(p Provider) error {
 		}
 		var key = strings.ToLower(item[:eqIndex])
 		var value = item[eqIndex+1:]
+		p.Add(key, value)
+	}
+	return nil
+}
+
+type EnvReaderLoader struct {
+	File io.Reader
+}
+
+func (el *EnvReaderLoader) Register(p Provider) error {
+	var parsedValues, parsedErr = ParseDotEnvReader(el.File)
+	if parsedErr != nil {
+		return nerror.WrapOnly(parsedErr)
+	}
+
+	for key, value := range parsedValues {
+		p.Add(key, value)
+	}
+	return nil
+}
+
+type EnvFileLoader struct {
+	File string
+}
+
+func (el *EnvFileLoader) Register(p Provider) error {
+	var parsedValues, parsedErr = ReadDotEnvFile(el.File)
+	if parsedErr != nil {
+		return nerror.WrapOnly(parsedErr)
+	}
+
+	for key, value := range parsedValues {
 		p.Add(key, value)
 	}
 	return nil
