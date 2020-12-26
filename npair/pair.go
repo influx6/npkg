@@ -115,6 +115,15 @@ func (p Field) Get(key string) (value interface{}, found bool) {
 	return val, ok
 }
 
+func (p Field) Has(key string) bool {
+	if p == nil {
+		return false
+	}
+
+	var _, ok = p[key]
+	return ok
+}
+
 // Pair defines a struct for storing a linked pair of key and values.
 type Pair struct {
 	prev  *Pair

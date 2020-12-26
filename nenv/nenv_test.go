@@ -9,16 +9,17 @@ import (
 )
 
 func TestEnv(t *testing.T) {
-	var envs, err = nenv.New("", func() ([]string, error) {
-		return []string{
-			"BADGER_MS=10ms",
-			"BADGER_MSI=msa",
-			"BADGER_IN_KEY=ricko",
-			"BADGER_DAY_OFF=tuesday",
-			"BAD_SUNDAY=rabbit",
-			"rick=rabbit",
-		}, nil
+	var loader = nenv.ListLoader([]string{
+		"BADGER_MS=10ms",
+		"BADGER_MSI=msa",
+		"BADGER_IN_KEY=ricko",
+		"BADGER_DAY_OFF=tuesday",
+		"BAD_SUNDAY=rabbit",
+		"rick=rabbit",
 	})
+
+	var envs, err = nenv.LoadFrom("", loader)
+
 	require.NoError(t, err)
 	require.NotNil(t, envs)
 
@@ -30,16 +31,16 @@ func TestEnv(t *testing.T) {
 }
 
 func TestEnvWithPrefix(t *testing.T) {
-	var envs, err = nenv.New("badger", func() ([]string, error) {
-		return []string{
-			"BADGER_MS=10ms",
-			"BADGER_MSI=msa",
-			"BADGER_IN_KEY=ricko",
-			"BADGER_DAY_OFF=tuesday",
-			"BAD_SUNDAY=rabbit",
-			"rick=rabbit",
-		}, nil
+	var loader = nenv.ListLoader([]string{
+		"BADGER_MS=10ms",
+		"BADGER_MSI=msa",
+		"BADGER_IN_KEY=ricko",
+		"BADGER_DAY_OFF=tuesday",
+		"BAD_SUNDAY=rabbit",
+		"rick=rabbit",
 	})
+
+	var envs, err = nenv.LoadFrom("BADGER", loader)
 	require.NoError(t, err)
 	require.NotNil(t, envs)
 
