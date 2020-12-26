@@ -168,6 +168,12 @@ func (env *EnvStore) GetInt(key string) (int, bool) {
 	return env.cache.GetInt(getHash(env.prefix, key))
 }
 
+// KeyFor returns the expected name of a giving key from the environment
+// store.
+func (env *EnvStore) KeyFor(key string) string {
+	return getHash(env.prefix, key)
+}
+
 // GetString collects the string value of a key if it exists.
 func (env *EnvStore) GetString(key string) (string, bool) {
 	env.fl.RLock()
