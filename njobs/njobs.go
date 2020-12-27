@@ -226,7 +226,7 @@ func WhenFileExists(job JobFunction) JobFunction {
 	}
 }
 
-func ExecuteCommand(ctx context.Context, cmd string, args []string, in io.Reader, envs map[string]string) JobFunction {
+func ExecuteCommand(ctx context.Context, dir string, cmd string, args []string, in io.Reader, envs map[string]string) JobFunction {
 	return func(targetPath interface{}) (interface{}, error) {
 		var result bytes.Buffer
 		var errBuf bytes.Buffer
@@ -234,6 +234,7 @@ func ExecuteCommand(ctx context.Context, cmd string, args []string, in io.Reader
 		var cmd = nexec.New(
 			nexec.Command(cmd),
 			nexec.SubCommands(args...),
+			nexec.Dir(dir),
 			nexec.Input(in),
 			nexec.Output(&result),
 			nexec.Err(&errBuf),
@@ -296,7 +297,7 @@ func WhenNextPathNotExists(job JobFunction) JobFunction {
 	}
 }
 
-// File returns a new function to create a file within directory if not exsiting
+// File returns a new function to create a file within directory if not existing
 // passed to function.
 func File(name string, mod os.FileMode, r io.Reader) JobFunction {
 	return func(dir interface{}) (interface{}, error) {
@@ -306,9 +307,10 @@ func File(name string, mod os.FileMode, r io.Reader) JobFunction {
 		}
 		var targetFile = path.Join(rootDir, name)
 		var _, statErr = os.Stat(targetFile)
-		if statErr != nil && statErr == os.ErrExist {
+		if statErr == nil {
 			return targetFile, nil
 		}
+
 		var createdFile, err = os.OpenFile(targetFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mod)
 		if err != nil {
 			return nil, nerror.WrapOnly(err)
