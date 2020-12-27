@@ -206,7 +206,7 @@ func (env *EnvStore) GetInt(key string) (int, bool) {
 // KeyFor returns the expected name of a giving key from the environment
 // store.
 func (env *EnvStore) KeyFor(key string) string {
-	return getHash(env.prefix, key)
+	return strings.ToUpper(getHash(env.prefix, key))
 }
 
 // GetString collects the string value of a key if it exists.
