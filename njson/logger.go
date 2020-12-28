@@ -1,8 +1,6 @@
 package njson
 
 import (
-	"sync"
-
 	"github.com/influx6/npkg"
 )
 
@@ -10,26 +8,10 @@ func jsonMaker() npkg.Encoder {
 	return JSONB()
 }
 
-var (
-	logPool = &sync.Pool{
-		New: func() interface{} {
-			return &LogStack{npkg.NewWriteStack(jsonMaker, nil)}
-		},
-	}
-)
-
 func Log(log Logger) *LogStack {
 	var writer = &writeLogger{log}
-	var newStack, isStack = logPool.Get().(*LogStack)
-	if !isStack {
-		newStack = &LogStack{npkg.NewWriteStack(jsonMaker, nil)}
-	}
-	newStack.SetWriter(writer)
+	var newStack = &LogStack{npkg.NewWriteStack(jsonMaker, writer)}
 	return newStack
-}
-
-func ReleaseLogStack(ll *LogStack) {
-	logPool.Put(ll)
 }
 
 type LogStack struct {
