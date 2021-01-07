@@ -29,10 +29,6 @@ const (
 	CLAIM_TYPE = "email_username_password"
 )
 
-//***************************************************************************
-// In-House Email Credential
-//***************************************************************************
-
 // EmailCredential defines the underline data expected for
 // the authentication of a user session.
 type EmailCredential struct {
@@ -60,10 +56,6 @@ func (e EmailCredential) User() string {
 	}
 	return e.Username
 }
-
-//***************************************************************************
-// In-House Email Authentication Provider
-//***************************************************************************
 
 const (
 	// ProviderName sets the provider name for giving email authentication package.
