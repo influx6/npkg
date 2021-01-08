@@ -9,6 +9,7 @@ import (
 
 const (
 	VariantToken TokenType = iota + 10
+	PrefixToken
 	GroupStartToken
 	GroupEndToken
 	TargetFinished
@@ -18,6 +19,7 @@ const (
 
 const (
 	dash              = '-'
+	prefixer          = '~'
 	underscore        = '_'
 	colon             = ':'
 	comma             = ','
@@ -100,15 +102,20 @@ func (th *stack) Push(t string) {
 // 2. Variant:(Prefix-text, Prefix2-text2) which expanded is Variant:Prefix-text and Variant:Prefix2-text2
 // 3. Variant:(Variant2:Prefix-text, Prefix-text) which expanded is Variant:Variant2:Prefix-text and Variant:Prefix-text
 // 4. Variant:(Variant2:Prefix-text, Variant3:Prefix-text) which expanded is Variant:Variant2:Prefix-text and Variant:Variant3:Prefix-text
-// 4. Variant:(Variant2:(Prefix-text, Prefix2-text2), Variant3:Prefix-text3) which expanded is Variant:Variant2:Prefix-text, Variant:Variant2:Prefix2-text2 and Variant:Variant3:Prefix-text
-// 4. Variant:(Variant2:Prefix-text, Variant3:Prefix-text)! which expanded is Variant:Variant2:Prefix-text! and Variant:Variant3:Prefix-text!
+// 5. Variant:(Variant2:(Prefix-text, Prefix2-text2), Variant3:Prefix-text3) which expanded is Variant:Variant2:Prefix-text, Variant:Variant2:Prefix2-text2 and Variant:Variant3:Prefix-text
+// 6. Pf~(Prefix-text, Prefix2-text2) which expanded is Variant:Pf-Prefix-text and Variant:Pf-Prefix2-text2
 //
 func ParseVariantDirectives(v string) ([]string, error) {
 	var parsed []string
 
 	var cls stack
 	var gps intStack
+
+	var pls stack
+	var pgps intStack
+
 	var variantCount int
+	var prefixCount int
 	var groups int
 
 	var lexer = NewLexer(v)
@@ -122,16 +129,31 @@ func ParseVariantDirectives(v string) ([]string, error) {
 			gps.Push(variantCount)
 			variantCount = 0
 
-			if cls.Len() > 0 {
-				parsed = append(parsed, cls.Join(":")+":"+b)
-				return nil
+			pgps.Push(prefixCount)
+			prefixCount = 0
+
+			var prefixed = b
+			if pls.Len() > 0 {
+				prefixed = pls.Join("-") + "-" + prefixed
 			}
-			parsed = append(parsed, b)
+
+			if cls.Len() > 0 {
+				prefixed = cls.Join(":") + ":" + prefixed
+			}
+
+			parsed = append(parsed, prefixed)
 		case TargetFinished:
 			if gps.Len() > 0 {
 				var grpVariantCount = gps.Pop()
 				cls.ClearCount(grpVariantCount)
 			}
+			if pgps.Len() > 0 {
+				var pgrpVariantCount = pgps.Pop()
+				pls.ClearCount(pgrpVariantCount)
+			}
+		case PrefixToken:
+			prefixCount++
+			pls.Push(b)
 		case VariantToken:
 			variantCount++
 			cls.Push(b)
@@ -139,10 +161,16 @@ func ParseVariantDirectives(v string) ([]string, error) {
 			groups++
 			gps.Push(variantCount)
 			variantCount = 0
+
+			pgps.Push(prefixCount)
+			prefixCount = 0
 		case GroupEndToken:
 			groups--
 			var grpVariantCount = gps.Pop()
 			cls.ClearCount(grpVariantCount)
+
+			var pgrpVariantCount = pgps.Pop()
+			pls.ClearCount(pgrpVariantCount)
 		}
 		return nil
 	})
@@ -168,8 +196,8 @@ func ParseVariantDirectives(v string) ([]string, error) {
 // 2. Variant:(Prefix-text, Prefix2-text2) which expanded is Variant:Prefix-text and Variant:Prefix2-text2
 // 3. Variant:(Variant2:Prefix-text, Prefix-text) which expanded is Variant:Variant2:Prefix-text and Variant:Prefix-text
 // 4. Variant:(Variant2:Prefix-text, Variant3:Prefix-text) which expanded is Variant:Variant2:Prefix-text and Variant:Variant3:Prefix-text
-// 4. Variant:(Variant2:(Prefix-text, Prefix2-text2), Variant3:Prefix-text3) which expanded is Variant:Variant2:Prefix-text, Variant:Variant2:Prefix2-text2 and Variant:Variant3:Prefix-text
-// 4. Variant:(Variant2:Prefix-text, Variant3:Prefix-text)! which expanded is Variant:Variant2:Prefix-text! and Variant:Variant3:Prefix-text!
+// 5. Variant:(Variant2:(Prefix-text, Prefix2-text2), Variant3:Prefix-text3) which expanded is Variant:Variant2:Prefix-text, Variant:Variant2:Prefix2-text2 and Variant:Variant3:Prefix-text
+// 6. Pf~(Prefix-text, Prefix2-text2) which expanded is Variant:Pf-Prefix-text and Variant:Pf-Prefix2-text2
 //
 func LexCompactDirective(l *Lexer, result ResultFunc) (TokenFunc, error) {
 	if l.isAtEnd() {
@@ -214,6 +242,12 @@ func lexVariant(l *Lexer, result ResultFunc) (TokenFunc, error) {
 				}
 			}
 			if err := result("", TargetFinished); err != nil {
+				return nil, nerror.WrapOnly(err)
+			}
+			l.skipNext()
+			return lexVariant, nil
+		case prefixer:
+			if err := result(l.slice(), PrefixToken); err != nil {
 				return nil, nerror.WrapOnly(err)
 			}
 			l.skipNext()

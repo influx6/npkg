@@ -31,6 +31,14 @@ func TestParseVariantDirectives(t *testing.T) {
 			Expected:   []string{},
 		},
 		{
+			Directive: "text~(xs:(hover:(bg-color-500, flex:color-400), fg-color-600))",
+			Expected: []string{
+				"xs:hover:text-bg-color-500",
+				"xs:hover:flex:text-color-400",
+				"xs:text-fg-color-600",
+			},
+		},
+		{
 			Directive: "xs:(hover:(bg-color-500, flex:text-color-400), fg-color-600)",
 			Expected: []string{
 				"xs:hover:bg-color-500",
@@ -57,6 +65,20 @@ func TestParseVariantDirectives(t *testing.T) {
 			Directive: "xs:(hover:bg-color-500, fg-color-600)",
 			Expected: []string{
 				"xs:hover:bg-color-500",
+				"xs:fg-color-600",
+			},
+		},
+		{
+			Directive: "xs~(bg-color-500!, fg-color-600)",
+			Expected: []string{
+				"xs-bg-color-500!",
+				"xs-fg-color-600",
+			},
+		},
+		{
+			Directive: "xs:(rg~(bg-color-500!), fg-color-600)",
+			Expected: []string{
+				"xs:rg-bg-color-500!",
 				"xs:fg-color-600",
 			},
 		},
