@@ -94,9 +94,9 @@ func (b *Lexer) ignore() {
 }
 
 func (b *Lexer) peekSlice() string {
-	// if b.pos >= len(b.input) {
-	// 	return b.input
-	// }
+	if b.pos >= len(b.input) {
+		return b.input[b.start:]
+	}
 	var sl = b.input[b.start:b.pos]
 	return sl
 }
