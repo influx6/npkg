@@ -27,6 +27,20 @@ func TestGetJSON(t *testing.T) {
 		require.Equal(t, "[\"thunder\", 234]", event.Message())
 	})
 
+	t.Run("basic list with bytes", func(t *testing.T) {
+		event := njson.JSONL()
+		event.AddString("thunder")
+		event.AddInt(234)
+
+		var jsid, err = gnjson.Marshal(map[string]interface{}{"id": 23})
+		require.NoError(t, err)
+		require.NotEmpty(t, jsid)
+
+		event.AddBytes(jsid)
+
+		require.Equal(t, "[\"thunder\", 234, {\"id\":23}]", event.Message())
+	})
+
 	t.Run("basic fields", func(t *testing.T) {
 		event := njson.MJSON("My log")
 		event.String("name", "thunder")

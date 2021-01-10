@@ -574,7 +574,7 @@ func (l *JSON) AddBytes(value []byte) {
 	}
 
 	l.panicIfObject()
-	l.addListBytes(value)
+	l.appendBytesList(value)
 	l.endEntry()
 }
 
@@ -642,7 +642,7 @@ func (l *JSON) Bytes(name string, value []byte) {
 	}
 
 	l.panicIfList()
-	l.addListBytesKV(name, value)
+	l.appendListBytesKV(name, value)
 	l.endEntry()
 }
 
@@ -1100,6 +1100,22 @@ func (l *JSON) addListBytes(v []byte) {
 		content = append(content, '[')
 		content = append(content, v...)
 		content = append(content, ']')
+		return content
+	})
+}
+
+func (l *JSON) appendListBytesKV(k string, v []byte) {
+	if l.released() {
+		panic("Re-using released *JSON")
+	}
+
+	l.appendItem(func(content []byte) []byte {
+		content = append(content, doubleQuote...)
+		content = append(content, k...)
+		content = append(content, doubleQuote...)
+		content = append(content, colon...)
+		content = append(content, space...)
+		content = append(content, v...)
 		return content
 	})
 }

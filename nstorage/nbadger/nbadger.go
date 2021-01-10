@@ -82,6 +82,72 @@ func (rd *BadgerStore) Find(fn func([]byte, string) bool) error {
 	return rd.Each(fn)
 }
 
+// ErrorEach runs through all elements for giving store, skipping keys
+// in Badger who have no data or an empty byte slice.
+//
+// Each byte slice provided is only valid for the call of
+// the function, after which it becomes invalid as it can
+// be re-used for efficient memory management, so ensure to copy
+// given byte slice yourself within function to protect against
+// undefined behaviour.
+func (rd *BadgerStore) ErrorEach(fn func([]byte, string) error) error {
+	return rd.Db.View(func(txn *badger.Txn) error {
+		var iterator = txn.NewIterator(rd.iter)
+		defer iterator.Close()
+
+		if rd.prefix == "" {
+			for iterator.Rewind(); iterator.Valid(); iterator.Next() {
+				var item = iterator.Item()
+				if item.IsDeletedOrExpired() {
+					continue
+				}
+				var stop = false
+				var err = item.Value(func(value []byte) error {
+					if derr := fn(value, string(item.Key())); derr != nil {
+						stop = true
+						return derr
+					}
+					return nil
+				})
+
+				if err != nil {
+					return nerror.WrapOnly(err)
+				}
+
+				if stop {
+					return nil
+				}
+			}
+			return nil
+		}
+
+		var prefix = []byte(rd.prefix)
+		for iterator.Rewind(); iterator.ValidForPrefix(prefix); iterator.Next() {
+			var item = iterator.Item()
+			if item.IsDeletedOrExpired() {
+				continue
+			}
+			var stop = false
+			var err = item.Value(func(value []byte) error {
+				if dataErr := fn(value, string(item.Key())); dataErr != nil {
+					stop = true
+					return dataErr
+				}
+				return nil
+			})
+
+			if err != nil {
+				return nerror.WrapOnly(err)
+			}
+
+			if stop {
+				return nil
+			}
+		}
+		return nil
+	})
+}
+
 // Each runs through all elements for giving store, skipping keys
 // in Badger who have no data or an empty byte slice.
 //

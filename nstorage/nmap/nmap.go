@@ -487,6 +487,24 @@ func (m *ExpiringByteMap) TTL(k string) (value time.Duration) {
 	return
 }
 
+// GetManyErr allows retrieval of many keys from underline map.
+//
+// Get makes a copy of the content of the key
+// returning that, which causes a single allocation,
+// use GetMany to access the content of the key directly
+// without any copy, but ensure to copy the content as
+// necessary to avoid corruption of value.
+//
+// You are expected to respect the expiry values of a ExpiringValue
+// and ignore any that as expired as a cleanup will be done later.
+//
+// WARNING: Never modify the map, ever.
+func (m *ExpiringByteMap) GetManyErr(fn func(map[string]ExpiringValue) error) error {
+	m.init()
+	var cached = m.cache.Load().(map[string]ExpiringValue)
+	return fn(cached)
+}
+
 // GetMany allows retrieval of many keys from underline map.
 //
 // Get makes a copy of the content of the key

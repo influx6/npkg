@@ -12,6 +12,7 @@ type ByteStore interface {
 	Update(string, []byte) error
 	Remove(string) ([]byte, error)
 	Each(fn func([]byte, string) bool) error
+	ErrorEach(fn func([]byte, string) error) error
 }
 
 // QueryableByteStore defines a queryable store which can

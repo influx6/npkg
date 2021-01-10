@@ -186,10 +186,6 @@ func Decode(dec Decoder, v interface{}) error {
 	return err
 }
 
-//************************************************************
-// Encoder
-//************************************************************
-
 type Error interface {
 	Err() error
 }

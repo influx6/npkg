@@ -3,8 +3,7 @@ ci: boot-redis
 	go test -v -cover -tags=integration ./...
 
 boot-redis:
-	redis-server &
-	sleep 5s
+	docker-compose up -d
 
 build-docker-ci:
 	docker build -t npkg-docker-tests -f ./dockerfile-test .

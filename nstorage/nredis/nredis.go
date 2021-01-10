@@ -81,6 +81,24 @@ func (rd *RedisStore) Keys() ([]string, error) {
 	return nstatus.Val(), nil
 }
 
+// ErrorEach runs through all elements for giving store, skipping keys
+// in redis who have no data or an empty byte slice.
+func (rd *RedisStore) ErrorEach(fn func([]byte, string) error) error {
+	var nstatus = rd.Client.SMembers(rd.hashList)
+	if err := nstatus.Err(); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	for _, item := range nstatus.Val() {
+		var gstatus = rd.Client.Get(item)
+		if err := gstatus.Err(); err == nil {
+			if err := fn(string2Bytes(gstatus.Val()), item); err != nil {
+				return nerror.WrapOnly(err)
+			}
+		}
+	}
+	return nil
+}
+
 // Each runs through all elements for giving store, skipping keys
 // in redis who have no data or an empty byte slice.
 func (rd *RedisStore) Each(fn func([]byte, string) bool) error {

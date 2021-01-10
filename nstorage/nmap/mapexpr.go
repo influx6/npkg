@@ -101,6 +101,22 @@ func (expr *ExprByteStore) UpdateTTL(k string, v []byte, t time.Duration) error 
 	return nil
 }
 
+// ErrorEach alternatives through all keys and values from underline cache.
+//
+// To ensure no-undesired behaviour, ensure to copy the value to avoid
+// possible change to it, as the underline store owns the giving value
+// slice and maybe re-used as it sees fit.
+func (expr *ExprByteStore) ErrorEach(fn func([]byte, string) error) error {
+	return expr.cache.GetManyErr(func(values map[string]ExpiringValue) error {
+		for key, value := range values {
+			if err := fn(value.Value, key); err != nil {
+				return nerror.WrapOnly(err)
+			}
+		}
+		return nil
+	})
+}
+
 // Each alternatives through all keys and values from underline cache.
 //
 // To ensure no-undesired behaviour, ensure to copy the value to avoid
