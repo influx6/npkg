@@ -79,7 +79,6 @@ func CronDaemon(
 
 	daemonService.Job = func(ctx context.Context, logger Logger) {
 		var logStack = njson.Log(logger)
-		defer njson.ReleaseLogStack(logStack)
 
 		var waiter sync.WaitGroup
 		waiter.Add(1)
@@ -187,7 +186,6 @@ type ServiceDaemon struct {
 
 func (c *ServiceDaemon) Run(args []string) (string, error) {
 	var logStack = njson.Log(c.Logger)
-	defer njson.ReleaseLogStack(logStack)
 
 	var usageHelp = "Usage: " + c.Name + " install | remove | start | stop | status"
 
