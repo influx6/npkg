@@ -1,6 +1,7 @@
 package nmap
 
 import (
+	regexp2 "regexp"
 	"strings"
 	"time"
 
@@ -127,10 +128,16 @@ func (expr *ExprByteStore) Each(fn nstorage.EachItem) error {
 
 // Find returns all elements matching giving function and count.
 func (expr *ExprByteStore) EachKeyPrefix(prefix string) ([]string, error) {
+	var compiled = strings.ReplaceAll(prefix, "*", "(.+)")
+	var generatedRegEx, rgErr = regexp2.Compile(compiled)
+	if rgErr != nil {
+		return nil, nerror.WrapOnly(rgErr)
+	}
+
 	var keys = make([]string, 0, 10)
 	expr.cache.GetMany(func(values map[string]ExpiringValue) {
 		for key := range values {
-			if strings.HasPrefix(key, prefix) {
+			if generatedRegEx.MatchString(key) {
 				keys = append(keys, key)
 			}
 		}

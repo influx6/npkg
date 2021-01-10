@@ -7,6 +7,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestStoreWithNMapStoreFindEachPrefixKey(t *testing.T) {
+	var store = NewExprByteStore(100)
+	require.NotNil(t, store)
+
+	tharness.TestByteStoreFindPrefix(t, store)
+}
+
 func TestStoreWithNMapStoreFindEach(t *testing.T) {
 	var store = NewExprByteStore(100)
 	require.NotNil(t, store)
