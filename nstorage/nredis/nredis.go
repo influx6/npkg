@@ -12,7 +12,6 @@ import (
 )
 
 var _ nstorage.ExpirableStore = (*RedisStore)(nil)
-var _ nstorage.QueryableByteStore = (*RedisStore)(nil)
 
 // RedisStore implements session management, storage and access using redis as
 // underline store.
@@ -81,45 +80,9 @@ func (rd *RedisStore) Keys() ([]string, error) {
 	return nstatus.Val(), nil
 }
 
-// ErrorEach runs through all elements for giving store, skipping keys
-// in redis who have no data or an empty byte slice.
-func (rd *RedisStore) ErrorEach(fn func([]byte, string) error) error {
-	var nstatus = rd.Client.SMembers(rd.hashList)
-	if err := nstatus.Err(); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	for _, item := range nstatus.Val() {
-		var gstatus = rd.Client.Get(item)
-		if err := gstatus.Err(); err == nil {
-			if err := fn(nunsafe.String2Bytes(gstatus.Val()), item); err != nil {
-				return nerror.WrapOnly(err)
-			}
-		}
-	}
-	return nil
-}
-
 // Each runs through all elements for giving store, skipping keys
 // in redis who have no data or an empty byte slice.
-func (rd *RedisStore) Each(fn func([]byte, string) bool) error {
-	var nstatus = rd.Client.SMembers(rd.hashList)
-	if err := nstatus.Err(); err != nil {
-		return nerror.WrapOnly(err)
-	}
-	for _, item := range nstatus.Val() {
-		var gstatus = rd.Client.Get(item)
-		if err := gstatus.Err(); err == nil {
-			if !fn(nunsafe.String2Bytes(gstatus.Val()), item) {
-				return nil
-			}
-		}
-	}
-	return nil
-}
-
-// Find returns all matching values within store, if elements found match giving
-// count then all values returned.
-func (rd *RedisStore) Find(fn func([]byte, string) bool) error {
+func (rd *RedisStore) Each(fn nstorage.EachItem) error {
 	var nstatus = rd.Client.SMembers(rd.hashList)
 	if err := nstatus.Err(); err != nil {
 		return nerror.WrapOnly(err)
@@ -128,12 +91,49 @@ func (rd *RedisStore) Find(fn func([]byte, string) bool) error {
 		var gstatus = rd.Client.Get(item)
 		if err := gstatus.Err(); err == nil {
 			var data = nunsafe.String2Bytes(gstatus.Val())
-			if !fn(data, item) {
-				return nil
+			if doErr := fn(data, item); doErr != nil {
+				if nerror.IsAny(doErr, nstorage.ErrJustStop) {
+					return nil
+				}
+				return doErr
 			}
 		}
 	}
 	return nil
+}
+
+// EachKeyPrefix returns all matching values within store, if elements found match giving
+// count then all values returned.
+//
+// if an error occurs, the partially collected list of keys and error is returned.
+//
+// Return nstorage.ErrJustStop if you want to just stop iterating.
+func (rd *RedisStore) EachKeyPrefix(prefix string) ([]string, error) {
+	return rd.FindPrefixFor(100, prefix)
+}
+
+// FindPrefixFor returns all matching values within store, if elements found match giving
+// count then all values returned.
+//
+// if an error occurs, the partially collected list of keys and error is returned.
+func (rd *RedisStore) FindPrefixFor(count int64, prefix string) ([]string, error) {
+	var cursor uint64
+	var keys = make([]string, 0, count)
+	var err error
+	for {
+		var ky []string
+		var scanned = rd.Client.Scan(cursor, prefix, count)
+		ky, cursor, err = scanned.Result()
+		if err != nil {
+			return keys, nerror.WrapOnly(err)
+		}
+
+		keys = append(keys, ky...)
+		if cursor == 0 {
+			break
+		}
+	}
+	return keys, nil
 }
 
 // Exists returns true/false if giving key exists.
@@ -197,7 +197,7 @@ func (rd *RedisStore) Update(key string, data []byte) error {
 }
 
 // UpdateTTL updates giving session stored with giving key. It updates
-// the underline data.
+// the underline data and increases the expiration with provided value.
 //
 // if expiration is zero then giving value expiration will not be reset but left
 // as is.
@@ -215,20 +215,7 @@ func (rd *RedisStore) UpdateTTL(key string, data []byte, expiration time.Duratio
 		return rd.remove(key)
 	}
 
-	var newTTL time.Duration
-	if expiration > 0 {
-		var ttlstatus = rd.Client.PTTL(hashKey)
-		if err := ttlstatus.Err(); err != nil {
-			return nerror.WrapOnly(err)
-		}
-
-		newTTL = ttlstatus.Val() + expiration
-		if ttlstatus.Val() <= 0 {
-			newTTL = expiration
-		}
-	}
-
-	var nset = rd.Client.Set(hashKey, data, newTTL)
+	var nset = rd.Client.Set(hashKey, data, expiration)
 	if err := nset.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}

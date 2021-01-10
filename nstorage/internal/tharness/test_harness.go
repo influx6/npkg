@@ -12,7 +12,7 @@ import (
 	"github.com/influx6/npkg/nstorage"
 )
 
-func TestByteStoreFindAll(t *testing.T, store nstorage.QueryableByteStore) {
+func TestByteStoreFindAll(t *testing.T, store nstorage.ByteStore) {
 	for i := 0; i < 10; i++ {
 		var key = fmt.Sprintf("day-%d", i)
 		require.NoError(t, store.Save(key, string2Bytes(fmt.Sprintf("i"))))
@@ -20,19 +20,19 @@ func TestByteStoreFindAll(t *testing.T, store nstorage.QueryableByteStore) {
 
 	var keys, keyErr = store.Keys()
 	require.NoError(t, keyErr)
-	require.Len(t, keys, 10)
+	require.NotEmpty(t, keys)
 
 	var count int
-	var err = store.Find(func(val []byte, k string) bool {
+	var err = store.Each(func(val []byte, k string) error {
 		count++
-		return true
+		return nil
 	})
 
 	require.NoError(t, err)
 	require.Equal(t, 10, count)
 }
 
-func TestByteStoreFindEach(t *testing.T, store nstorage.QueryableByteStore) {
+func TestByteStoreFindEach(t *testing.T, store nstorage.ByteStore) {
 	for i := 0; i < 10; i++ {
 		var key = fmt.Sprintf("day-%d", i)
 		require.NoError(t, store.Save(key, string2Bytes(fmt.Sprintf("i"))))
@@ -40,15 +40,15 @@ func TestByteStoreFindEach(t *testing.T, store nstorage.QueryableByteStore) {
 
 	var keys, keyErr = store.Keys()
 	require.NoError(t, keyErr)
-	require.Len(t, keys, 10)
+	require.NotEmpty(t, keys)
 
 	var count int
-	var err = store.Find(func(val []byte, k string) bool {
+	var err = store.Each(func(val []byte, k string) error {
 		if count >= 2 {
-			return false
+			return nstorage.ErrJustStop
 		}
 		count++
-		return true
+		return nil
 	})
 
 	require.NoError(t, err)
@@ -78,12 +78,12 @@ func TestByteStore(t *testing.T, store nstorage.ByteStore) {
 	require.Equal(t, newValue, string(keyValue))
 
 	var count int
-	store.Each(func(v []byte, k string) bool {
+	require.NoError(t, store.Each(func(v []byte, k string) error {
 		count++
-		return true
-	})
+		return nil
+	}))
 
-	require.Equal(t, 1, count)
+	require.NotEqual(t, 0, count)
 
 	val, err = store.Remove("day")
 	require.NoError(t, err)
@@ -115,8 +115,7 @@ func TestExpirableStore(t *testing.T, store nstorage.ExpirableStore) {
 
 	var ttl2, terr = store.TTL("day")
 	require.NoError(t, terr)
-	fmt.Printf("TTL: %s -> %s\n", ttl2, ttl)
-	require.True(t, ttl2 < ttl)
+	require.True(t, ttl > ttl2, fmt.Sprintf("TTL1: %q, TTL2: %q", ttl, ttl2))
 }
 
 func bytes2String(bc []byte) string {

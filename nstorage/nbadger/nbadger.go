@@ -11,7 +11,6 @@ import (
 )
 
 var _ nstorage.ExpirableStore = (*BadgerStore)(nil)
-var _ nstorage.QueryableByteStore = (*BadgerStore)(nil)
 
 // BadgerStore implements session management, storage and access using Badger as
 // underline store.
@@ -77,12 +76,27 @@ func (rd *BadgerStore) Keys() ([]string, error) {
 	return keys, err
 }
 
-// Find returns all matching results within using giving functions.
-func (rd *BadgerStore) Find(fn func([]byte, string) bool) error {
-	return rd.Each(fn)
+// FindPrefix returns all matching results within using giving functions.
+func (rd *BadgerStore) EachKeyPrefix(prefix string) (keys []string, err error) {
+	keys = make([]string, 0, 10)
+	err = rd.Db.View(func(txn *badger.Txn) error {
+		var iterator = txn.NewIterator(rd.iter)
+		defer iterator.Close()
+
+		var prefix = []byte(prefix)
+		for iterator.Rewind(); iterator.ValidForPrefix(prefix); iterator.Next() {
+			var item = iterator.Item()
+			if item.IsDeletedOrExpired() {
+				continue
+			}
+			keys = append(keys, nunsafe.Bytes2String(item.Key()))
+		}
+		return nil
+	})
+	return
 }
 
-// ErrorEach runs through all elements for giving store, skipping keys
+// Each runs through all elements for giving store, skipping keys
 // in Badger who have no data or an empty byte slice.
 //
 // Each byte slice provided is only valid for the call of
@@ -90,7 +104,7 @@ func (rd *BadgerStore) Find(fn func([]byte, string) bool) error {
 // be re-used for efficient memory management, so ensure to copy
 // given byte slice yourself within function to protect against
 // undefined behaviour.
-func (rd *BadgerStore) ErrorEach(fn func([]byte, string) error) error {
+func (rd *BadgerStore) Each(fn nstorage.EachItem) error {
 	return rd.Db.View(func(txn *badger.Txn) error {
 		var iterator = txn.NewIterator(rd.iter)
 		defer iterator.Close()
@@ -103,9 +117,12 @@ func (rd *BadgerStore) ErrorEach(fn func([]byte, string) error) error {
 				}
 				var stop = false
 				var err = item.Value(func(value []byte) error {
-					if derr := fn(value, string(item.Key())); derr != nil {
+					if dataErr := fn(value, string(item.Key())); dataErr != nil {
 						stop = true
-						return derr
+						if nerror.IsAny(dataErr, nstorage.ErrJustStop) {
+							return nil
+						}
+						return dataErr
 					}
 					return nil
 				})
@@ -131,71 +148,10 @@ func (rd *BadgerStore) ErrorEach(fn func([]byte, string) error) error {
 			var err = item.Value(func(value []byte) error {
 				if dataErr := fn(value, string(item.Key())); dataErr != nil {
 					stop = true
-					return dataErr
-				}
-				return nil
-			})
-
-			if err != nil {
-				return nerror.WrapOnly(err)
-			}
-
-			if stop {
-				return nil
-			}
-		}
-		return nil
-	})
-}
-
-// Each runs through all elements for giving store, skipping keys
-// in Badger who have no data or an empty byte slice.
-//
-// Each byte slice provided is only valid for the call of
-// the function, after which it becomes invalid as it can
-// be re-used for efficient memory management, so ensure to copy
-// given byte slice yourself within function to protect against
-// undefined behaviour.
-func (rd *BadgerStore) Each(fn func([]byte, string) bool) error {
-	return rd.Db.View(func(txn *badger.Txn) error {
-		var iterator = txn.NewIterator(rd.iter)
-		defer iterator.Close()
-
-		if rd.prefix == "" {
-			for iterator.Rewind(); iterator.Valid(); iterator.Next() {
-				var item = iterator.Item()
-				if item.IsDeletedOrExpired() {
-					continue
-				}
-				var stop = false
-				var err = item.Value(func(value []byte) error {
-					if !fn(value, string(item.Key())) {
-						stop = true
+					if nerror.IsAny(dataErr, nstorage.ErrJustStop) {
+						return nil
 					}
-					return nil
-				})
-
-				if err != nil {
-					return nerror.WrapOnly(err)
-				}
-
-				if stop {
-					return nil
-				}
-			}
-			return nil
-		}
-
-		var prefix = []byte(rd.prefix)
-		for iterator.Rewind(); iterator.ValidForPrefix(prefix); iterator.Next() {
-			var item = iterator.Item()
-			if item.IsDeletedOrExpired() {
-				continue
-			}
-			var stop = false
-			var err = item.Value(func(value []byte) error {
-				if !fn(value, string(item.Key())) {
-					stop = true
+					return dataErr
 				}
 				return nil
 			})

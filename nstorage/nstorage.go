@@ -1,26 +1,28 @@
 package nstorage
 
-import "time"
+import (
+	"time"
+
+	"github.com/influx6/npkg/nerror"
+)
+
+// ErrJustStop can be used to inform the iterator to just stop
+var ErrJustStop = nerror.New("stop iterator")
+
+type EachItem func([]byte, string) error
 
 // ByteStore defines a storage interface defining what we expect to
 // be provided for storing a byte slice with a underline key.
 type ByteStore interface {
+	Each(fn EachItem) error
+	EachKeyPrefix(prefix string) ([]string, error)
+
 	Keys() ([]string, error)
 	Save(string, []byte) error
 	Get(string) ([]byte, error)
 	Exists(string) (bool, error)
 	Update(string, []byte) error
 	Remove(string) ([]byte, error)
-	Each(fn func([]byte, string) bool) error
-	ErrorEach(fn func([]byte, string) error) error
-}
-
-// QueryableByteStore defines a queryable store which can
-// take a function to find giving matching elements.
-type QueryableByteStore interface {
-	ByteStore
-
-	Find(fn func([]byte, string) bool) error
 }
 
 // ExpirableStore composes the ByteStore providing the

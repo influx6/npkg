@@ -1,6 +1,7 @@
 package nmap
 
 import (
+	"strings"
 	"time"
 
 	"github.com/influx6/npkg/nerror"
@@ -8,7 +9,6 @@ import (
 )
 
 var _ nstorage.ExpirableStore = (*ExprByteStore)(nil)
-var _ nstorage.QueryableByteStore = (*ExprByteStore)(nil)
 
 // ExprByteStore implements an expiring byte store that
 // matches the nstorage.ExpirableStorage interface.
@@ -101,48 +101,41 @@ func (expr *ExprByteStore) UpdateTTL(k string, v []byte, t time.Duration) error 
 	return nil
 }
 
-// ErrorEach alternatives through all keys and values from underline cache.
-//
-// To ensure no-undesired behaviour, ensure to copy the value to avoid
-// possible change to it, as the underline store owns the giving value
-// slice and maybe re-used as it sees fit.
-func (expr *ExprByteStore) ErrorEach(fn func([]byte, string) error) error {
-	return expr.cache.GetManyErr(func(values map[string]ExpiringValue) error {
-		for key, value := range values {
-			if err := fn(value.Value, key); err != nil {
-				return nerror.WrapOnly(err)
-			}
-		}
-		return nil
-	})
-}
-
 // Each alternatives through all keys and values from underline cache.
 //
 // To ensure no-undesired behaviour, ensure to copy the value to avoid
 // possible change to it, as the underline store owns the giving value
 // slice and maybe re-used as it sees fit.
-func (expr *ExprByteStore) Each(fn func([]byte, string) bool) error {
+func (expr *ExprByteStore) Each(fn nstorage.EachItem) error {
+	var recvErr error
 	expr.cache.GetMany(func(values map[string]ExpiringValue) {
 		for key, value := range values {
-			if !fn(value.Value, key) {
-				return
+			if err := fn(value.Value, key); err != nil {
+				if nerror.IsAny(err, nstorage.ErrJustStop) {
+					return
+				}
+				recvErr = err
+				break
 			}
 		}
 	})
+	if recvErr != nil {
+		return nerror.WrapOnly(recvErr)
+	}
 	return nil
 }
 
 // Find returns all elements matching giving function and count.
-func (expr *ExprByteStore) Find(fn func([]byte, string) bool) error {
+func (expr *ExprByteStore) EachKeyPrefix(prefix string) ([]string, error) {
+	var keys = make([]string, 0, 10)
 	expr.cache.GetMany(func(values map[string]ExpiringValue) {
-		for key, value := range values {
-			if !fn(value.Value, key) {
-				return
+		for key := range values {
+			if strings.HasPrefix(key, prefix) {
+				keys = append(keys, key)
 			}
 		}
 	})
-	return nil
+	return keys, nil
 }
 
 // Remove deletes giving key from underling store.

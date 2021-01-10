@@ -10,14 +10,12 @@ import (
 
 func TestIntegrationRedisStoreFindEach(t *testing.T) {
 	var ops redis.Options
-	ops.Addr = "localhost:6379"
-	ops.Network = "tcp"
 	require.NotNil(t, &ops)
 
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
-	if err := redisClient.Ping(); err != nil {
+	if err := redisClient.Ping().Err(); err != nil {
 		t.SkipNow()
 		return
 	}
@@ -31,14 +29,12 @@ func TestIntegrationRedisStoreFindEach(t *testing.T) {
 
 func TestIntegrationRedisStoreFindAll(t *testing.T) {
 	var ops redis.Options
-	ops.Addr = "localhost:6379"
-	ops.Network = "tcp"
 	require.NotNil(t, &ops)
 
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
-	if err := redisClient.Ping(); err != nil {
+	if err := redisClient.Ping().Err(); err != nil {
 		t.SkipNow()
 		return
 	}
@@ -52,14 +48,12 @@ func TestIntegrationRedisStoreFindAll(t *testing.T) {
 
 func TestIntegrationRedisStore(t *testing.T) {
 	var ops redis.Options
-	ops.Addr = "localhost:6379"
-	ops.Network = "tcp"
 	require.NotNil(t, &ops)
 
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
-	if err := redisClient.Ping(); err != nil {
+	if err := redisClient.Ping().Err(); err != nil {
 		t.SkipNow()
 		return
 	}
@@ -73,14 +67,12 @@ func TestIntegrationRedisStore(t *testing.T) {
 
 func TestIntegrationRedisStoreExpirables(t *testing.T) {
 	var ops redis.Options
-	ops.Addr = "localhost:6379"
-	ops.Network = "tcp"
 	require.NotNil(t, &ops)
 
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
-	if err := redisClient.Ping(); err != nil {
+	if err := redisClient.Ping().Err(); err != nil {
 		t.SkipNow()
 		return
 	}
