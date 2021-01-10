@@ -68,7 +68,7 @@ func (rd *RedisStore) Close() error {
 // getHashKey returns formatted for unique form towards using creating
 // efficient hashmaps to contain list of keys.
 func (rd *RedisStore) getHashKey(key string) string {
-	return fmt.Sprintf("_redis_store_%s_%s", rd.hashList, key)
+	return fmt.Sprintf("%s_%s", rd.hashList, key)
 }
 
 // Keys returns all giving keys of elements within store.
@@ -117,12 +117,14 @@ func (rd *RedisStore) EachKeyPrefix(prefix string) ([]string, error) {
 //
 // if an error occurs, the partially collected list of keys and error is returned.
 func (rd *RedisStore) FindPrefixFor(count int64, prefix string) ([]string, error) {
+	var keyPrefix = rd.getHashKey(prefix)
+
 	var cursor uint64
 	var keys = make([]string, 0, count)
 	var err error
 	for {
 		var ky []string
-		var scanned = rd.Client.Scan(cursor, prefix, count)
+		var scanned = rd.Client.SScan(rd.hashList, cursor, keyPrefix, count)
 		ky, cursor, err = scanned.Result()
 		if err != nil {
 			return keys, nerror.WrapOnly(err)

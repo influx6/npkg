@@ -10,16 +10,25 @@ import (
 
 func TestStoreWithBadgerStoreFindEach(t *testing.T) {
 	var ops = badger.DefaultOptions("").WithInMemory(true)
-	var store, err = NewBadgerStore("", ops, badger.DefaultIteratorOptions)
+	var store, err = NewBadgerStore(ops, badger.DefaultIteratorOptions)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
 	tharness.TestByteStoreFindEach(t, store)
 }
 
+func TestStoreWithBadgerStoreEachKeyPrefix(t *testing.T) {
+	var ops = badger.DefaultOptions("").WithInMemory(true)
+	var store, err = NewBadgerStore(ops, badger.DefaultIteratorOptions)
+	require.NoError(t, err)
+	require.NotNil(t, store)
+
+	tharness.TestByteStoreFindPrefix(t, store)
+}
+
 func TestStoreWithBadgerStoreFindAll(t *testing.T) {
 	var ops = badger.DefaultOptions("").WithInMemory(true)
-	var store, err = NewBadgerStore("", ops, badger.DefaultIteratorOptions)
+	var store, err = NewBadgerStore(ops, badger.DefaultIteratorOptions)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
@@ -28,7 +37,7 @@ func TestStoreWithBadgerStoreFindAll(t *testing.T) {
 
 func TestStoreWithBadgerStore(t *testing.T) {
 	var ops = badger.DefaultOptions("").WithInMemory(true)
-	var store, err = NewBadgerStore("", ops, badger.DefaultIteratorOptions)
+	var store, err = NewBadgerStore(ops, badger.DefaultIteratorOptions)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
@@ -37,7 +46,7 @@ func TestStoreWithBadgerStore(t *testing.T) {
 
 func TestBadgerExpiryStore(t *testing.T) {
 	var ops = badger.DefaultOptions("").WithInMemory(true)
-	var store, err = NewBadgerStore("", ops, badger.DefaultIteratorOptions)
+	var store, err = NewBadgerStore(ops, badger.DefaultIteratorOptions)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 

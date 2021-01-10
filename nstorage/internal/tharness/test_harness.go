@@ -32,6 +32,29 @@ func TestByteStoreFindAll(t *testing.T, store nstorage.ByteStore) {
 	require.Equal(t, 10, count)
 }
 
+func TestByteStoreFindPrefix(t *testing.T, store nstorage.ByteStore) {
+	for i := 0; i < 10; i++ {
+		var key = fmt.Sprintf("day-%d", i)
+		require.NoError(t, store.Save(key, string2Bytes(fmt.Sprintf("i"))))
+	}
+
+	var inKeys, getKeysErr = store.Keys()
+	require.NoError(t, getKeysErr)
+	require.NotEmpty(t, inKeys)
+
+	var returnedKeys, keyErr = store.EachKeyPrefix("day-*")
+	require.NoError(t, keyErr)
+	require.NotEmpty(t, returnedKeys)
+
+	for _, v := range inKeys {
+		require.Contains(t, returnedKeys, v)
+	}
+
+	var returnedKeys2, keyErr2 = store.EachKeyPrefix("day-0")
+	require.NoError(t, keyErr2)
+	require.Len(t, returnedKeys2, 1)
+}
+
 func TestByteStoreFindEach(t *testing.T, store nstorage.ByteStore) {
 	for i := 0; i < 10; i++ {
 		var key = fmt.Sprintf("day-%d", i)

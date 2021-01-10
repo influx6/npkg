@@ -27,6 +27,25 @@ func TestIntegrationRedisStoreFindEach(t *testing.T) {
 	tharness.TestByteStoreFindEach(t, store)
 }
 
+func TestIntegrationRedisStoreEachPrefixKey(t *testing.T) {
+	var ops redis.Options
+	require.NotNil(t, &ops)
+
+	var redisClient = redis.NewClient(&ops)
+	require.NotNil(t, redisClient)
+
+	if err := redisClient.Ping().Err(); err != nil {
+		t.SkipNow()
+		return
+	}
+
+	var store, err = FromRedisStore("testing_mb", redisClient)
+	require.NoError(t, err)
+	require.NotNil(t, store)
+
+	tharness.TestByteStoreFindPrefix(t, store)
+}
+
 func TestIntegrationRedisStoreFindAll(t *testing.T) {
 	var ops redis.Options
 	require.NotNil(t, &ops)

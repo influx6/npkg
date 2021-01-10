@@ -1,6 +1,8 @@
 package nbadger
 
 import (
+	regexp2 "regexp"
+	"strings"
 	"time"
 
 	"github.com/dgraph-io/badger/v2"
@@ -15,17 +17,15 @@ var _ nstorage.ExpirableStore = (*BadgerStore)(nil)
 // BadgerStore implements session management, storage and access using Badger as
 // underline store.
 type BadgerStore struct {
-	prefix string
-	ops    badger.Options
-	iter   badger.IteratorOptions
-	Db     *badger.DB
+	ops  badger.Options
+	iter badger.IteratorOptions
+	Db   *badger.DB
 }
 
 // NewBadgerStore returns a new instance of a Badger store using provided prefix if present.
-func NewBadgerStore(prefix string, ops badger.Options, iterator badger.IteratorOptions) (*BadgerStore, error) {
+func NewBadgerStore(ops badger.Options, iterator badger.IteratorOptions) (*BadgerStore, error) {
 	var red BadgerStore
 	red.ops = ops
-	red.prefix = prefix
 	red.iter = iterator
 	if err := red.createConnection(); err != nil {
 		return nil, err
@@ -52,19 +52,7 @@ func (rd *BadgerStore) Keys() ([]string, error) {
 		var iterator = txn.NewIterator(iteratorOption)
 		defer iterator.Close()
 
-		if rd.prefix == "" {
-			for iterator.Rewind(); iterator.Valid(); iterator.Next() {
-				var item = iterator.Item()
-				if item.IsDeletedOrExpired() {
-					continue
-				}
-				keys = append(keys, nunsafe.Bytes2String(copyBytes(item.Key())))
-			}
-			return nil
-		}
-
-		var prefix = []byte(rd.prefix)
-		for iterator.Rewind(); iterator.ValidForPrefix(prefix); iterator.Next() {
+		for iterator.Rewind(); iterator.Valid(); iterator.Next() {
 			var item = iterator.Item()
 			if item.IsDeletedOrExpired() {
 				continue
@@ -78,15 +66,23 @@ func (rd *BadgerStore) Keys() ([]string, error) {
 
 // FindPrefix returns all matching results within using giving functions.
 func (rd *BadgerStore) EachKeyPrefix(prefix string) (keys []string, err error) {
+	var compiled = strings.ReplaceAll(prefix, "*", "(.+)")
+	var generatedRegEx, rgErr = regexp2.Compile(compiled)
+	if rgErr != nil {
+		return nil, nerror.WrapOnly(rgErr)
+	}
+
 	keys = make([]string, 0, 10)
 	err = rd.Db.View(func(txn *badger.Txn) error {
 		var iterator = txn.NewIterator(rd.iter)
 		defer iterator.Close()
 
-		var prefix = []byte(prefix)
-		for iterator.Rewind(); iterator.ValidForPrefix(prefix); iterator.Next() {
+		for iterator.Rewind(); iterator.Valid(); iterator.Next() {
 			var item = iterator.Item()
 			if item.IsDeletedOrExpired() {
+				continue
+			}
+			if !generatedRegEx.Match(item.Key()) {
 				continue
 			}
 			keys = append(keys, nunsafe.Bytes2String(item.Key()))
@@ -109,37 +105,7 @@ func (rd *BadgerStore) Each(fn nstorage.EachItem) error {
 		var iterator = txn.NewIterator(rd.iter)
 		defer iterator.Close()
 
-		if rd.prefix == "" {
-			for iterator.Rewind(); iterator.Valid(); iterator.Next() {
-				var item = iterator.Item()
-				if item.IsDeletedOrExpired() {
-					continue
-				}
-				var stop = false
-				var err = item.Value(func(value []byte) error {
-					if dataErr := fn(value, string(item.Key())); dataErr != nil {
-						stop = true
-						if nerror.IsAny(dataErr, nstorage.ErrJustStop) {
-							return nil
-						}
-						return dataErr
-					}
-					return nil
-				})
-
-				if err != nil {
-					return nerror.WrapOnly(err)
-				}
-
-				if stop {
-					return nil
-				}
-			}
-			return nil
-		}
-
-		var prefix = []byte(rd.prefix)
-		for iterator.Rewind(); iterator.ValidForPrefix(prefix); iterator.Next() {
+		for iterator.Rewind(); iterator.Valid(); iterator.Next() {
 			var item = iterator.Item()
 			if item.IsDeletedOrExpired() {
 				continue
@@ -404,9 +370,9 @@ func (rd *BadgerStore) Remove(key string) ([]byte, error) {
 	return old, err
 }
 
-//*****************************************************
+// *****************************************************
 // internal methods
-//*****************************************************
+// *****************************************************
 
 func copyBytes(bu []byte) []byte {
 	var cu = make([]byte, len(bu))
