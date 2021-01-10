@@ -153,6 +153,63 @@ func (rd *BadgerStore) Exists(key string) (bool, error) {
 	return exist, nil
 }
 
+// GetAnyKeys returns a list of values for any of the key's found.
+// Unless a specific error occurred retrieving the value of a key, if a
+// key is not found then it is ignored and a nil is set in it's place.
+func (rd *BadgerStore) GetAnyKeys(keys ...string) ([][]byte, error) {
+	var values = make([][]byte, 0, len(keys))
+	if err := rd.Db.View(func(txn *badger.Txn) error {
+		for _, key := range keys {
+			item, err := txn.Get(nunsafe.String2Bytes(key))
+			if err != nil {
+				return nerror.WrapOnly(err)
+			}
+			if item.IsDeletedOrExpired() {
+				values = append(values, nil)
+				continue
+			}
+			var value, verr = item.ValueCopy(nil)
+			if verr != nil {
+				return nerror.WrapOnly(verr)
+			}
+			values = append(values, value)
+		}
+
+		return nil
+	}); err != nil {
+		return values, err
+	}
+	return values, nil
+}
+
+// GetAllKeys returns a list of values for any of the key's found.
+// if the value of a key is not found then we stop immediately, returning
+// an error and the current set of items retreived.
+func (rd *BadgerStore) GetAllKeys(keys ...string) ([][]byte, error) {
+	var values = make([][]byte, 0, len(keys))
+	if err := rd.Db.View(func(txn *badger.Txn) error {
+		for _, key := range keys {
+			item, err := txn.Get(nunsafe.String2Bytes(key))
+			if err != nil {
+				return nerror.WrapOnly(err)
+			}
+			if item.IsDeletedOrExpired() {
+				return nerror.New("not found")
+			}
+			var value, verr = item.ValueCopy(nil)
+			if verr != nil {
+				return nerror.WrapOnly(verr)
+			}
+			values = append(values, value)
+		}
+
+		return nil
+	}); err != nil {
+		return values, err
+	}
+	return values, nil
+}
+
 // Get returns giving session stored with giving key, returning an
 // error if not found.
 func (rd *BadgerStore) Get(key string) ([]byte, error) {

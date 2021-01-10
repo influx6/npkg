@@ -13,6 +13,34 @@ import (
 	"github.com/influx6/npkg/nstorage"
 )
 
+func TestByteStoreGetAnykeys(t *testing.T, store nstorage.ByteStore) {
+	var keys []string
+	for i := 0; i < 10; i++ {
+		var key = fmt.Sprintf("day-%d", i)
+		keys = append(keys, key)
+		require.NoError(t, store.Save(key, string2Bytes(fmt.Sprintf("i"))))
+	}
+
+	var values, err = store.GetAnyKeys(keys...)
+
+	require.NoError(t, err)
+	require.Len(t, values, len(keys))
+}
+
+func TestByteStoreGetAllkeys(t *testing.T, store nstorage.ByteStore) {
+	var keys []string
+	for i := 0; i < 10; i++ {
+		var key = fmt.Sprintf("day-%d", i)
+		keys = append(keys, key)
+		require.NoError(t, store.Save(key, string2Bytes(fmt.Sprintf("i"))))
+	}
+
+	var values, err = store.GetAllKeys(keys...)
+
+	require.NoError(t, err)
+	require.Len(t, values, len(keys))
+}
+
 func TestByteStoreFindAll(t *testing.T, store nstorage.ByteStore) {
 	for i := 0; i < 10; i++ {
 		var key = fmt.Sprintf("day-%d", i)

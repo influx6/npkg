@@ -36,6 +36,16 @@ func (expr *ExprByteStore) Keys() ([]string, error) {
 	return keys, nil
 }
 
+// GetAnyKeys returns the giving values of any key if it exists and has not expired.
+func (expr *ExprByteStore) GetAnyKeys(k ...string) ([][]byte, error) {
+	return expr.cache.GetAnyKeys(k...)
+}
+
+// GetAllKeys returns the giving values of all keys.
+func (expr *ExprByteStore) GetAllKeys(k ...string) ([][]byte, error) {
+	return expr.cache.GetAllKeys(k...)
+}
+
 // Get returns the giving value of key if it exists and has not expired.
 func (expr *ExprByteStore) Get(k string) ([]byte, error) {
 	if !expr.cache.Has(k) {

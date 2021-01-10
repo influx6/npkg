@@ -2,6 +2,7 @@ package nredis
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -68,7 +69,11 @@ func (rd *RedisStore) Close() error {
 // getHashKey returns formatted for unique form towards using creating
 // efficient hashmaps to contain list of keys.
 func (rd *RedisStore) getHashKey(key string) string {
-	return fmt.Sprintf("%s_%s", rd.hashList, key)
+	var prefix = rd.hashList + "_"
+	if strings.HasPrefix(key, prefix) {
+		return key
+	}
+	return fmt.Sprintf("%s%s", prefix, key)
 }
 
 // Keys returns all giving keys of elements within store.
@@ -289,6 +294,64 @@ func (rd *RedisStore) ResetTTL(key string, expiration time.Duration) error {
 
 	var exstatus = rd.Client.Expire(hashKey, expiration)
 	return exstatus.Err()
+}
+
+// GetAnyKeys returns a list of values for any of the key's found.
+// Unless a specific error occurred retrieving the value of a key, if a
+// key is not found then it is ignored and a nil is set in it's place.
+func (rd *RedisStore) GetAnyKeys(keys ...string) ([][]byte, error) {
+	var modifiedKeys = make([]string, len(keys))
+	for index, key := range keys {
+		modifiedKeys[index] = rd.getHashKey(key)
+	}
+
+	var nstatus = rd.Client.MGet(modifiedKeys...)
+	if err := nstatus.Err(); err != nil {
+		return nil, nerror.WrapOnly(err)
+	}
+
+	var values = make([][]byte, len(keys))
+	var contentList = nstatus.Val()
+	for index, val := range contentList {
+		switch mv := val.(type) {
+		case string:
+			values[index] = nunsafe.String2Bytes(mv)
+		case []byte:
+			values[index] = mv
+		default:
+			values[index] = nil
+		}
+	}
+	return values, nil
+}
+
+// GetAllKeys returns a list of values for any of the key's found.
+// if the value of a key is not found then we stop immediately, returning
+// an error and the current set of items retreived.
+func (rd *RedisStore) GetAllKeys(keys ...string) ([][]byte, error) {
+	var modifiedKeys = make([]string, len(keys))
+	for index, key := range keys {
+		modifiedKeys[index] = rd.getHashKey(key)
+	}
+
+	var nstatus = rd.Client.MGet(modifiedKeys...)
+	if err := nstatus.Err(); err != nil {
+		return nil, nerror.WrapOnly(err)
+	}
+
+	var values = make([][]byte, len(keys))
+	var contentList = nstatus.Val()
+	for index, val := range contentList {
+		switch mv := val.(type) {
+		case string:
+			values[index] = nunsafe.String2Bytes(mv)
+		case []byte:
+			values[index] = mv
+		default:
+			return values, nerror.New("value with type %T has value %#v but is not bytes or string for key %q", mv, mv, keys[index])
+		}
+	}
+	return values, nil
 }
 
 // Get returns giving session stored with giving key, returning an

@@ -19,10 +19,13 @@ type ByteStore interface {
 
 	Keys() ([]string, error)
 	Save(string, []byte) error
-	Get(string) ([]byte, error)
 	Exists(string) (bool, error)
 	Update(string, []byte) error
 	Remove(string) ([]byte, error)
+
+	Get(string) ([]byte, error)
+	GetAllKeys(...string) ([][]byte, error)
+	GetAnyKeys(...string) ([][]byte, error)
 }
 
 // ExpirableStore composes the ByteStore providing the

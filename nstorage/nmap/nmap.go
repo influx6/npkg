@@ -4,6 +4,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/influx6/npkg/nerror"
 )
 
 //**********************************************************************
@@ -472,6 +474,48 @@ func (m *ExpiringByteMap) Get(k string) (value []byte) {
 			var content = make([]byte, len(nvalue.Value))
 			copy(content, nvalue.Value)
 			value = content
+		}
+	})
+	return
+}
+
+func (m *ExpiringByteMap) GetAnyKeys(keys ...string) (values [][]byte, err error) {
+	values = make([][]byte, len(keys))
+	m.GetMany(func(data map[string]ExpiringValue) {
+		for index, k := range keys {
+			if nvalue, ok := data[k]; ok {
+				if nvalue.Expired() {
+					values[index] = nil
+					continue
+				}
+
+				var content = make([]byte, len(nvalue.Value))
+				copy(content, nvalue.Value)
+				values[index] = content
+				continue
+			}
+			values[index] = nil
+		}
+	})
+	return
+}
+
+func (m *ExpiringByteMap) GetAllKeys(keys ...string) (values [][]byte, err error) {
+	values = make([][]byte, len(keys))
+	m.GetMany(func(data map[string]ExpiringValue) {
+		for index, k := range keys {
+			if nvalue, ok := data[k]; ok {
+				if nvalue.Expired() {
+					err = nerror.New("key %q has expired", k)
+					return
+				}
+
+				var content = make([]byte, len(nvalue.Value))
+				copy(content, nvalue.Value)
+				values[index] = content
+				continue
+			}
+			values[index] = nil
 		}
 	})
 	return
