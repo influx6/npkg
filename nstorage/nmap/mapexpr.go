@@ -155,6 +155,16 @@ func (expr *ExprByteStore) EachKeyPrefix(prefix string) ([]string, error) {
 	return keys, nil
 }
 
+// RemoveKeys deletes giving key from underling store.
+func (expr *ExprByteStore) RemoveKeys(ks ...string) error {
+	expr.cache.GetMany(func(values map[string]ExpiringValue) {
+		for _, key := range ks {
+			delete(values, key)
+		}
+	})
+	return nil
+}
+
 // Remove deletes giving key from underling store.
 func (expr *ExprByteStore) Remove(k string) ([]byte, error) {
 	var v []byte

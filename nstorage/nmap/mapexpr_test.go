@@ -7,6 +7,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestStoreWithNMapStoreRemoveKeys(t *testing.T) {
+	var store = NewExprByteStore(100)
+	require.NotNil(t, store)
+
+	tharness.TestByteStoreRemoveKeys(t, store)
+}
+
 func TestStoreWithNMapStoreGetAnyKeys(t *testing.T) {
 	var store = NewExprByteStore(100)
 	require.NotNil(t, store)

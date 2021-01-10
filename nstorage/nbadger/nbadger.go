@@ -427,6 +427,24 @@ func (rd *BadgerStore) Remove(key string) ([]byte, error) {
 	return old, err
 }
 
+// RemoveKeys removes all keys found in the store.
+func (rd *BadgerStore) RemoveKeys(keys ...string) error {
+	if err := rd.Db.Update(func(txn *badger.Txn) error {
+		for _, key := range keys {
+			err := txn.Delete(nunsafe.String2Bytes(key))
+			if err != nil && err != badger.ErrEmptyKey && err != badger.ErrKeyNotFound {
+				return nerror.WrapOnly(err)
+			}
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return nerror.WrapOnly(err)
+	}
+	return nil
+}
+
 // *****************************************************
 // internal methods
 // *****************************************************

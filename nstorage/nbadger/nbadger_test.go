@@ -8,6 +8,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestStoreWithBadgerStoreRemoveKeys(t *testing.T) {
+	var ops = badger.DefaultOptions("").WithInMemory(true)
+	var store, err = NewBadgerStore(ops, badger.DefaultIteratorOptions)
+	require.NoError(t, err)
+	require.NotNil(t, store)
+
+	tharness.TestByteStoreRemoveKeys(t, store)
+}
+
 func TestStoreWithBadgerStoreGetAnykeys(t *testing.T) {
 	var ops = badger.DefaultOptions("").WithInMemory(true)
 	var store, err = NewBadgerStore(ops, badger.DefaultIteratorOptions)

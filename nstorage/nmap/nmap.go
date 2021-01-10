@@ -515,7 +515,8 @@ func (m *ExpiringByteMap) GetAllKeys(keys ...string) (values [][]byte, err error
 				values[index] = content
 				continue
 			}
-			values[index] = nil
+			err = nerror.New("not found")
+			break
 		}
 	})
 	return

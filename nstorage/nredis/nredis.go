@@ -365,6 +365,34 @@ func (rd *RedisStore) Get(key string) ([]byte, error) {
 	return nunsafe.String2Bytes(nstatus.Val()), nil
 }
 
+// RemoveKeys removes underline key from the redis store after retrieving it and
+// returning giving session.
+func (rd *RedisStore) RemoveKeys(keys ...string) error {
+	var modifiedKeys = make([]string, len(keys))
+	var modifiedIKeys = make([]interface{}, len(keys))
+	for index, key := range keys {
+		var mod = rd.getHashKey(key)
+		modifiedKeys[index] = mod
+		modifiedIKeys[index] = mod
+	}
+
+	var _, err = rd.Client.TxPipelined(func(pipeliner redis.Pipeliner) error {
+		var mstatus = pipeliner.SRem(rd.hashList, modifiedIKeys...)
+		if err := mstatus.Err(); err != nil {
+			return nerror.WrapOnly(err)
+		}
+		var dstatus = pipeliner.Del(modifiedKeys...)
+		if err := dstatus.Err(); err != nil {
+			return nerror.WrapOnly(err)
+		}
+		return nil
+	})
+	if err != nil {
+		return nerror.WrapOnly(err)
+	}
+	return nil
+}
+
 // Remove removes underline key from the redis store after retrieving it and
 // returning giving session.
 func (rd *RedisStore) Remove(key string) ([]byte, error) {

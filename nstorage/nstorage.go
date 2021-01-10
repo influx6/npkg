@@ -21,6 +21,8 @@ type ByteStore interface {
 	Save(string, []byte) error
 	Exists(string) (bool, error)
 	Update(string, []byte) error
+
+	RemoveKeys(...string) error
 	Remove(string) ([]byte, error)
 
 	Get(string) ([]byte, error)
