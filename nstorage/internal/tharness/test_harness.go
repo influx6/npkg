@@ -3,6 +3,7 @@ package tharness
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 	"unsafe"
@@ -33,8 +34,10 @@ func TestByteStoreFindAll(t *testing.T, store nstorage.ByteStore) {
 }
 
 func TestByteStoreFindPrefix(t *testing.T, store nstorage.ByteStore) {
+	var keys []string
 	for i := 0; i < 10; i++ {
 		var key = fmt.Sprintf("day-%d", i)
+		keys = append(keys, key)
 		require.NoError(t, store.Save(key, string2Bytes(fmt.Sprintf("i"))))
 	}
 
@@ -46,13 +49,22 @@ func TestByteStoreFindPrefix(t *testing.T, store nstorage.ByteStore) {
 	require.NoError(t, keyErr)
 	require.NotEmpty(t, returnedKeys)
 
-	for _, v := range inKeys {
-		require.Contains(t, returnedKeys, v)
+	for _, v := range keys {
+		require.True(t, hasSuffixInList(returnedKeys, v))
 	}
 
 	var returnedKeys2, keyErr2 = store.EachKeyPrefix("day-0")
 	require.NoError(t, keyErr2)
 	require.Len(t, returnedKeys2, 1)
+}
+
+func hasSuffixInList(v []string, k string) bool {
+	for _, vk := range v {
+		if strings.HasSuffix(vk, k) {
+			return true
+		}
+	}
+	return false
 }
 
 func TestByteStoreFindEach(t *testing.T, store nstorage.ByteStore) {

@@ -181,15 +181,23 @@ func (rd *RedisStore) Save(key string, data []byte) error {
 // Duration of 0 means no expiration.
 func (rd *RedisStore) SaveTTL(key string, data []byte, expiration time.Duration) error {
 	var hashKey = rd.getHashKey(key)
-	var nstatus = rd.Client.SAdd(rd.hashList, hashKey)
-	if err := nstatus.Err(); err != nil {
-		return nerror.WrapOnly(err)
+	var _, pipeErr = rd.Client.TxPipelined(func(pipeliner redis.Pipeliner) error {
+		var nstatus = pipeliner.SAdd(rd.hashList, hashKey)
+		if err := nstatus.Err(); err != nil {
+			return nerror.WrapOnly(err)
+		}
+
+		var nset = pipeliner.Set(hashKey, data, expiration)
+		if err := nset.Err(); err != nil {
+			return nerror.WrapOnly(err)
+		}
+		return nil
+	})
+
+	if err := pipeErr; err != nil {
+		return nerror.WrapOnly(pipeErr)
 	}
 
-	var nset = rd.Client.Set(hashKey, data, expiration)
-	if err := nset.Err(); err != nil {
-		return nerror.WrapOnly(err)
-	}
 	return nil
 }
 
@@ -302,12 +310,19 @@ func (rd *RedisStore) Remove(key string) ([]byte, error) {
 	if err := nstatus.Err(); err != nil {
 		return nil, nerror.WrapOnly(err)
 	}
-	var mstatus = rd.Client.SRem(rd.hashList, hashKey)
-	if err := mstatus.Err(); err != nil {
-		return nil, nerror.WrapOnly(err)
-	}
-	var dstatus = rd.Client.Del(hashKey)
-	if err := dstatus.Err(); err != nil {
+
+	var _, err = rd.Client.TxPipelined(func(pipeliner redis.Pipeliner) error {
+		var mstatus = pipeliner.SRem(rd.hashList, hashKey)
+		if err := mstatus.Err(); err != nil {
+			return nerror.WrapOnly(err)
+		}
+		var dstatus = pipeliner.Del(hashKey)
+		if err := dstatus.Err(); err != nil {
+			return nerror.WrapOnly(err)
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, nerror.WrapOnly(err)
 	}
 	return nunsafe.String2Bytes(nstatus.Val()), nil
