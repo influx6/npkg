@@ -376,7 +376,7 @@ func (rd *RedisStore) RemoveKeys(keys ...string) error {
 		modifiedIKeys[index] = mod
 	}
 
-	var _, err = rd.Client.TxPipelined(func(pipeliner redis.Pipeliner) error {
+	var _, err = rd.Client.Pipelined(func(pipeliner redis.Pipeliner) error {
 		var mstatus = pipeliner.SRem(rd.hashList, modifiedIKeys...)
 		if err := mstatus.Err(); err != nil {
 			return nerror.WrapOnly(err)
