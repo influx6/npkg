@@ -2,12 +2,12 @@ package nbadger
 
 import (
 	"time"
-	"unsafe"
 
 	"github.com/dgraph-io/badger/v2"
 
 	"github.com/influx6/npkg/nerror"
 	"github.com/influx6/npkg/nstorage"
+	"github.com/influx6/npkg/nunsafe"
 )
 
 var _ nstorage.ExpirableStore = (*BadgerStore)(nil)
@@ -59,7 +59,7 @@ func (rd *BadgerStore) Keys() ([]string, error) {
 				if item.IsDeletedOrExpired() {
 					continue
 				}
-				keys = append(keys, bytes2String(copyBytes(item.Key())))
+				keys = append(keys, nunsafe.Bytes2String(copyBytes(item.Key())))
 			}
 			return nil
 		}
@@ -70,7 +70,7 @@ func (rd *BadgerStore) Keys() ([]string, error) {
 			if item.IsDeletedOrExpired() {
 				continue
 			}
-			keys = append(keys, bytes2String(copyBytes(item.Key())))
+			keys = append(keys, nunsafe.Bytes2String(copyBytes(item.Key())))
 		}
 		return nil
 	})
@@ -216,7 +216,7 @@ func (rd *BadgerStore) Each(fn func([]byte, string) bool) error {
 func (rd *BadgerStore) Exists(key string) (bool, error) {
 	var exist bool
 	if err := rd.Db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(string2Bytes(key))
+		item, err := txn.Get(nunsafe.String2Bytes(key))
 		if err != nil {
 			return nerror.WrapOnly(err)
 		}
@@ -236,7 +236,7 @@ func (rd *BadgerStore) Exists(key string) (bool, error) {
 func (rd *BadgerStore) Get(key string) ([]byte, error) {
 	var value []byte
 	if err := rd.Db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(string2Bytes(key))
+		item, err := txn.Get(nunsafe.String2Bytes(key))
 		if err != nil {
 			return nerror.WrapOnly(err)
 		}
@@ -268,7 +268,7 @@ func (rd *BadgerStore) SaveTTL(key string, data []byte, expiration time.Duration
 	return rd.Db.Update(func(txn *badger.Txn) error {
 		var op badger.Entry
 		op.Value = data
-		op.Key = string2Bytes(key)
+		op.Key = nunsafe.String2Bytes(key)
 
 		if expiration > 0 {
 			op.WithTTL(expiration)
@@ -285,7 +285,7 @@ func (rd *BadgerStore) SaveTTL(key string, data []byte, expiration time.Duration
 func (rd *BadgerStore) TTL(key string) (time.Duration, error) {
 	var ttl time.Duration
 	var err = rd.Db.Update(func(txn *badger.Txn) error {
-		var item, err = txn.Get(string2Bytes(key))
+		var item, err = txn.Get(nunsafe.String2Bytes(key))
 		if err != nil {
 			return nerror.Wrap(err, "Failed to retrieve key")
 		}
@@ -317,7 +317,7 @@ func (rd *BadgerStore) Sync() error {
 // A expiration value of zero means to persist the giving key.
 func (rd *BadgerStore) ExtendTTL(key string, expiration time.Duration) error {
 	return rd.Db.Update(func(txn *badger.Txn) error {
-		var item, err = txn.Get(string2Bytes(key))
+		var item, err = txn.Get(nunsafe.String2Bytes(key))
 		if err != nil {
 			return nerror.Wrap(err, "Failed to retrieve key")
 		}
@@ -336,13 +336,13 @@ func (rd *BadgerStore) ExtendTTL(key string, expiration time.Duration) error {
 		}
 
 		// delete old key
-		if err := txn.Delete(string2Bytes(key)); err != nil {
+		if err := txn.Delete(nunsafe.String2Bytes(key)); err != nil {
 			return nerror.Wrap(err, "failed to delete")
 		}
 
 		var op badger.Entry
 		op.Value = value
-		op.Key = string2Bytes(key)
+		op.Key = nunsafe.String2Bytes(key)
 
 		if expiration > 0 {
 			op.WithTTL(lastTTL + expiration)
@@ -361,7 +361,7 @@ func (rd *BadgerStore) ExtendTTL(key string, expiration time.Duration) error {
 // A expiration value of zero means to persist the giving key.
 func (rd *BadgerStore) ResetTTL(key string, expiration time.Duration) error {
 	return rd.Db.Update(func(txn *badger.Txn) error {
-		var item, err = txn.Get(string2Bytes(key))
+		var item, err = txn.Get(nunsafe.String2Bytes(key))
 		if err != nil {
 			return nerror.Wrap(err, "Failed to retrieve key")
 		}
@@ -376,7 +376,7 @@ func (rd *BadgerStore) ResetTTL(key string, expiration time.Duration) error {
 
 		var op badger.Entry
 		op.Value = value
-		op.Key = string2Bytes(key)
+		op.Key = nunsafe.String2Bytes(key)
 
 		if expiration > 0 {
 			op.WithTTL(expiration)
@@ -403,7 +403,7 @@ func (rd *BadgerStore) Update(key string, data []byte) error {
 // as is.
 func (rd *BadgerStore) UpdateTTL(key string, data []byte, expiration time.Duration) error {
 	return rd.Db.Update(func(txn *badger.Txn) error {
-		var item, err = txn.Get(string2Bytes(key))
+		var item, err = txn.Get(nunsafe.String2Bytes(key))
 		if err != nil {
 			return nerror.Wrap(err, "Failed to retrieve key")
 		}
@@ -413,7 +413,7 @@ func (rd *BadgerStore) UpdateTTL(key string, data []byte, expiration time.Durati
 
 		var op badger.Entry
 		op.Value = data
-		op.Key = string2Bytes(key)
+		op.Key = nunsafe.String2Bytes(key)
 
 		if expiration > 0 {
 			op.WithTTL(expiration)
@@ -432,7 +432,7 @@ func (rd *BadgerStore) UpdateTTL(key string, data []byte, expiration time.Durati
 func (rd *BadgerStore) Remove(key string) ([]byte, error) {
 	var old []byte
 	err := rd.Db.Update(func(txn *badger.Txn) error {
-		var item, err = txn.Get(string2Bytes(key))
+		var item, err = txn.Get(nunsafe.String2Bytes(key))
 		if err != nil {
 			return err
 		}
@@ -443,7 +443,7 @@ func (rd *BadgerStore) Remove(key string) ([]byte, error) {
 			return err
 		}
 
-		return txn.Delete(string2Bytes(key))
+		return txn.Delete(nunsafe.String2Bytes(key))
 	})
 	return old, err
 }
@@ -464,18 +464,4 @@ func ttlDur(tx uint64, ns int64) time.Duration {
 	}
 	var ttl = time.Unix(int64(tx), ns)
 	return time.Now().Sub(ttl)
-}
-
-//*****************************************************
-// unsafe methods
-//*****************************************************
-
-// byte2String converts a byte slice into a string.
-func bytes2String(bc []byte) string {
-	return *(*string)(unsafe.Pointer(&bc))
-}
-
-// string2Bytes converts a string into a byte slice.
-func string2Bytes(bc string) []byte {
-	return *(*[]byte)(unsafe.Pointer(&bc))
 }

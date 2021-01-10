@@ -3,12 +3,12 @@ package nredis
 import (
 	"fmt"
 	"time"
-	"unsafe"
 
 	"github.com/go-redis/redis"
 
 	"github.com/influx6/npkg/nerror"
 	"github.com/influx6/npkg/nstorage"
+	"github.com/influx6/npkg/nunsafe"
 )
 
 var _ nstorage.ExpirableStore = (*RedisStore)(nil)
@@ -91,7 +91,7 @@ func (rd *RedisStore) ErrorEach(fn func([]byte, string) error) error {
 	for _, item := range nstatus.Val() {
 		var gstatus = rd.Client.Get(item)
 		if err := gstatus.Err(); err == nil {
-			if err := fn(string2Bytes(gstatus.Val()), item); err != nil {
+			if err := fn(nunsafe.String2Bytes(gstatus.Val()), item); err != nil {
 				return nerror.WrapOnly(err)
 			}
 		}
@@ -109,7 +109,7 @@ func (rd *RedisStore) Each(fn func([]byte, string) bool) error {
 	for _, item := range nstatus.Val() {
 		var gstatus = rd.Client.Get(item)
 		if err := gstatus.Err(); err == nil {
-			if !fn(string2Bytes(gstatus.Val()), item) {
+			if !fn(nunsafe.String2Bytes(gstatus.Val()), item) {
 				return nil
 			}
 		}
@@ -127,7 +127,7 @@ func (rd *RedisStore) Find(fn func([]byte, string) bool) error {
 	for _, item := range nstatus.Val() {
 		var gstatus = rd.Client.Get(item)
 		if err := gstatus.Err(); err == nil {
-			var data = string2Bytes(gstatus.Val())
+			var data = nunsafe.String2Bytes(gstatus.Val())
 			if !fn(data, item) {
 				return nil
 			}
@@ -302,7 +302,7 @@ func (rd *RedisStore) Get(key string) ([]byte, error) {
 	if err := nstatus.Err(); err != nil {
 		return nil, nerror.WrapOnly(err)
 	}
-	return string2Bytes(nstatus.Val()), nil
+	return nunsafe.String2Bytes(nstatus.Val()), nil
 }
 
 // Remove removes underline key from the redis store after retrieving it and
@@ -321,29 +321,11 @@ func (rd *RedisStore) Remove(key string) ([]byte, error) {
 	if err := dstatus.Err(); err != nil {
 		return nil, nerror.WrapOnly(err)
 	}
-	return string2Bytes(nstatus.Val()), nil
+	return nunsafe.String2Bytes(nstatus.Val()), nil
 }
 
 func (rd *RedisStore) remove(key string) error {
 	var hashKey = rd.getHashKey(key)
 	var dstatus = rd.Client.Del(hashKey)
 	return dstatus.Err()
-}
-
-//*****************************************************
-// internal methods
-//*****************************************************
-
-//*****************************************************
-// unsafe methods
-//*****************************************************
-
-// byte2String converts a byte slice into a string.
-func bytes2String(bc []byte) string {
-	return *(*string)(unsafe.Pointer(&bc))
-}
-
-// string2Bytes converts a string into a byte slice.
-func string2Bytes(bc string) []byte {
-	return *(*[]byte)(unsafe.Pointer(&bc))
 }
