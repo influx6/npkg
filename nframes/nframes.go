@@ -66,6 +66,26 @@ func (l Level) String() string {
 // Stack Frames
 //************************************************************
 
+func GetCallerName() string {
+	pc, _, _, _ := runtime.Caller(1)
+	return runtime.FuncForPC(pc).Name()
+}
+
+func GetLineNumberWith(skip int) int {
+	_, _, line, _ := runtime.Caller(skip)
+	return line
+}
+
+func GetFileNameNameWith(skip int) string {
+	_, file, _, _ := runtime.Caller(skip)
+	return file
+}
+
+func GetCallerNameWith(skip int) string {
+	pc, _, _, _ := runtime.Caller(skip)
+	return runtime.FuncForPC(pc).Name()
+}
+
 // GetFrameDetails uses runtime.CallersFrames instead of runtime.FuncForPC
 // which in go1.12 misses certain frames, to ensure backward compatibility
 // with the previous version, this method is written to provide alternative

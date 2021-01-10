@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/influx6/npkg"
+	"github.com/influx6/npkg/nframes"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
@@ -23,10 +24,10 @@ const (
 
 type contextKey string
 
-// WithBaggage as new key-value pair into the spans baggage store.
+// WithKV as new key-value pair into the spans baggage store.
 //
 // This values get propagated down to child spans from this span.
-func WithBaggage(span opentracing.Span, key string, value string) {
+func WithKV(span opentracing.Span, key string, value string) {
 	if span == nil {
 		return
 	}
@@ -57,14 +58,30 @@ func WithTrace(ctx context.Context, methodName string) (context.Context, func())
 	}
 }
 
+// WithTrace returns a new context.Context and a function which can be used to finish the
+// opentracing.Span attached to giving context.
+//
+// It's an alternative to using Trace.
+func WithMethodTrace(ctx context.Context) (context.Context, func()) {
+	return WithTrace(ctx, nframes.GetCallerNameWith(2))
+}
+
 // GetSpanFromContext returns a OpenTracing span if available from provided context.
 //
 // WARNING: Second returned value can be nil if no parent span is in context.
-func GetSpanFromContext(ctx context.Context, traceName string) (opentracing.Span, bool) {
+func GetSpanFromContext(ctx context.Context) (opentracing.Span, bool) {
 	if span, ok := ctx.Value(SpanKey).(opentracing.Span); ok {
 		return span, true
 	}
 	return nil, false
+}
+
+// NewMethodSpanFromContext returns a OpenTracing span if available from provided context.
+// It automatically gets the caller name using runtime.
+//
+// WARNING: Second returned value can be nil if no parent span is in context.
+func NewMethodSpanFromContext(ctx context.Context) (context.Context, opentracing.Span) {
+	return NewSpanFromContext(ctx, nframes.GetCallerNameWith(2))
 }
 
 // NewSpanFromContext returns a new OpenTracing child span which was created as a child of a
