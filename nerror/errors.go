@@ -3,6 +3,7 @@ package nerror
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/influx6/npkg/nframes"
@@ -17,6 +18,23 @@ func IsAny(err error, set ...error) bool {
 		}
 	}
 	return false
+}
+
+type ErrorStack []string
+
+func (es *ErrorStack) Add(msg string, m ...interface{}) {
+	if len(m) > 0 {
+		*es = append(*es, "- "+fmt.Sprintf(msg, m...)+"\n")
+		return
+	}
+	*es = append(*es, "- "+msg+"\n")
+}
+
+func (es *ErrorStack) Err() error {
+	if len(*es) > 0 {
+		return New(strings.Join(*es, ""))
+	}
+	return nil
 }
 
 // ErrorOption defines a giving function which receiving
