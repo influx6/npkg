@@ -226,13 +226,21 @@ func (rd *RedisStore) UpdateTTL(key string, data []byte, expiration time.Duratio
 		return nerror.New("key does not exist")
 	}
 
-	if len(data) == 0 {
-		return rd.remove(key)
-	}
+	var _, pipeErr = rd.Client.TxPipelined(func(cl redis.Pipeliner) error {
+		if len(data) == 0 {
+			var dstatus = cl.Del(hashKey)
+			return dstatus.Err()
+		}
 
-	var nset = rd.Client.Set(hashKey, data, expiration)
-	if err := nset.Err(); err != nil {
-		return nerror.WrapOnly(err)
+		var nset = cl.Set(hashKey, data, expiration)
+		if err := nset.Err(); err != nil {
+			return nerror.WrapOnly(err)
+		}
+		return nil
+	})
+
+	if err := pipeErr; err != nil {
+		return nerror.WrapOnly(pipeErr)
 	}
 	return nil
 }
@@ -263,14 +271,22 @@ func (rd *RedisStore) ExtendTTL(key string, expiration time.Duration) error {
 		return nil
 	}
 
-	if expiration == 0 {
-		var exstatus = rd.Client.Persist(hashKey)
+	var newExpiration = expiration + nstatus.Val()
+	var _, pipeErr = rd.Client.TxPipelined(func(cl redis.Pipeliner) error {
+		if expiration == 0 {
+			var exstatus = cl.Persist(hashKey)
+			return exstatus.Err()
+		}
+
+		var exstatus = cl.Expire(hashKey, newExpiration)
 		return exstatus.Err()
+	})
+
+	if err := pipeErr; err != nil {
+		return nerror.WrapOnly(pipeErr)
 	}
 
-	var newExpiration = expiration + nstatus.Val()
-	var exstatus = rd.Client.Expire(hashKey, newExpiration)
-	return exstatus.Err()
+	return nil
 }
 
 // ResetTTL resets giving expiration value to provided duration.
@@ -287,13 +303,20 @@ func (rd *RedisStore) ResetTTL(key string, expiration time.Duration) error {
 		return nil
 	}
 
-	if expiration == 0 {
-		var exstatus = rd.Client.Persist(hashKey)
+	var _, pipeErr = rd.Client.TxPipelined(func(cl redis.Pipeliner) error {
+		if expiration == 0 {
+			var exstatus = cl.Persist(hashKey)
+			return exstatus.Err()
+		}
+
+		var exstatus = cl.Expire(hashKey, expiration)
 		return exstatus.Err()
+	})
+	if err := pipeErr; err != nil {
+		return nerror.WrapOnly(pipeErr)
 	}
 
-	var exstatus = rd.Client.Expire(hashKey, expiration)
-	return exstatus.Err()
+	return nil
 }
 
 // GetAnyKeys returns a list of values for any of the key's found.
@@ -417,10 +440,4 @@ func (rd *RedisStore) Remove(key string) ([]byte, error) {
 		return nil, nerror.WrapOnly(err)
 	}
 	return nunsafe.String2Bytes(nstatus.Val()), nil
-}
-
-func (rd *RedisStore) remove(key string) error {
-	var hashKey = rd.getHashKey(key)
-	var dstatus = rd.Client.Del(hashKey)
-	return dstatus.Err()
 }

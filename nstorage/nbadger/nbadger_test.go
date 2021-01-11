@@ -79,3 +79,11 @@ func TestBadgerExpiryStore(t *testing.T) {
 
 	tharness.TestExpirableStore(t, store)
 }
+func TestBadgerExpiryStoreTT(t *testing.T) {
+	var ops = badger.DefaultOptions("").WithInMemory(true)
+	var store, err = NewBadgerStore(ops, badger.DefaultIteratorOptions)
+	require.NoError(t, err)
+	require.NotNil(t, store)
+
+	tharness.TestExpiryReset(t, store)
+}

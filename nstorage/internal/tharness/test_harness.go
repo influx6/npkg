@@ -76,7 +76,7 @@ func TestByteStoreFindAll(t *testing.T, store nstorage.ByteStore) {
 	})
 
 	require.NoError(t, err)
-	require.Equal(t, 10, count)
+	require.True(t, count >= 10)
 }
 
 func TestByteStoreFindPrefix(t *testing.T, store nstorage.ByteStore) {
@@ -169,6 +169,35 @@ func TestByteStore(t *testing.T, store nstorage.ByteStore) {
 	val, err = store.Remove("day")
 	require.NoError(t, err)
 	require.Equal(t, "tweeter", bytes2String(val))
+}
+
+func TestExpiryReset(t *testing.T, store nstorage.ExpirableStore) {
+	require.NoError(t, store.SaveTTL("day", string2Bytes("wrecker"), 3*time.Second))
+
+	var val, err = store.Get("day")
+	require.NoError(t, err)
+	require.Equal(t, "wrecker", bytes2String(val))
+
+	ttl, err := store.TTL("day")
+	require.NoError(t, err)
+	require.True(t, ttl <= 3*time.Second)
+
+	require.NoError(t, store.ResetTTL("day", time.Second))
+
+	ttl, err = store.TTL("day")
+	require.NoError(t, err)
+	require.True(t, ttl <= time.Second)
+
+	var terr = store.ResetTTL("day", 0)
+	require.NoError(t, terr)
+
+	ttl, err = store.TTL("day")
+	require.NoError(t, err)
+	require.True(t, ttl <= 0)
+
+	var val2, err2 = store.Get("day")
+	require.NoError(t, err2)
+	require.Equal(t, "wrecker", bytes2String(val2))
 }
 
 func TestExpirableStore(t *testing.T, store nstorage.ExpirableStore) {

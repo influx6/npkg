@@ -46,6 +46,44 @@ func TestIntegrationRedisStoreGetAnyKeys(t *testing.T) {
 	tharness.TestByteStoreGetAnykeys(t, store)
 }
 
+func TestIntegrationRedisStoreTTL(t *testing.T) {
+	var ops redis.Options
+	require.NotNil(t, &ops)
+
+	var redisClient = redis.NewClient(&ops)
+	require.NotNil(t, redisClient)
+
+	if err := redisClient.Ping().Err(); err != nil {
+		t.SkipNow()
+		return
+	}
+
+	var store, err = FromRedisStore("testing_mb", redisClient)
+	require.NoError(t, err)
+	require.NotNil(t, store)
+
+	tharness.TestExpiryReset(t, store)
+}
+
+func TestIntegrationRedisStoreExpirableStore(t *testing.T) {
+	var ops redis.Options
+	require.NotNil(t, &ops)
+
+	var redisClient = redis.NewClient(&ops)
+	require.NotNil(t, redisClient)
+
+	if err := redisClient.Ping().Err(); err != nil {
+		t.SkipNow()
+		return
+	}
+
+	var store, err = FromRedisStore("testing_mb", redisClient)
+	require.NoError(t, err)
+	require.NotNil(t, store)
+
+	tharness.TestExpirableStore(t, store)
+}
+
 func TestIntegrationRedisStoreGetAllKeys(t *testing.T) {
 	var ops redis.Options
 	require.NotNil(t, &ops)
