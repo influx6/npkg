@@ -20,6 +20,11 @@ func IsAny(err error, set ...error) bool {
 	return false
 }
 
+// ErrorStack allows you to stack multiple messages together
+// which can be combined into a single error message when
+// calling ErrorStack.Err().
+//
+// If no messages are found then no error is returned.
 type ErrorStack []string
 
 func (es *ErrorStack) Add(msg string, m ...interface{}) {
