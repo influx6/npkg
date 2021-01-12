@@ -6,7 +6,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/influx6/npkg"
 	"github.com/influx6/npkg/nframes"
+	"github.com/influx6/npkg/njson"
 )
 
 // IsAny returns true/false any of giving error matches set of error.
@@ -100,7 +102,7 @@ func StackedBy(n int) ErrorOption {
 // present and also collects current stack trace into returned error.
 // It formats message accordingly with arguments from
 // variadic list v.
-func StackWrap(err error, message string, v ...interface{}) error {
+func StackWrap(err error, message string, v ...interface{}) *PointingError {
 	if len(v) != 0 {
 		message = fmt.Sprintf(message, v...)
 	}
@@ -116,7 +118,7 @@ func StackWrap(err error, message string, v ...interface{}) error {
 // present and also collects current stack trace into returned error.
 // It formats message accordingly with arguments from
 // variadic list v.
-func NewStack(message string, v ...interface{}) error {
+func NewStack(message string, v ...interface{}) *PointingError {
 	if len(v) != 0 {
 		message = fmt.Sprintf(message, v...)
 	}
@@ -130,7 +132,7 @@ func NewStack(message string, v ...interface{}) error {
 // New returns an error from provided message and parameter
 // list if provided. It adds necessary information related
 // to point of return.
-func New(message string, v ...interface{}) error {
+func New(message string, v ...interface{}) *PointingError {
 	if len(v) != 0 {
 		message = fmt.Sprintf(message, v...)
 	}
@@ -144,7 +146,7 @@ func New(message string, v ...interface{}) error {
 // NewBy returns an error from provided message and parameter
 // list if provided. It adds necessary information related
 // to point of return.
-func NewBy(n int, message string, v ...interface{}) error {
+func NewBy(n int, message string, v ...interface{}) *PointingError {
 	if len(v) != 0 {
 		message = fmt.Sprintf(message, v...)
 	}
@@ -158,7 +160,7 @@ func NewBy(n int, message string, v ...interface{}) error {
 // WrapBy returns a new error which wraps existing error value if
 // present. It formats message accordingly with arguments from
 // variadic list v.
-func WrapBy(n int, err error, message string, v ...interface{}) error {
+func WrapBy(n int, err error, message string, v ...interface{}) *PointingError {
 	if len(v) != 0 {
 		message = fmt.Sprintf(message, v...)
 	}
@@ -172,7 +174,7 @@ func WrapBy(n int, err error, message string, v ...interface{}) error {
 
 // WrapOnly returns a new error which wraps existing error value if
 // present.
-func WrapOnly(err error) error {
+func WrapOnly(err error) *PointingError {
 	if tm, ok := err.(*PointingError); ok {
 		return tm
 	}
@@ -206,7 +208,7 @@ func UnwrapDeep(e error) error {
 
 // Forward wraps giving error, recording where it was
 // created and attaches the frames of call.
-func Forward(err error) error {
+func Forward(err error) *PointingError {
 	next := wrapOnly(err)
 	next.Parent = err
 	next.Message = err.Error()
@@ -217,7 +219,7 @@ func Forward(err error) error {
 // Wrap returns a new error which wraps existing error value if
 // present. It formats message accordingly with arguments from
 // variadic list v.
-func Wrap(err error, message string, v ...interface{}) error {
+func Wrap(err error, message string, v ...interface{}) *PointingError {
 	if len(v) != 0 {
 		message = fmt.Sprintf(message, v...)
 	}
@@ -261,9 +263,17 @@ var _ HasMessage = (*PointingError)(nil)
 // wrapped.
 type PointingError struct {
 	Message string
+	Params  map[string]string
 	Frames  []nframes.FrameDetail
 	Meta    map[string]interface{}
 	Parent  error
+}
+
+func (pe *PointingError) Add(key, value string) {
+	if pe.Params == nil {
+		pe.Params = map[string]string{}
+	}
+	pe.Params[key] = value
 }
 
 // Error implements the error interface.
@@ -328,6 +338,13 @@ func (pe *PointingError) FormatMessage(buf *bytes.Buffer) {
 // FormatStack formats giving stack information for giving error.
 func (pe *PointingError) FormatStack(buf *bytes.Buffer) {
 	buf.WriteString("-------------------------------------------")
+	var nb = njson.JSONB()
+	if len(pe.Params) > 0 {
+		npkg.EncodableStringMap(pe.Params).EncodeObject(nb)
+		_, _ = nb.WriteTo(buf)
+		buf.WriteString("\n")
+		buf.WriteString("-------------------------------------------")
+	}
 	buf.WriteString("\n")
 	for _, frame := range pe.Frames {
 		_, _ = fmt.Fprintf(buf, "- [%s] %s:%d", frame.Package, frame.File, frame.Line)

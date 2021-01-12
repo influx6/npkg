@@ -10,22 +10,19 @@ import (
 )
 
 func TestErrorCallGraph(t *testing.T) {
-	newErr, ok := (nerror.New("failed connection: %s", "10.9.1.0")).(*nerror.PointingError)
-	assert.True(t, ok)
+	newErr := nerror.New("failed connection: %s", "10.9.1.0")
 	assert.NotNil(t, newErr.Frames)
 	assert.Equal(t, newErr.Message, "failed connection: 10.9.1.0")
 }
 
 func TestErrorWithStack(t *testing.T) {
-	newErr, ok := (nerror.NewStack("failed connection: %s", "10.9.1.0")).(*nerror.PointingError)
-	assert.True(t, ok)
+	newErr := nerror.NewStack("failed connection: %s", "10.9.1.0")
 	assert.NotNil(t, newErr.Frames)
 	assert.Equal(t, newErr.Message, "failed connection: 10.9.1.0")
 }
 
 func TestErrorWithWrapOnly(t *testing.T) {
-	newErr, ok := (nerror.WrapOnly(doBad())).(*nerror.PointingError)
-	assert.True(t, ok)
+	newErr := nerror.WrapOnly(doBad())
 	assert.NotNil(t, newErr.Frames)
 	assert.Equal(t, "Very bad error", nerror.ErrorMessage(newErr).GetMessage())
 	fmt.Println(newErr.String())
