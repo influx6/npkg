@@ -269,11 +269,12 @@ type PointingError struct {
 	Parent  error
 }
 
-func (pe *PointingError) Add(key, value string) {
+func (pe *PointingError) Add(key, value string) *PointingError {
 	if pe.Params == nil {
 		pe.Params = map[string]string{}
 	}
 	pe.Params[key] = value
+	return pe
 }
 
 // Error implements the error interface.
