@@ -165,19 +165,24 @@ func (expr *ExprByteStore) RemoveKeys(ks ...string) error {
 	return nil
 }
 
+func (expr *ExprByteStore) Clear() {
+	expr.cache.Reset()
+}
+
 // Remove deletes giving key from underling store.
 func (expr *ExprByteStore) Remove(k string) ([]byte, error) {
 	var v []byte
 	var found bool
 	expr.cache.GetMany(func(values map[string]ExpiringValue) {
-		for key, value := range values {
-			if key == key {
-				found = true
-				v = value.Value
-				delete(values, key)
-				return
-			}
+		var value, hasKey = values[k]
+		if !hasKey {
+			return
 		}
+
+		delete(values, k)
+
+		found = true
+		v = value.Value
 	})
 
 	if !found {

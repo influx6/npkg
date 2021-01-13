@@ -625,6 +625,15 @@ func (m *ExpiringByteMap) ResetTTL(k string, expire time.Duration) {
 	})
 }
 
+func (m *ExpiringByteMap) Reset() {
+	m.init()
+
+	var newCache = map[string]ExpiringValue{}
+	m.lock.Lock()
+	m.cache.Store(newCache)
+	m.lock.Unlock()
+}
+
 // SetMany adds giving key into underline map.
 func (m *ExpiringByteMap) SetMany(fn func(map[string]ExpiringValue)) {
 	m.init()
