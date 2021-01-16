@@ -69,11 +69,7 @@ func (rd *RedisStore) Close() error {
 // getHashKey returns formatted for unique form towards using creating
 // efficient hashmaps to contain list of keys.
 func (rd *RedisStore) getHashKey(key string) string {
-	var prefix = rd.hashList + "_"
-	if strings.HasPrefix(key, prefix) {
-		return key
-	}
-	return fmt.Sprintf("%s%s", prefix, key)
+	return key
 }
 
 // Keys returns all giving keys of elements within store.
