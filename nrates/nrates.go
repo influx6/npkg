@@ -34,7 +34,7 @@ type RedisIncr struct {
 	Client *redis.Client
 }
 
-func NewBitStore(config *redis.Options) (*RedisIncr, error) {
+func NewRedisIncr(config *redis.Options) (*RedisIncr, error) {
 	client := redis.NewClient(config)
 
 	return &RedisIncr{
