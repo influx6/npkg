@@ -11,12 +11,21 @@ var ErrJustStop = nerror.New("stop iterator")
 
 type EachItem func([]byte, string) error
 
+type ScanResult struct {
+	Finished  bool
+	LastIndex int64
+	LastKey   string
+	Keys      []string
+}
+
 // ByteStore defines a storage interface defining what we expect to
 // be provided for storing a byte slice with a underline key.
 type ByteStore interface {
 	Each(fn EachItem) error
-	EachKeyPrefix(prefix string) ([]string, error)
+	EachKeyMatch(regexp string) ([]string, error)
+	ScanMatch(count int64, lastIndex int64, lastKey string, regexp string) (ScanResult, error)
 
+	Count() (int64, error)
 	Keys() ([]string, error)
 	Save(string, []byte) error
 	Exists(string) (bool, error)

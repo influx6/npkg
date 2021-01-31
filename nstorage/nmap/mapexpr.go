@@ -2,7 +2,6 @@ package nmap
 
 import (
 	regexp2 "regexp"
-	"strings"
 	"time"
 
 	"github.com/influx6/npkg/nerror"
@@ -22,6 +21,10 @@ func NewExprByteStore(initial ...uint) *ExprByteStore {
 	var expr ExprByteStore
 	expr.cache = NewExpiringByteMap(initial...)
 	return &expr
+}
+
+func (expr *ExprByteStore) Count() (int64, error) {
+	return expr.cache.Count(), nil
 }
 
 // Keys returns the list of all keys registered to giving store.
@@ -136,20 +139,47 @@ func (expr *ExprByteStore) Each(fn nstorage.EachItem) error {
 	return nil
 }
 
+// ScanMatch returns all elements matching giving function and count.
+func (expr *ExprByteStore) ScanMatch(count int64, lastIndex int64, lastKey string, regexp string) (nstorage.ScanResult, error) {
+	var rs nstorage.ScanResult
+
+	var keys, keyFetchErr = expr.EachKeyMatch(regexp)
+	if keyFetchErr != nil {
+		return rs, nerror.WrapOnly(keyFetchErr)
+	}
+
+	var remainingKeys = keys[lastIndex : lastIndex+count]
+
+	rs.Keys = remainingKeys
+	rs.LastIndex = lastIndex + count
+	if int(rs.LastIndex) > len(keys) {
+		rs.LastIndex = int64(len(keys))
+		rs.Finished = true
+		return rs, nil
+	}
+
+	rs.LastIndex = lastIndex + count
+	return rs, nil
+}
+
 // Find returns all elements matching giving function and count.
-func (expr *ExprByteStore) EachKeyPrefix(prefix string) ([]string, error) {
-	var compiled = strings.ReplaceAll(prefix, "*", "(.+)")
-	var generatedRegEx, rgErr = regexp2.Compile(compiled)
+func (expr *ExprByteStore) EachKeyMatch(regexp string) ([]string, error) {
+	if len(regexp) == 0 {
+		regexp = ".+"
+	}
+
+	var generatedRegEx, rgErr = regexp2.Compile(regexp)
 	if rgErr != nil {
 		return nil, nerror.WrapOnly(rgErr)
 	}
 
-	var keys = make([]string, 0, 10)
+	var keys = make([]string, 0, 2)
 	expr.cache.GetMany(func(values map[string]ExpiringValue) {
 		for key := range values {
-			if generatedRegEx.MatchString(key) {
-				keys = append(keys, key)
+			if !generatedRegEx.MatchString(key) {
+				continue
 			}
+			keys = append(keys, key)
 		}
 	})
 	return keys, nil

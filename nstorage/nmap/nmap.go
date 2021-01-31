@@ -361,6 +361,12 @@ func (m *ByteMap) SetMany(fn func(map[string][]byte)) {
 	m.lock.Unlock()
 }
 
+func (m *ByteMap) Count() int64 {
+	m.init()
+	var cached = m.cache.Load().(map[string][]byte)
+	return int64(len(cached))
+}
+
 func (m *ByteMap) init() {
 	m.lock.Lock()
 	if m.cache != nil {
@@ -623,6 +629,12 @@ func (m *ExpiringByteMap) ResetTTL(k string, expire time.Duration) {
 			return
 		}
 	})
+}
+
+func (m *ExpiringByteMap) Count() int64 {
+	m.init()
+	var cached = m.cache.Load().(map[string][]byte)
+	return int64(len(cached))
 }
 
 func (m *ExpiringByteMap) Reset() {

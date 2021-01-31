@@ -18,7 +18,7 @@ func TestByteStoreRemoveKeys(t *testing.T, store nstorage.ByteStore) {
 	for i := 0; i < 10; i++ {
 		var key = fmt.Sprintf("day-%d", i)
 		keys = append(keys, key)
-		require.NoError(t, store.Save(key, string2Bytes(fmt.Sprintf("i"))))
+		require.NoError(t, store.Save(key, string2Bytes("i")))
 	}
 
 	var values, err = store.GetAnyKeys(keys...)
@@ -31,12 +31,43 @@ func TestByteStoreRemoveKeys(t *testing.T, store nstorage.ByteStore) {
 	require.Error(t, err2)
 }
 
+func TestByteStoreScanMatch(t *testing.T, store nstorage.ByteStore) {
+	for i := 0; i < 10; i++ {
+		var key = fmt.Sprintf("day-%d", i)
+		require.NoError(t, store.Save(key, string2Bytes("i")))
+	}
+
+	var result, err = store.ScanMatch(2, 0, "", "")
+
+	require.NoError(t, err, "ScanMatch should not fail")
+	require.Len(t, result.Keys, 2)
+
+	if len(result.LastKey) == 0 {
+		require.Equal(t, int(result.LastIndex), 2)
+	} else {
+		require.NotEmpty(t, result.LastKey)
+		require.Equal(t, result.Keys[len(result.Keys)-1], result.LastKey)
+	}
+
+	result, err = store.ScanMatch(2, result.LastIndex, result.LastKey, "")
+
+	require.NoError(t, err, "ScanMatch should not fail")
+	require.Len(t, result.Keys, 2)
+
+	if len(result.LastKey) == 0 {
+		require.Equal(t, int(result.LastIndex), 4)
+	} else {
+		require.NotEmpty(t, result.LastKey)
+		require.Equal(t, result.Keys[len(result.Keys)-1], result.LastKey)
+	}
+}
+
 func TestByteStoreGetAnykeys(t *testing.T, store nstorage.ByteStore) {
 	var keys []string
 	for i := 0; i < 10; i++ {
 		var key = fmt.Sprintf("day-%d", i)
 		keys = append(keys, key)
-		require.NoError(t, store.Save(key, string2Bytes(fmt.Sprintf("i"))))
+		require.NoError(t, store.Save(key, string2Bytes("i")))
 	}
 
 	var values, err = store.GetAnyKeys(keys...)
@@ -50,7 +81,7 @@ func TestByteStoreGetAllkeys(t *testing.T, store nstorage.ByteStore) {
 	for i := 0; i < 10; i++ {
 		var key = fmt.Sprintf("day-%d", i)
 		keys = append(keys, key)
-		require.NoError(t, store.Save(key, string2Bytes(fmt.Sprintf("i"))))
+		require.NoError(t, store.Save(key, string2Bytes("i")))
 	}
 
 	var values, err = store.GetAllKeys(keys...)
@@ -62,7 +93,7 @@ func TestByteStoreGetAllkeys(t *testing.T, store nstorage.ByteStore) {
 func TestByteStoreFindAll(t *testing.T, store nstorage.ByteStore) {
 	for i := 0; i < 10; i++ {
 		var key = fmt.Sprintf("day-%d", i)
-		require.NoError(t, store.Save(key, string2Bytes(fmt.Sprintf("i"))))
+		require.NoError(t, store.Save(key, string2Bytes("i")))
 	}
 
 	var keys, keyErr = store.Keys()
@@ -71,6 +102,8 @@ func TestByteStoreFindAll(t *testing.T, store nstorage.ByteStore) {
 
 	var count int
 	var err = store.Each(func(val []byte, k string) error {
+		require.NotEmpty(t, val)
+		require.NotEmpty(t, k)
 		count++
 		return nil
 	})
@@ -84,14 +117,14 @@ func TestByteStoreFindPrefix(t *testing.T, store nstorage.ByteStore) {
 	for i := 0; i < 10; i++ {
 		var key = fmt.Sprintf("day-%d", i)
 		keys = append(keys, key)
-		require.NoError(t, store.Save(key, string2Bytes(fmt.Sprintf("i"))))
+		require.NoError(t, store.Save(key, string2Bytes("i")))
 	}
 
 	var inKeys, getKeysErr = store.Keys()
 	require.NoError(t, getKeysErr)
 	require.NotEmpty(t, inKeys)
 
-	var returnedKeys, keyErr = store.EachKeyPrefix("day-*")
+	var returnedKeys, keyErr = store.EachKeyMatch("day-.+")
 	require.NoError(t, keyErr)
 	require.NotEmpty(t, returnedKeys)
 
@@ -99,7 +132,7 @@ func TestByteStoreFindPrefix(t *testing.T, store nstorage.ByteStore) {
 		require.True(t, hasSuffixInList(returnedKeys, v))
 	}
 
-	var returnedKeys2, keyErr2 = store.EachKeyPrefix("day-0")
+	var returnedKeys2, keyErr2 = store.EachKeyMatch("day-0")
 	require.NoError(t, keyErr2)
 	require.Len(t, returnedKeys2, 1)
 }
@@ -116,7 +149,7 @@ func hasSuffixInList(v []string, k string) bool {
 func TestByteStoreFindEach(t *testing.T, store nstorage.ByteStore) {
 	for i := 0; i < 10; i++ {
 		var key = fmt.Sprintf("day-%d", i)
-		require.NoError(t, store.Save(key, string2Bytes(fmt.Sprintf("i"))))
+		require.NoError(t, store.Save(key, string2Bytes("i")))
 	}
 
 	var keys, keyErr = store.Keys()

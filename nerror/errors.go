@@ -3,6 +3,7 @@ package nerror
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -11,10 +12,23 @@ import (
 	"github.com/influx6/npkg/njson"
 )
 
+type IsError interface {
+	IsErr(err error) bool
+}
+
 // IsAny returns true/false any of giving error matches set of error.
 func IsAny(err error, set ...error) bool {
 	err = UnwrapDeep(err)
 	for _, item := range set {
+		if isErrItem, ok := item.(IsError); ok {
+			if !isErrItem.IsErr(err) {
+				continue
+			}
+			return true
+		}
+		if IsSameTypeName(err, item) {
+			return true
+		}
 		if item == err {
 			return true
 		}
@@ -277,6 +291,19 @@ func (pe *PointingError) Add(key, value string) *PointingError {
 	return pe
 }
 
+func (pe *PointingError) IsError(err error) bool {
+	if pe.Parent == nil {
+		return false
+	}
+	if isErrorParent, ok := pe.Parent.(IsError); ok {
+		return isErrorParent.IsErr(err)
+	}
+	if IsSameTypeName(pe.Parent, err) {
+		return true
+	}
+	return pe.Parent == err
+}
+
 // Error implements the error interface.
 func (pe *PointingError) Error() string {
 	return pe.String()
@@ -361,4 +388,26 @@ func (pe *PointingError) Format(buf *bytes.Buffer) {
 	pe.FormatMessage(buf)
 	buf.WriteString("\n")
 	pe.FormatStack(buf)
+}
+
+func IsSameTypeName(me interface{}, other interface{}) bool {
+	var mc = reflect.TypeOf(me)
+	var oc = reflect.TypeOf(other)
+	return nameOfType(mc) == nameOfType(oc)
+}
+func nameOfType(t reflect.Type) string {
+	stars := ""
+	if t == nil {
+		return "nil"
+	}
+
+	for t.Kind() == reflect.Ptr {
+		stars += "*"
+		t = t.Elem()
+	}
+
+	if t.Kind() == reflect.Interface {
+		stars = ""
+	}
+	return t.PkgPath() + "/" + stars + t.Name()
 }

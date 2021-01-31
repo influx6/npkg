@@ -17,6 +17,15 @@ func TestStoreWithBadgerStoreRemoveKeys(t *testing.T) {
 	tharness.TestByteStoreRemoveKeys(t, store)
 }
 
+func TestStoreWithBadgerScanMatch(t *testing.T) {
+	var ops = badger.DefaultOptions("").WithInMemory(true)
+	var store, err = NewBadgerStore(ops, badger.DefaultIteratorOptions)
+	require.NoError(t, err)
+	require.NotNil(t, store)
+
+	tharness.TestByteStoreScanMatch(t, store)
+}
+
 func TestStoreWithBadgerStoreGetAnykeys(t *testing.T) {
 	var ops = badger.DefaultOptions("").WithInMemory(true)
 	var store, err = NewBadgerStore(ops, badger.DefaultIteratorOptions)
@@ -44,7 +53,7 @@ func TestStoreWithBadgerStoreFindEach(t *testing.T) {
 	tharness.TestByteStoreFindEach(t, store)
 }
 
-func TestStoreWithBadgerStoreEachKeyPrefix(t *testing.T) {
+func TestStoreWithBadgerStoreEachKeyMatch(t *testing.T) {
 	var ops = badger.DefaultOptions("").WithInMemory(true)
 	var store, err = NewBadgerStore(ops, badger.DefaultIteratorOptions)
 	require.NoError(t, err)

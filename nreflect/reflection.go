@@ -966,6 +966,36 @@ func IsStruct(elem interface{}) bool {
 	return true
 }
 
+func IsTypePtr(me interface{}, other interface{}) bool {
+	var mc = reflect.TypeOf(me)
+	var oc = reflect.TypeOf(other)
+	return mc == oc
+}
+
+func IsSameName(me interface{}, other interface{}) bool {
+	return TypeName(me) == TypeName(other)
+}
+
+func IsSameTypeName(me interface{}, other interface{}) bool {
+	var mc = reflect.TypeOf(me)
+	var oc = reflect.TypeOf(other)
+	return nameOfType(mc) == nameOfType(oc)
+}
+
+func IsType(me interface{}, other interface{}) bool {
+	var mc = reflect.TypeOf(me)
+	if mc.Kind() == reflect.Ptr {
+		mc = mc.Elem()
+	}
+
+	var oc = reflect.TypeOf(other)
+	if oc.Kind() == reflect.Ptr {
+		oc = oc.Elem()
+	}
+
+	return mc == oc
+}
+
 // MakeNew returns a new version of the giving type, returning a nonpointer type.
 // If the type is not a struct then an error is returned.
 func MakeNew(elem interface{}) (interface{}, error) {

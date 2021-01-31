@@ -28,6 +28,13 @@ func TestStoreWithNMapStoreGetAllkeys(t *testing.T) {
 	tharness.TestByteStoreGetAllkeys(t, store)
 }
 
+func TestStoreWithNMapStoreScanMatch(t *testing.T) {
+	var store = NewExprByteStore(100)
+	require.NotNil(t, store)
+
+	tharness.TestByteStoreScanMatch(t, store)
+}
+
 func TestStoreWithNMapStoreFindEachPrefixKey(t *testing.T) {
 	var store = NewExprByteStore(100)
 	require.NotNil(t, store)

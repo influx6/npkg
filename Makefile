@@ -2,7 +2,10 @@ ci: boot-redis
 	go test -v -cover ./...
 	go test -v -cover -tags=integration ./...
 
-boot-redis:
+down:
+	docker-compose down 
+
+up:
 	docker-compose up -d
 
 build-docker-ci:

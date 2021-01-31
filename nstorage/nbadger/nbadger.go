@@ -2,7 +2,6 @@ package nbadger
 
 import (
 	regexp2 "regexp"
-	"strings"
 	"time"
 
 	"github.com/dgraph-io/badger/v2"
@@ -64,12 +63,75 @@ func (rd *BadgerStore) Keys() ([]string, error) {
 	return keys, err
 }
 
-// FindPrefix returns all matching results within using giving functions.
-func (rd *BadgerStore) EachKeyPrefix(prefix string) (keys []string, err error) {
-	var compiled = strings.ReplaceAll(prefix, "*", "(.+)")
-	var generatedRegEx, rgErr = regexp2.Compile(compiled)
+// ScanMatch uses the value of lastKey instead the index to allow scanning keys over
+// a giving range, this is important and should be maintained and provided for
+// this to work with BadgerDB.
+func (rd *BadgerStore) ScanMatch(count int64, _ int64, lastKey string, regexp string) (nstorage.ScanResult, error) {
+	if len(regexp) == 0 {
+		regexp = ".+"
+	}
+
+	var regx, rgErr = regexp2.Compile(regexp)
 	if rgErr != nil {
-		return nil, nerror.WrapOnly(rgErr)
+		return nstorage.ScanResult{}, nerror.WrapOnly(rgErr)
+	}
+
+	var isFinished bool
+	var keys = make([]string, 0, 10)
+	var err = rd.Db.View(func(txn *badger.Txn) error {
+		var iterator = txn.NewIterator(rd.iter)
+		defer iterator.Close()
+
+		if len(lastKey) != 0 {
+			iterator.Seek(nunsafe.String2Bytes(lastKey))
+		} else {
+			iterator.Rewind()
+		}
+
+		for ; iterator.Valid(); iterator.Next() {
+			var item = iterator.Item()
+			if item.IsDeletedOrExpired() {
+				continue
+			}
+			if regx != nil && !regx.Match(item.Key()) {
+				continue
+			}
+
+			keys = append(keys, nunsafe.Bytes2String(item.Key()))
+			if currCount := len(keys); currCount >= int(count) {
+				break
+			}
+		}
+
+		isFinished = iterator.Valid()
+		return nil
+	})
+	if err != nil {
+		return nstorage.ScanResult{}, nerror.WrapOnly(err)
+	}
+
+	var nextKey string
+	if len(keys) != 0 {
+		nextKey = keys[len(keys)-1]
+	}
+
+	return nstorage.ScanResult{
+		Finished: isFinished,
+		Keys:     keys,
+		LastKey:  nextKey,
+	}, nil
+}
+
+// EachKeyMatch returns all matching results within using giving functions.
+func (rd *BadgerStore) EachKeyMatch(regexp string) (keys []string, err error) {
+	var generatedRegEx *regexp2.Regexp
+	var rgErr error
+
+	if len(regexp) != 0 {
+		generatedRegEx, rgErr = regexp2.Compile(regexp)
+		if rgErr != nil {
+			return nil, nerror.WrapOnly(rgErr)
+		}
 	}
 
 	keys = make([]string, 0, 10)
@@ -82,7 +144,7 @@ func (rd *BadgerStore) EachKeyPrefix(prefix string) (keys []string, err error) {
 			if item.IsDeletedOrExpired() {
 				continue
 			}
-			if !generatedRegEx.Match(item.Key()) {
+			if generatedRegEx != nil && !generatedRegEx.Match(item.Key()) {
 				continue
 			}
 			keys = append(keys, nunsafe.Bytes2String(item.Key()))
@@ -90,6 +152,17 @@ func (rd *BadgerStore) EachKeyPrefix(prefix string) (keys []string, err error) {
 		return nil
 	})
 	return
+}
+
+func (rd *BadgerStore) Count() (int64, error) {
+	var count int64
+	var readErr = rd.Db.View(func(txn *badger.Txn) error {
+		return nil
+	})
+	if readErr != nil {
+		return -1, nerror.WrapOnly(readErr)
+	}
+	return count, nil
 }
 
 // Each runs through all elements for giving store, skipping keys
