@@ -633,7 +633,7 @@ func (m *ExpiringByteMap) ResetTTL(k string, expire time.Duration) {
 
 func (m *ExpiringByteMap) Count() int64 {
 	m.init()
-	var cached = m.cache.Load().(map[string][]byte)
+	var cached = m.cache.Load().(map[string]ExpiringValue)
 	return int64(len(cached))
 }
 
