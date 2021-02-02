@@ -368,6 +368,7 @@ func (pe *PointingError) FormatStack(buf *bytes.Buffer) {
 	buf.WriteString("-------------------------------------------")
 	var nb = njson.JSONB()
 	if len(pe.Params) > 0 {
+		buf.WriteString("\n")
 		npkg.EncodableStringMap(pe.Params).EncodeObject(nb)
 		_, _ = nb.WriteTo(buf)
 		buf.WriteString("\n")
