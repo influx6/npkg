@@ -71,7 +71,8 @@ func (expr *ExprByteStore) Exists(k string) (bool, error) {
 
 // Save adds giving key and value into store.
 func (expr *ExprByteStore) Save(k string, v []byte) error {
-	expr.cache.Set(k, v, 0)
+	var cm = append(make([]byte, 0, len(v)), v...)
+	expr.cache.Set(k, cm, 0)
 	return nil
 }
 
@@ -95,13 +96,15 @@ func (expr *ExprByteStore) ResetTTL(k string, t time.Duration) error {
 
 // Updates updates giving key and value into store.
 func (expr *ExprByteStore) Update(k string, v []byte) error {
-	expr.cache.Set(k, v, 0)
+	var cm = append(make([]byte, 0, len(v)), v...)
+	expr.cache.Set(k, cm, 0)
 	return nil
 }
 
 // SaveTTL updates giving key and value into store with expiration value.
 func (expr *ExprByteStore) SaveTTL(k string, v []byte, t time.Duration) error {
-	expr.cache.Set(k, v, t)
+	var cm = append(make([]byte, 0, len(v)), v...)
+	expr.cache.Set(k, cm, t)
 	return nil
 }
 
@@ -111,7 +114,8 @@ func (expr *ExprByteStore) UpdateTTL(k string, v []byte, t time.Duration) error 
 		return nerror.New("key does not exists")
 	}
 
-	expr.cache.Set(k, v, t)
+	var cm = append(make([]byte, 0, len(v)), v...)
+	expr.cache.Set(k, cm, t)
 	return nil
 }
 
