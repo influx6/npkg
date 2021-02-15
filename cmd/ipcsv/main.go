@@ -22,7 +22,7 @@ func generateFromCSV(targetFile string, output io.Writer) error {
 
 	var reader = csv.NewReader(recordFile)
 
-	var _, printErr = fmt.Fprint(output, "var Records = []nnet.Location{\n")
+	var _, printErr = fmt.Fprint(output, "var IP2Records = nnet.Locations{\n")
 	if printErr != nil {
 		return nerror.WrapOnly(printErr)
 	}
@@ -81,7 +81,7 @@ func generateFromCSV(targetFile string, output io.Writer) error {
 }
 
 func writeFile(output io.Writer, value nnet.Location) error {
-	var _, err = fmt.Fprintf(output, `{IP:%q,Street:%q,City:%q,State:%q,Postal:%q,CountryCode:q,CountryName:%q,RegionCode:%q,RegionName:%q,Zipcode:%q,Lat:%q,Long:%q,MetroCode:%q,Timezone:%q,AreaCode:%q,FromIP:%q,ToIP:%q,FromIPNumeric:%q,ToIPNumeric:%q},`,
+	var _, err = fmt.Fprintf(output, `{IP:%q,Street:%q,City:%q,State:%q,Postal:%q,CountryCode:%q,CountryName:%q,RegionCode:%q,RegionName:%q,Zipcode:%q,Lat:%q,Long:%q,MetroCode:%q,Timezone:%q,AreaCode:%q,FromIP:%q,ToIP:%q,FromIPNumeric:%q,ToIPNumeric:%q},`,
 		value.IP,
 		value.Street, value.City, value.State,
 		value.Postal, value.CountryCode, value.CountryName,
