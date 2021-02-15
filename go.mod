@@ -6,6 +6,7 @@ require (
 	github.com/HdrHistogram/hdrhistogram-go v0.9.0 // indirect
 	github.com/alicebob/gopher-json v0.0.0-20200520072559-a9ecdc9d1d3a // indirect
 	github.com/alicebob/miniredis v2.5.0+incompatible
+	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/codahale/hdrhistogram v0.9.0 // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.2
 	github.com/dimfeld/httptreemux v5.0.1+incompatible
@@ -25,4 +26,5 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
+	xojoc.pw/useragent v0.0.0-20200116211053-1ec61d55e8fe
 )

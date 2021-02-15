@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -17,11 +18,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
-)
 
-//*********************************************************************************************
-// TimedConn
-//*********************************************************************************************
+	"github.com/influx6/npkg/nerror"
+	"github.com/influx6/npkg/nunsafe"
+)
 
 var (
 	noTime = time.Time{}
@@ -142,6 +142,76 @@ func ResolveAddr(addr string) string {
 	}
 
 	return scheme + "://" + host + ":" + port
+}
+
+func IPDotNotation2LongNotation(ipAddr string) (uint32, error) {
+	ip := net.ParseIP(ipAddr)
+	if ip == nil {
+		return 0, errors.New("wrong ipAddr format")
+	}
+	ip = ip.To4()
+	return binary.BigEndian.Uint32(ip), nil
+}
+
+func IPLongNotation2IPFromString(ipLong string) (net.IP, error) {
+	var parsedVal, parseErr = strconv.ParseUint(ipLong, 10, 32)
+	if parseErr != nil {
+		return nil, nerror.WrapOnly(parseErr)
+	}
+	return IPLongNotation2IP(uint32(parsedVal)), nil
+}
+
+func IPLongNotation2IP(ipLong uint32) net.IP {
+	ipByte := make([]byte, 4)
+	binary.BigEndian.PutUint32(ipByte, ipLong)
+	return net.IP(ipByte)
+}
+
+func IPLongNotation2DotNotation(ipLong uint32) string {
+	ipByte := make([]byte, 4)
+	binary.BigEndian.PutUint32(ipByte, ipLong)
+	ip := net.IP(ipByte)
+	return ip.String()
+}
+
+func IntToIP(ip uint32) string {
+	result := make(net.IP, 4)
+	result[0] = byte(ip)
+	result[1] = byte(ip >> 8)
+	result[2] = byte(ip >> 16)
+	result[3] = byte(ip >> 24)
+	return result.String()
+}
+
+func IsTargetBetweenUsingCDIR(cdir string, to net.IP) (bool, error) {
+	if to == nil {
+		return false, nerror.New("target cant be nil")
+	}
+
+	var _, subnet, subErr = net.ParseCIDR(cdir)
+	if subErr != nil {
+		return false, nerror.WrapOnly(subErr)
+	}
+
+	return subnet.Contains(to), nil
+}
+
+func IsTargetBetween(target net.IP, from net.IP, to net.IP) bool {
+	if from == nil || to == nil || target == nil {
+		return false
+	}
+
+	from16 := from.To16()
+	to16 := to.To16()
+	test16 := target.To16()
+	if from16 == nil || to16 == nil || test16 == nil {
+		return false
+	}
+
+	if bytes.Compare(test16, from16) >= 0 && bytes.Compare(test16, to16) <= 0 {
+		return true
+	}
+	return false
 }
 
 // FreePort returns a random free port from the underline system for use in a network socket.
@@ -579,6 +649,23 @@ func GetMainIP() (string, error) {
 	ip, _, _ := net.SplitHostPort(localAddr)
 
 	return ip, nil
+}
+
+// GetExternalIP returns the actual internal external IP of the
+// calling system.
+func GetExternalIP() (string, error) {
+	var response, err = http.Get("http://ipv4bot.whatismyipaddress.com")
+	if err != nil {
+		return "", nerror.WrapOnly(err)
+	}
+	defer response.Body.Close()
+
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return "", nerror.WrapOnly(err)
+	}
+
+	return nunsafe.Bytes2String(body), nil
 }
 
 // GetMainIPByInterface returns the giving ip of the current system by looping
