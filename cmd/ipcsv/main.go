@@ -22,7 +22,7 @@ func generateFromCSV(targetFile string, output io.Writer) error {
 
 	var reader = csv.NewReader(recordFile)
 
-	var _, printErr = fmt.Fprint(output, "var IP2Records = nnet.Locations{\n")
+	var _, printErr = fmt.Fprint(output, "var IP2Records = nnet.Locations{")
 	if printErr != nil {
 		return nerror.WrapOnly(printErr)
 	}
@@ -73,7 +73,7 @@ func generateFromCSV(targetFile string, output io.Writer) error {
 		}
 	}
 
-	var _, err = fmt.Fprint(output, "\n}")
+	var _, err = fmt.Fprint(output, "}")
 	if err != nil {
 		return nerror.WrapOnly(err)
 	}
@@ -112,8 +112,7 @@ Please always provide:
 
 - ip_file: csv file from IP2Location.com
 - out: the path to the golang file to generate
-- package: the name of the package to use.
-`)
+- package: the name of the package to use.`)
 		return
 	}
 
