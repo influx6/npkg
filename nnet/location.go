@@ -79,6 +79,23 @@ type LocationService interface {
 	Get(ip string) (Location, error)
 }
 
+// DudLocationService returns a default unknown location with
+// provided address as ip.
+type DudLocationService struct{}
+
+func (f DudLocationService) Get(address string) (Location, error) {
+	var lt Location
+	lt.City = "Unknown"
+	lt.State = "Unknown"
+	lt.CountryName = "Unknown"
+	lt.RegionCode = "Unknown"
+	lt.RegionName = "Unknown"
+	lt.CountryCode = "Unknown"
+	lt.Zipcode = "00000"
+	lt.IP = address
+	return lt, nil
+}
+
 type FreeGeoipLocationService struct{}
 
 func (f FreeGeoipLocationService) Get(address string) (Location, error) {
