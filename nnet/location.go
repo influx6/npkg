@@ -2,11 +2,13 @@ package nnet
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 
 	"github.com/influx6/npkg/nerror"
+	"github.com/influx6/npkg/nunsafe"
 	"xojoc.pw/useragent"
 )
 
@@ -39,17 +41,21 @@ func (l Locations) Find(ip string) (Location, error) {
 
 type Location struct {
 	IP            string `json:"ip"`
+	Type          string `json:"type"`
+	ContinentCode string `json:"continent_code"`
+	ContinentName string `json:"continent_name"`
 	Street        string `json:"street"`
 	City          string `json:"city"`
 	State         string `json:"state"`
 	Postal        string `json:"postal"`
+	Zip           string `json:"zip"`
 	CountryCode   string `json:"country_code"`
 	CountryName   string `json:"country_name"`
 	RegionCode    string `json:"region_code"`
 	RegionName    string `json:"region_name"`
 	Zipcode       string `json:"zip_code"`
-	Lat           string `json:"lat"`
-	Long          string `json:"long"`
+	Latitude      float64 `json:"latitude"`
+	Longitude     float64 `json:"longitude"`
 	MetroCode     string `json:"metro_code"`
 	Timezone      string `json:"time_zone"`
 	AreaCode      string `json:"area_code"`
@@ -96,14 +102,16 @@ func (f DudLocationService) Get(address string) (Location, error) {
 	return lt, nil
 }
 
-type FreeGeoipLocationService struct{}
+type IPStackService struct {
+	Token string
+}
 
-func (f FreeGeoipLocationService) Get(address string) (Location, error) {
+func (f IPStackService) Get(address string) (Location, error) {
 	var lt Location
 
 	// Use freegeoip.net to get a JSON response
 	// There is also /xml/ and /csv/ formats available
-	var response, err = http.Get("https://freegeoip.net/json/" + address)
+	var response, err = http.Get(fmt.Sprintf("http://api.ipstack.com/%s?access_key=%s", address, f.Token))
 	if err != nil {
 		return lt, nerror.WrapOnly(err)
 	}
@@ -116,11 +124,12 @@ func (f FreeGeoipLocationService) Get(address string) (Location, error) {
 	if berr != nil {
 		return lt, nerror.WrapOnly(berr)
 	}
+	fmt.Printf("ResponseJSON: %q\n", body)
 
 	// Unmarshal the JSON byte slice to a GeoIP struct
 	err = json.Unmarshal(body, &lt)
 	if err != nil {
-		return lt, nerror.WrapOnly(err)
+		return lt, nerror.WrapOnly(err).Add("body", nunsafe.Bytes2String(body))
 	}
 
 	return lt, nil
