@@ -40,29 +40,29 @@ func (l Locations) Find(ip string) (Location, error) {
 }
 
 type Location struct {
-	IP            string `json:"ip"`
-	Type          string `json:"type"`
-	ContinentCode string `json:"continent_code"`
-	ContinentName string `json:"continent_name"`
-	Street        string `json:"street"`
-	City          string `json:"city"`
-	State         string `json:"state"`
-	Postal        string `json:"postal"`
-	Zip           string `json:"zip"`
-	CountryCode   string `json:"country_code"`
-	CountryName   string `json:"country_name"`
-	RegionCode    string `json:"region_code"`
-	RegionName    string `json:"region_name"`
-	Zipcode       string `json:"zip_code"`
+	IP            string  `json:"ip"`
+	Type          string  `json:"type"`
+	ContinentCode string  `json:"continent_code"`
+	ContinentName string  `json:"continent_name"`
+	Street        string  `json:"street"`
+	City          string  `json:"city"`
+	State         string  `json:"state"`
+	Postal        string  `json:"postal"`
+	Zip           string  `json:"zip"`
+	CountryCode   string  `json:"country_code"`
+	CountryName   string  `json:"country_name"`
+	RegionCode    string  `json:"region_code"`
+	RegionName    string  `json:"region_name"`
+	Zipcode       string  `json:"zip_code"`
 	Latitude      float64 `json:"latitude"`
 	Longitude     float64 `json:"longitude"`
-	MetroCode     string `json:"metro_code"`
-	Timezone      string `json:"time_zone"`
-	AreaCode      string `json:"area_code"`
-	FromIP        string `json:"from_ip"`
-	ToIP          string `json:"to_ip"`
-	FromIPNumeric string `json:"from_ip_numeric"`
-	ToIPNumeric   string `json:"to_ip_numeric"`
+	MetroCode     string  `json:"metro_code"`
+	Timezone      string  `json:"time_zone"`
+	AreaCode      string  `json:"area_code"`
+	FromIP        string  `json:"from_ip"`
+	ToIP          string  `json:"to_ip"`
+	FromIPNumeric string  `json:"from_ip_numeric"`
+	ToIPNumeric   string  `json:"to_ip_numeric"`
 }
 
 func (l Location) IPIsInLocation(ip string) bool {
@@ -124,7 +124,6 @@ func (f IPStackService) Get(address string) (Location, error) {
 	if berr != nil {
 		return lt, nerror.WrapOnly(berr)
 	}
-	fmt.Printf("ResponseJSON: %q\n", body)
 
 	// Unmarshal the JSON byte slice to a GeoIP struct
 	err = json.Unmarshal(body, &lt)
