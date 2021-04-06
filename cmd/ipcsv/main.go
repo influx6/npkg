@@ -12,6 +12,32 @@ import (
 	"github.com/influx6/npkg/nnet"
 )
 
+
+type Location struct {
+	Type          string  `json:"type_"`
+	Street        string  `json:"street"`
+	ContinentCode string  `json:"continent_code"`
+	ContinentName string  `json:"continent_name"`
+	City          string  `json:"city"`
+	State         string  `json:"state"`
+	Postal        string  `json:"postal"`
+	Zip           string  `json:"zip"`
+	Zipcode       string  `json:"zip_code"`
+	CountryCode   string  `json:"country_code"`
+	CountryName   string  `json:"country_name"`
+	RegionCode    string  `json:"region_code"`
+	RegionName    string  `json:"region_name"`
+	Timezone      string  `json:"time_zone"`
+	Latitude      string `json:"latitude"`
+	Longitude     string `json:"longitude"`
+	MetroCode     string  `json:"metro_code"`
+	AreaCode      string  `json:"area_code"`
+	FromIP        string  `json:"from_ip"`
+	ToIP          string  `json:"to_ip"`
+	FromIPNumeric string  `json:"from_ip_numeric"`
+	ToIPNumeric   string  `json:"to_ip_numeric"`
+}
+
 func generateFromCSV(targetFile string, output io.Writer) error {
 	var recordFile, recordErr = os.Open(targetFile)
 	if recordErr != nil {
@@ -40,15 +66,15 @@ func generateFromCSV(targetFile string, output io.Writer) error {
 		line++
 		fmt.Printf("Handling: %+q on line %d\n", currentLine, line)
 
-		var loc nnet.Location
+		var loc Location
 		loc.FromIPNumeric = currentLine[0]
 		loc.ToIPNumeric = currentLine[1]
 		loc.CountryCode = currentLine[2]
 		loc.CountryName = currentLine[3]
 		loc.RegionName = currentLine[4]
 		loc.City = currentLine[5]
-		loc.Lat = currentLine[6]
-		loc.Long = currentLine[7]
+		loc.Latitude = currentLine[6]
+		loc.Longitude = currentLine[7]
 		loc.Zipcode = currentLine[8]
 		loc.Timezone = currentLine[9]
 
@@ -80,13 +106,12 @@ func generateFromCSV(targetFile string, output io.Writer) error {
 	return nil
 }
 
-func writeFile(output io.Writer, value nnet.Location) error {
-	var _, err = fmt.Fprintf(output, `{IP:%q,Street:%q,City:%q,State:%q,Postal:%q,CountryCode:%q,CountryName:%q,RegionCode:%q,RegionName:%q,Zipcode:%q,Lat:%q,Long:%q,MetroCode:%q,Timezone:%q,AreaCode:%q,FromIP:%q,ToIP:%q,FromIPNumeric:%q,ToIPNumeric:%q},`,
-		value.IP,
+func writeFile(output io.Writer, value Location) error {
+	var _, err = fmt.Fprintf(output, `{Street:%q,City:%q,State:%q,Postal:%q,CountryCode:%q,CountryName:%q,RegionCode:%q,RegionName:%q,Zipcode:%q,Lat:%q,Long:%q,MetroCode:%q,Timezone:%q,AreaCode:%q,FromIP:%q,ToIP:%q,FromIPNumeric:%q,ToIPNumeric:%q},`,
 		value.Street, value.City, value.State,
 		value.Postal, value.CountryCode, value.CountryName,
 		value.RegionCode, value.RegionName, value.Zipcode,
-		value.Lat, value.Long, value.MetroCode, value.Timezone,
+		value.Latitude, value.Longitude, value.MetroCode, value.Timezone,
 		value.AreaCode, value.FromIP, value.ToIP,
 		value.FromIPNumeric, value.ToIPNumeric,
 	)

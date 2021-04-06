@@ -40,24 +40,23 @@ func (l Locations) Find(ip string) (Location, error) {
 }
 
 type Location struct {
-	IP            string  `json:"ip"`
-	Type          string  `json:"type"`
+	Type          string  `json:"type_"`
+	Street        string  `json:"street"`
 	ContinentCode string  `json:"continent_code"`
 	ContinentName string  `json:"continent_name"`
-	Street        string  `json:"street"`
 	City          string  `json:"city"`
 	State         string  `json:"state"`
 	Postal        string  `json:"postal"`
 	Zip           string  `json:"zip"`
+	Zipcode       string  `json:"zip_code"`
 	CountryCode   string  `json:"country_code"`
 	CountryName   string  `json:"country_name"`
 	RegionCode    string  `json:"region_code"`
 	RegionName    string  `json:"region_name"`
-	Zipcode       string  `json:"zip_code"`
+	Timezone      string  `json:"time_zone"`
 	Latitude      float64 `json:"latitude"`
 	Longitude     float64 `json:"longitude"`
 	MetroCode     string  `json:"metro_code"`
-	Timezone      string  `json:"time_zone"`
 	AreaCode      string  `json:"area_code"`
 	FromIP        string  `json:"from_ip"`
 	ToIP          string  `json:"to_ip"`
@@ -98,7 +97,37 @@ func (f DudLocationService) Get(address string) (Location, error) {
 	lt.RegionName = "Unknown"
 	lt.CountryCode = "Unknown"
 	lt.Zipcode = "00000"
-	lt.IP = address
+	return lt, nil
+}
+
+type CampIPService struct {
+	Addr string
+}
+
+func (f CampIPService) Get(address string) (Location, error) {
+	var lt Location
+
+	// Use campip service to get a JSON response
+	var response, err = http.Get(fmt.Sprintf("%s/%s", f.Addr, address))
+	if err != nil {
+		return lt, nerror.WrapOnly(err)
+	}
+	defer response.Body.Close()
+
+	// response.Body() is a reader type. We have
+	// to use ioutil.ReadAll() to read the data
+	// in to a byte slice(string)
+	var body, berr = ioutil.ReadAll(response.Body)
+	if berr != nil {
+		return lt, nerror.WrapOnly(berr)
+	}
+
+	// Unmarshal the JSON byte slice to a GeoIP struct
+	err = json.Unmarshal(body, &lt)
+	if err != nil {
+		return lt, nerror.WrapOnly(err).Add("body", nunsafe.Bytes2String(body))
+	}
+
 	return lt, nil
 }
 

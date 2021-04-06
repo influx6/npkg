@@ -74,18 +74,18 @@ func TestNew(t *testing.T) {
 		for j, tid := range ids {
 			if j != i {
 				if id.Compare(tid) == 0 {
-					t.Errorf("generated ID is not unique (%d/%d)", i, j)
+					t.Errorf("generated Id is not unique (%d/%d)", i, j)
 				}
 			}
 		}
 		// Check that timestamp was incremented and is within 30 seconds of the previous one
 		secs := id.Time().Sub(prevID.Time()).Seconds()
 		if secs < 0 || secs > 30 {
-			t.Error("wrong timestamp in generated ID")
+			t.Error("wrong timestamp in generated Id")
 		}
 		// Check that machine ids are the same
 		if !bytes.Equal(id.Machine(), prevID.Machine()) {
-			t.Error("machine ID not equal")
+			t.Error("machine Id not equal")
 		}
 		// Check that pids are the same
 		if id.Pid() != prevID.Pid() {
@@ -93,7 +93,7 @@ func TestNew(t *testing.T) {
 		}
 		// Test for proper increment
 		if got, want := int(id.Counter()-prevID.Counter()), 1; got != want {
-			t.Errorf("wrong increment in generated ID, delta=%v, want %v", got, want)
+			t.Errorf("wrong increment in generated Id, delta=%v, want %v", got, want)
 		}
 	}
 }
@@ -135,13 +135,13 @@ func TestIDJSONMarshaling(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, want := string(data), `{"ID":"9m4e2mr0ui3e8a215n4g","Str":"test"}`; got != want {
+	if got, want := string(data), `{"Id":"9m4e2mr0ui3e8a215n4g","Str":"test"}`; got != want {
 		t.Errorf("json.Marshal() = %v, want %v", got, want)
 	}
 }
 
 func TestIDJSONUnmarshaling(t *testing.T) {
-	data := []byte(`{"ID":"9m4e2mr0ui3e8a215n4g","Str":"test"}`)
+	data := []byte(`{"Id":"9m4e2mr0ui3e8a215n4g","Str":"test"}`)
 	v := jsonType{}
 	err := json.Unmarshal(data, &v)
 	if err != nil {
@@ -156,15 +156,15 @@ func TestIDJSONUnmarshaling(t *testing.T) {
 
 func TestIDJSONUnmarshalingError(t *testing.T) {
 	v := jsonType{}
-	err := json.Unmarshal([]byte(`{"ID":"9M4E2MR0UI3E8A215N4G"}`), &v)
+	err := json.Unmarshal([]byte(`{"Id":"9M4E2MR0UI3E8A215N4G"}`), &v)
 	if err != ErrInvalidID {
 		t.Errorf("json.Unmarshal() err=%v, want %v", err, ErrInvalidID)
 	}
-	err = json.Unmarshal([]byte(`{"ID":"TYjhW2D0huQoQS"}`), &v)
+	err = json.Unmarshal([]byte(`{"Id":"TYjhW2D0huQoQS"}`), &v)
 	if err != ErrInvalidID {
 		t.Errorf("json.Unmarshal() err=%v, want %v", err, ErrInvalidID)
 	}
-	err = json.Unmarshal([]byte(`{"ID":"TYjhW2D0huQoQS3kdk"}`), &v)
+	err = json.Unmarshal([]byte(`{"Id":"TYjhW2D0huQoQS3kdk"}`), &v)
 	if err != ErrInvalidID {
 		t.Errorf("json.Unmarshal() err=%v, want %v", err, ErrInvalidID)
 	}
@@ -263,12 +263,12 @@ func TestID_IsNil(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "ID not nil",
+			name: "Id not nil",
 			id:   New(),
 			want: false,
 		},
 		{
-			name: "Nil ID",
+			name: "Nil Id",
 			id:   ID{},
 			want: true,
 		},
@@ -286,7 +286,7 @@ func TestID_IsNil(t *testing.T) {
 func TestNilID(t *testing.T) {
 	got := ID{}
 	if want := NilID(); !reflect.DeepEqual(got, want) {
-		t.Error("NilID() not equal ID{}")
+		t.Error("NilID() not equal Id{}")
 	}
 }
 

@@ -74,7 +74,7 @@ const (
 	HeaderXUrlScheme          = "X-Url-Scheme"
 	HeaderXHTTPMethodOverride = "X-HTTP-Method-Override"
 	HeaderXRealIP             = "X-Real-IP"
-	HeaderXRequestID          = "X-Request-ID"
+	HeaderXRequestID          = "X-Request-Id"
 	HeaderServer              = "Server"
 	HeaderOrigin              = "Origin"
 

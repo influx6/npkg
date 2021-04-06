@@ -74,7 +74,7 @@ const (
 
 var (
 	// ErrInvalidID is returned when trying to unmarshal an invalid ID
-	ErrInvalidID = errors.New("nxid: invalid ID")
+	ErrInvalidID = errors.New("nxid: invalid Id")
 
 	// objectIDCounter is atomically incremented when generating a new ObjectId
 	// using NewObjectId() function. It's used as a counter part of an id.
@@ -323,12 +323,12 @@ func NilID() ID {
 	return nilID
 }
 
-// Bytes returns the byte array representation of `ID`
+// Bytes returns the byte array representation of `Id`
 func (id ID) Bytes() []byte {
 	return id[:]
 }
 
-// FromBytes convert the byte array representation of `ID` back to `ID`
+// FromBytes convert the byte array representation of `Id` back to `Id`
 func FromBytes(b []byte) (ID, error) {
 	var id ID
 	if len(b) != rawLen {
@@ -360,7 +360,7 @@ func (s sorter) Swap(i, j int) {
 }
 
 // Sort sorts an array of IDs inplace.
-// It works by wrapping `[]ID` and use `sort.Sort`.
+// It works by wrapping `[]Id` and use `sort.Sort`.
 func Sort(ids []ID) {
 	sort.Sort(sorter(ids))
 }
