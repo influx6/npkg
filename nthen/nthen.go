@@ -16,6 +16,25 @@ func NewFuture() *Future {
 	}
 }
 
+func Fn(fn func(ft *Future)) *Future {
+	var ft = NewFuture()
+	go fn(ft)
+	return ft
+}
+
+func From(fn func() (interface{}, error)) *Future {
+	var ft = NewFuture()
+	go func() {
+		var val, err = fn()
+		if err != nil {
+			ft.WithError(err)
+			return
+		}
+		ft.WithValue(val)
+	}()
+	return ft
+}
+
 
 // CollectFor collects all resolved results (value or error)
 // as a list which is used to resolve the returned future.
