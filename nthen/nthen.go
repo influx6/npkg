@@ -1,9 +1,5 @@
 package nthen
 
-import (
-	"github.com/influx6/npkg/nerror"
-)
-
 type Future struct {
 	err error
 	val interface{}
@@ -46,12 +42,12 @@ func CollectFor(fts ...*Future) *Future {
 			work.Wait()
 			results[index] = work.Value()
 		}
-		_ = ft.WithValue(results)
+		 ft.WithValue(results)
 	}(fts)
 	return ft
 }
 
-// Wait for collects all resolved successfully values
+// WaitFor for collects all resolved successfully values
 // and returns as a list of values but resolves the
 // future with an error and a partial list if
 // any of the futures resolved with an error.
@@ -66,11 +62,11 @@ func WaitFor(fts ...*Future) *Future {
 				results = append(results, value)
 			}
 			if err != nil {
-				_ = ft.WithValueAndError(results, err)
+				 ft.WithValueAndError(results, err)
 				break
 			}
 		}
-		_ = ft.WithValue(results)
+		 ft.WithValue(results)
 	}(fts)
 	return ft
 }
@@ -80,18 +76,18 @@ func WaitFor(fts ...*Future) *Future {
 // be resolved as well.
 func (f *Future) Then(next *Future)  {
 	go func(){
-		_ = f.WaitThen(next)
+		f.WaitThen(next)
 	}()
 }
 
 // WaitThen will block till this future resolves, at which it
 // resolves the next future provided as an argument.
-func (f *Future) WaitThen(next *Future)  error {
+func (f *Future) WaitThen(next *Future)   {
 	f.Wait()
 	if f.val != nil {
-		return next.WithValue(f.val)
+		next.WithValue(f.val)
 	}
-	return next.WithError(f.err)
+	next.WithError(f.err)
 }
 
 // Wait blocks till future is resolved.
@@ -131,43 +127,43 @@ func (f *Future) Err() error {
 
 // WithError resolves this Future as a failed operation with provided
 // error.
-func (f *Future) WithError(v error) error {
+func (f *Future) WithError(v error)  {
 	select {
 	case <-f.resolved:
-		return nerror.New("already resolved")
+		return
 	default:
 		f.err = v
 		close(f.resolved)
 	}
-	return nil
+	return
 }
 
 // WithValueAndError resolves this Future as a with a value for
 // both result and error. Useful for operations where a
 // value is returned but so was an error.
-func (f *Future) WithValueAndError(v interface{}, err error) error {
+func (f *Future) WithValueAndError(v interface{}, err error)  {
 	select {
 	case <-f.resolved:
-		return nerror.New("already resolved")
+		return
 	default:
 		f.val = v
 		f.err = err
 		close(f.resolved)
 	}
-	return nil
+	return
 }
 
 
 // WithValue resolves this Future as a completed operation with provided
 // value.
-func (f *Future) WithValue(v interface{}) error {
+func (f *Future) WithValue(v interface{})  {
 	select {
 	case <-f.resolved:
-		return nerror.New("already resolved")
+		return
 	default:
 		f.val = v
 		close(f.resolved)
 	}
-	return nil
+	return
 }
 
