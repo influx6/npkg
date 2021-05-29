@@ -370,8 +370,6 @@ func EncodeList(enc ListEncoder, v interface{}) error {
 		enc.AddFloat64(vt)
 	case float32:
 		enc.AddFloat32(vt)
-	case error:
-		enc.AddError(vt)
 	}
 	return enc.Err()
 }
