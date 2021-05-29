@@ -264,13 +264,13 @@ type ListEncoderMethods interface {
 	AddInt16(v int16)
 	AddInt32(v int32)
 	AddByte(v byte)
-	AddError(v error)
 	AddInt64(v int64)
 	AddUInt8(v uint8)
 	AddUInt16(v uint16)
 	AddUInt32(v uint32)
 	AddUInt64(v uint64)
 	AddString(v string)
+	AddError(v error)
 	AddFloat64(v float64)
 	AddFloat32(v float32)
 	AddBase64(v int64, b int)
@@ -344,6 +344,8 @@ func EncodeList(enc ListEncoder, v interface{}) error {
 		enc.AddString(vt)
 	case bool:
 		enc.AddBool(vt)
+	case error:
+		enc.AddError(vt)
 	case int:
 		enc.AddInt(vt)
 	case uint:
@@ -411,6 +413,20 @@ type EncodableMap map[string]interface{}
 func (enc EncodableMap) EncodeObject(encoder ObjectEncoder) {
 	for key, value := range enc {
 		_ = EncodeKV(encoder, key, value)
+	}
+}
+
+type EncodableStringListMap map[string][]string
+
+func (enc EncodableStringListMap) EncodeObject(encoder ObjectEncoder) {
+	for key, value := range enc {
+		func(k string, vals []string) {
+			encoder.ListFor(k, func(le ListEncoder) {
+				for _, val := range vals {
+					le.AddString(val)
+				}
+			})
+		}(key, value)
 	}
 }
 

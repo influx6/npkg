@@ -21,6 +21,25 @@ func WaitForKillChan() chan os.Signal {
 	return interrupt
 }
 
+func ContextFromKillSignal() context.Context {
+	return ContextFromKillSignalWithCtx(context.Background())
+}
+
+func ContextFromKillSignalWithCtx(rootCtx context.Context) context.Context {
+	var ctx, canceler = context.WithCancel(rootCtx)
+	WaiterForKillWithSignal(WaitForKillChan(), canceler)
+	return ctx
+}
+
+// LaunchSignalWaitGoRoutine will lunch a groutine where it waits on a response on the signal channel
+// at which point it calls the context cancel function.
+func LaunchSignalWaitGoRoutine(signalChan chan os.Signal, canceler context.CancelFunc) {
+	go func() {
+		defer canceler()
+		<-signalChan
+	}()
+}
+
 // WaiterForKillWithSignal will call the canceler function when a interrupt/kill signal is received.
 func WaiterForKillWithSignal(signalChan chan os.Signal, canceler context.CancelFunc) *sync.WaitGroup {
 	var waiter sync.WaitGroup
