@@ -564,7 +564,7 @@ func (l *JSON) AddFloat32(value float32) {
 	l.endEntry()
 }
 
-// AddBytes adds a bytes value. The byte is expected to be
+// AddBytes adds a bytes list value. The byte is expected to be
 // valid JSON, no checks are made to ensure this, you can mess up your JSON
 // if you do not use this correctly.
 func (l *JSON) AddBytes(value []byte) {
