@@ -1,11 +1,12 @@
 package nredis
 
 import (
+	"context"
 	regexp2 "regexp"
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis"
+	redis "github.com/go-redis/redis/v8"
 
 	"github.com/influx6/npkg/nerror"
 	"github.com/influx6/npkg/nstorage"
@@ -17,6 +18,7 @@ var _ nstorage.ExpirableStore = (*RedisStore)(nil)
 // RedisStore implements session management, storage and access using redis as
 // underline store.
 type RedisStore struct {
+	ctx       context.Context
 	tableName string
 	hashList  string
 	hashZList string
@@ -26,8 +28,9 @@ type RedisStore struct {
 }
 
 // NewRedisStore returns a new instance of a redis store.
-func NewRedisStore(tableName string, config redis.Options) (*RedisStore, error) {
+func NewRedisStore(ctx context.Context, tableName string, config redis.Options) (*RedisStore, error) {
 	var red RedisStore
+	red.ctx = ctx
 	red.tableName = tableName
 	red.hashList = tableName + "_keys"
 	red.hashElem = tableName + "_item"
@@ -39,12 +42,13 @@ func NewRedisStore(tableName string, config redis.Options) (*RedisStore, error) 
 }
 
 // FromRedisStore returns a new instance of a RedisStore using giving client.
-func FromRedisStore(tableName string, conn *redis.Client) (*RedisStore, error) {
-	if status := conn.Ping(); status.Err() != nil {
+func FromRedisStore(ctx context.Context, tableName string, conn *redis.Client) (*RedisStore, error) {
+	if status := conn.Ping(ctx); status.Err() != nil {
 		return nil, status.Err()
 	}
 
 	var red RedisStore
+	red.ctx = ctx
 	red.tableName = tableName
 	red.hashList = tableName + "_keys"
 	red.hashElem = tableName + "_item"
@@ -56,7 +60,7 @@ func FromRedisStore(tableName string, conn *redis.Client) (*RedisStore, error) {
 // createConnection attempts to create a new redis connection.
 func (rd *RedisStore) createConnection() error {
 	client := redis.NewClient(rd.Config)
-	status := client.Ping()
+	status := client.Ping(rd.ctx)
 	if err := status.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
@@ -87,7 +91,7 @@ func (rd *RedisStore) unHashKeyList(keys []string) []string {
 
 // Keys returns all giving keys of elements within store.
 func (rd *RedisStore) Keys() ([]string, error) {
-	var nstatus = rd.Client.SMembers(rd.hashList)
+	var nstatus = rd.Client.SMembers(rd.ctx, rd.hashList)
 	if err := nstatus.Err(); err != nil {
 		return nil, nerror.WrapOnly(err)
 	}
@@ -98,7 +102,7 @@ func (rd *RedisStore) Keys() ([]string, error) {
 // Each runs through all elements for giving store, skipping keys
 // in redis who have no data or an empty byte slice.
 func (rd *RedisStore) Each(fn nstorage.EachItem) error {
-	var nstatus = rd.Client.SMembers(rd.hashList)
+	var nstatus = rd.Client.SMembers(rd.ctx, rd.hashList)
 	if err := nstatus.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
@@ -108,11 +112,11 @@ func (rd *RedisStore) Each(fn nstorage.EachItem) error {
 
 	var values = make([]*redis.StringCmd, len(keys))
 	for index, key := range keys {
-		var result = pipeliner.Get(key)
+		var result = pipeliner.Get(rd.ctx, key)
 		values[index] = result
 	}
 
-	var _, err = pipeliner.Exec()
+	var _, err = pipeliner.Exec(rd.ctx)
 	if err != nil && err != redis.Nil {
 		return nerror.WrapOnly(err)
 	}
@@ -160,7 +164,7 @@ func (rd *RedisStore) ScanMatch(count int64, lastIndex int64, _ string, regexp s
 		return rs, nerror.WrapOnly(rgErr)
 	}
 
-	var scanned = rd.Client.ZRange(rd.hashZList, lastIndex, lastIndex+count-1)
+	var scanned = rd.Client.ZRange(rd.ctx, rd.hashZList, lastIndex, lastIndex+count-1)
 	var ky, err = scanned.Result()
 	if err != nil {
 		return rs, nerror.WrapOnly(err)
@@ -192,7 +196,7 @@ func (rd *RedisStore) ScanMatch(count int64, lastIndex int64, _ string, regexp s
 
 // Count returns the total count of element in the store.
 func (rd *RedisStore) Count() (int64, error) {
-	var command = rd.Client.HLen(rd.hashElem)
+	var command = rd.Client.HLen(rd.ctx, rd.hashElem)
 
 	var err = command.Err()
 	if err != nil {
@@ -221,7 +225,7 @@ func (rd *RedisStore) FindPrefixFor(count int64, regexp string) ([]string, error
 	var keys = make([]string, 0, count)
 	var err error
 	for {
-		var scanned = rd.Client.SScan(rd.hashList, cursor, "*", count)
+		var scanned = rd.Client.SScan(rd.ctx, rd.hashList, cursor, "*", count)
 		var ky, cursor, err = scanned.Result()
 		if err != nil {
 			return keys, nerror.WrapOnly(err)
@@ -248,7 +252,7 @@ func (rd *RedisStore) FindPrefixFor(count int64, regexp string) ([]string, error
 // Exists returns true/false if giving key exists.
 func (rd *RedisStore) Exists(key string) (bool, error) {
 	var hashKey = rd.doHashKey(key)
-	var nstatus = rd.Client.SIsMember(rd.hashList, hashKey)
+	var nstatus = rd.Client.SIsMember(rd.ctx, rd.hashList, hashKey)
 	if err := nstatus.Err(); err != nil {
 		return false, nerror.WrapOnly(err)
 	}
@@ -258,7 +262,7 @@ func (rd *RedisStore) Exists(key string) (bool, error) {
 // exists returns true/false if giving key is set in redis.
 func (rd *RedisStore) exists(key string) (bool, error) {
 	var hashKey = rd.doHashKey(key)
-	var nstatus = rd.Client.Exists(hashKey)
+	var nstatus = rd.Client.Exists(rd.ctx, hashKey)
 	if err := nstatus.Err(); err != nil {
 		return false, nerror.WrapOnly(err)
 	}
@@ -271,16 +275,16 @@ func (rd *RedisStore) expire(keys []string) error {
 	for index, elem := range keys {
 		items[index] = elem
 	}
-	var _, err = rd.Client.TxPipelined(func(pipeliner redis.Pipeliner) error {
-		var zstatus = pipeliner.ZRem(rd.hashZList, items...)
+	var _, err = rd.Client.TxPipelined(rd.ctx, func(pipeliner redis.Pipeliner) error {
+		var zstatus = pipeliner.ZRem(rd.ctx, rd.hashZList, items...)
 		if err := zstatus.Err(); err != nil {
 			return err
 		}
-		var mstatus = pipeliner.SRem(rd.hashList, items...)
+		var mstatus = pipeliner.SRem(rd.ctx, rd.hashList, items...)
 		if err := mstatus.Err(); err != nil {
 			return nerror.WrapOnly(err)
 		}
-		var dstatus = pipeliner.Del(keys...)
+		var dstatus = pipeliner.Del(rd.ctx, keys...)
 		if err := dstatus.Err(); err != nil {
 			return nerror.WrapOnly(err)
 		}
@@ -302,8 +306,8 @@ func (rd *RedisStore) Save(key string, data []byte) error {
 // Duration of 0 means no expiration.
 func (rd *RedisStore) SaveTTL(key string, data []byte, expiration time.Duration) error {
 	var hashKey = rd.doHashKey(key)
-	var _, pipeErr = rd.Client.TxPipelined(func(pipeliner redis.Pipeliner) error {
-		var nstatus = pipeliner.SAdd(rd.hashList, hashKey)
+	var _, pipeErr = rd.Client.TxPipelined(rd.ctx, func(pipeliner redis.Pipeliner) error {
+		var nstatus = pipeliner.SAdd(rd.ctx, rd.hashList, hashKey)
 		if err := nstatus.Err(); err != nil {
 			return nerror.WrapOnly(err)
 		}
@@ -312,12 +316,12 @@ func (rd *RedisStore) SaveTTL(key string, data []byte, expiration time.Duration)
 		zs.Score = 0
 		zs.Member = hashKey
 
-		var zstatus = pipeliner.ZAdd(rd.hashZList, zs)
+		var zstatus = pipeliner.ZAdd(rd.ctx, rd.hashZList, &zs)
 		if err := zstatus.Err(); err != nil {
 			return nerror.WrapOnly(err)
 		}
 
-		var nset = pipeliner.Set(hashKey, data, expiration)
+		var nset = pipeliner.Set(rd.ctx, hashKey, data, expiration)
 		if err := nset.Err(); err != nil {
 			return nerror.WrapOnly(err)
 		}
@@ -343,7 +347,7 @@ func (rd *RedisStore) Update(key string, data []byte) error {
 // as is.
 func (rd *RedisStore) UpdateTTL(key string, data []byte, expiration time.Duration) error {
 	var hashKey = rd.doHashKey(key)
-	var fstatus = rd.Client.SIsMember(rd.hashList, hashKey)
+	var fstatus = rd.Client.SIsMember(rd.ctx, rd.hashList, hashKey)
 	if err := fstatus.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
@@ -351,9 +355,9 @@ func (rd *RedisStore) UpdateTTL(key string, data []byte, expiration time.Duratio
 		return nerror.New("key does not exist")
 	}
 
-	var _, pipeErr = rd.Client.TxPipelined(func(cl redis.Pipeliner) error {
+	var _, pipeErr = rd.Client.TxPipelined(rd.ctx, func(cl redis.Pipeliner) error {
 		if len(data) == 0 {
-			var dstatus = cl.Del(hashKey)
+			var dstatus = cl.Del(rd.ctx, hashKey)
 			if err := dstatus.Err(); err != nil {
 				return err
 			}
@@ -361,7 +365,7 @@ func (rd *RedisStore) UpdateTTL(key string, data []byte, expiration time.Duratio
 			var zs redis.Z
 			zs.Score = 0
 			zs.Member = hashKey
-			var zstatus = cl.ZRem(rd.hashZList, zs)
+			var zstatus = cl.ZRem(rd.ctx, rd.hashZList, zs)
 			if err := zstatus.Err(); err != nil {
 				return err
 			}
@@ -373,12 +377,12 @@ func (rd *RedisStore) UpdateTTL(key string, data []byte, expiration time.Duratio
 		zs.Score = 0
 		zs.Member = hashKey
 
-		var zstatus = cl.ZAdd(rd.hashZList, zs)
+		var zstatus = cl.ZAdd(rd.ctx, rd.hashZList, &zs)
 		if err := zstatus.Err(); err != nil {
 			return nerror.WrapOnly(err)
 		}
 
-		var nset = cl.Set(hashKey, data, expiration)
+		var nset = cl.Set(rd.ctx, hashKey, data, expiration)
 		if err := nset.Err(); err != nil {
 			return nerror.WrapOnly(err)
 		}
@@ -394,7 +398,7 @@ func (rd *RedisStore) UpdateTTL(key string, data []byte, expiration time.Duratio
 // TTL returns current expiration time for giving key.
 func (rd *RedisStore) TTL(key string) (time.Duration, error) {
 	var hashKey = rd.doHashKey(key)
-	var nstatus = rd.Client.PTTL(hashKey)
+	var nstatus = rd.Client.PTTL(rd.ctx, hashKey)
 	if err := nstatus.Err(); err != nil {
 		return 0, nerror.WrapOnly(err)
 	}
@@ -408,7 +412,7 @@ func (rd *RedisStore) TTL(key string) (time.Duration, error) {
 // in milliseconds. If expiration value is zero then we consider that you wish to remove the expiration.
 func (rd *RedisStore) ExtendTTL(key string, expiration time.Duration) error {
 	var hashKey = rd.doHashKey(key)
-	var nstatus = rd.Client.PTTL(hashKey)
+	var nstatus = rd.Client.PTTL(rd.ctx, hashKey)
 	if err := nstatus.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
@@ -418,13 +422,13 @@ func (rd *RedisStore) ExtendTTL(key string, expiration time.Duration) error {
 	}
 
 	var newExpiration = expiration + nstatus.Val()
-	var _, pipeErr = rd.Client.TxPipelined(func(cl redis.Pipeliner) error {
+	var _, pipeErr = rd.Client.TxPipelined(rd.ctx, func(cl redis.Pipeliner) error {
 		if expiration == 0 {
-			var exstatus = cl.Persist(hashKey)
+			var exstatus = cl.Persist(rd.ctx, hashKey)
 			return exstatus.Err()
 		}
 
-		var exstatus = cl.Expire(hashKey, newExpiration)
+		var exstatus = cl.Expire(rd.ctx, hashKey, newExpiration)
 		return exstatus.Err()
 	})
 
@@ -440,7 +444,7 @@ func (rd *RedisStore) ExtendTTL(key string, expiration time.Duration) error {
 // A duration of zero persists the giving key.
 func (rd *RedisStore) ResetTTL(key string, expiration time.Duration) error {
 	var hashKey = rd.doHashKey(key)
-	var nstatus = rd.Client.PTTL(hashKey)
+	var nstatus = rd.Client.PTTL(rd.ctx, hashKey)
 	if err := nstatus.Err(); err != nil {
 		return nerror.WrapOnly(err)
 	}
@@ -449,13 +453,13 @@ func (rd *RedisStore) ResetTTL(key string, expiration time.Duration) error {
 		return nil
 	}
 
-	var _, pipeErr = rd.Client.TxPipelined(func(cl redis.Pipeliner) error {
+	var _, pipeErr = rd.Client.TxPipelined(rd.ctx, func(cl redis.Pipeliner) error {
 		if expiration == 0 {
-			var exstatus = cl.Persist(hashKey)
+			var exstatus = cl.Persist(rd.ctx, hashKey)
 			return exstatus.Err()
 		}
 
-		var exstatus = cl.Expire(hashKey, expiration)
+		var exstatus = cl.Expire(rd.ctx, hashKey, expiration)
 		return exstatus.Err()
 	})
 	if err := pipeErr; err != nil {
@@ -474,7 +478,7 @@ func (rd *RedisStore) GetAnyKeys(keys ...string) ([][]byte, error) {
 		modifiedKeys[index] = rd.doHashKey(key)
 	}
 
-	var nstatus = rd.Client.MGet(modifiedKeys...)
+	var nstatus = rd.Client.MGet(rd.ctx, modifiedKeys...)
 	if err := nstatus.Err(); err != nil {
 		return nil, nerror.WrapOnly(err)
 	}
@@ -503,7 +507,7 @@ func (rd *RedisStore) GetAllKeys(keys ...string) ([][]byte, error) {
 		modifiedKeys[index] = rd.doHashKey(key)
 	}
 
-	var nstatus = rd.Client.MGet(modifiedKeys...)
+	var nstatus = rd.Client.MGet(rd.ctx, modifiedKeys...)
 	if err := nstatus.Err(); err != nil {
 		return nil, nerror.WrapOnly(err)
 	}
@@ -527,7 +531,7 @@ func (rd *RedisStore) GetAllKeys(keys ...string) ([][]byte, error) {
 // error if not found.
 func (rd *RedisStore) Get(key string) ([]byte, error) {
 	var hashKey = rd.doHashKey(key)
-	var nstatus = rd.Client.Get(hashKey)
+	var nstatus = rd.Client.Get(rd.ctx, hashKey)
 	if err := nstatus.Err(); err != nil {
 		return nil, nerror.WrapOnly(err)
 	}
@@ -546,16 +550,16 @@ func (rd *RedisStore) RemoveKeys(keys ...string) error {
 		modifiedIKeys[index] = mod
 	}
 
-	var _, err = rd.Client.TxPipelined(func(pipeliner redis.Pipeliner) error {
-		var zstatus = pipeliner.ZRem(rd.hashZList, modifiedIKeys...)
+	var _, err = rd.Client.TxPipelined(rd.ctx, func(pipeliner redis.Pipeliner) error {
+		var zstatus = pipeliner.ZRem(rd.ctx, rd.hashZList, modifiedIKeys...)
 		if err := zstatus.Err(); err != nil {
 			return err
 		}
-		var mstatus = pipeliner.SRem(rd.hashList, modifiedIKeys...)
+		var mstatus = pipeliner.SRem(rd.ctx, rd.hashList, modifiedIKeys...)
 		if err := mstatus.Err(); err != nil {
 			return nerror.WrapOnly(err)
 		}
-		var dstatus = pipeliner.Del(modifiedKeys...)
+		var dstatus = pipeliner.Del(rd.ctx, modifiedKeys...)
 		if err := dstatus.Err(); err != nil {
 			return nerror.WrapOnly(err)
 		}
@@ -571,21 +575,21 @@ func (rd *RedisStore) RemoveKeys(keys ...string) error {
 // returning giving session.
 func (rd *RedisStore) Remove(key string) ([]byte, error) {
 	var hashKey = rd.doHashKey(key)
-	var nstatus = rd.Client.Get(hashKey)
+	var nstatus = rd.Client.Get(rd.ctx, hashKey)
 	if err := nstatus.Err(); err != nil {
 		return nil, nerror.WrapOnly(err)
 	}
 
-	var _, err = rd.Client.TxPipelined(func(pipeliner redis.Pipeliner) error {
-		var zstatus = pipeliner.ZRem(rd.hashZList, hashKey)
+	var _, err = rd.Client.TxPipelined(rd.ctx, func(pipeliner redis.Pipeliner) error {
+		var zstatus = pipeliner.ZRem(rd.ctx, rd.hashZList, hashKey)
 		if err := zstatus.Err(); err != nil {
 			return nerror.WrapOnly(err)
 		}
-		var mstatus = pipeliner.SRem(rd.hashList, hashKey)
+		var mstatus = pipeliner.SRem(rd.ctx, rd.hashList, hashKey)
 		if err := mstatus.Err(); err != nil {
 			return nerror.WrapOnly(err)
 		}
-		var dstatus = pipeliner.Del(hashKey)
+		var dstatus = pipeliner.Del(rd.ctx, hashKey)
 		if err := dstatus.Err(); err != nil {
 			return nerror.WrapOnly(err)
 		}

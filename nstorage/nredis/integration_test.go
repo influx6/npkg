@@ -1,9 +1,10 @@
 package nredis
 
 import (
+	"context"
 	"testing"
 
-	"github.com/go-redis/redis"
+	redis "github.com/go-redis/redis/v8"
 	"github.com/influx6/npkg/nstorage/internal/tharness"
 	"github.com/stretchr/testify/require"
 )
@@ -15,12 +16,12 @@ func TestIntegrationRedisStoreRemoveKeys(t *testing.T) {
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
-	if err := redisClient.Ping().Err(); err != nil {
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		t.SkipNow()
 		return
 	}
 
-	var store, err = FromRedisStore("testing_mb", redisClient)
+	var store, err = FromRedisStore(context.Background(), "testing_mb", redisClient)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
@@ -34,12 +35,12 @@ func TestIntegrationRedisStoreScanMatch(t *testing.T) {
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
-	if err := redisClient.Ping().Err(); err != nil {
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		t.SkipNow()
 		return
 	}
 
-	var store, err = FromRedisStore("testing_mb", redisClient)
+	var store, err = FromRedisStore(context.Background(), "testing_mb", redisClient)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
@@ -53,12 +54,12 @@ func TestIntegrationRedisStoreGetAnyKeys(t *testing.T) {
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
-	if err := redisClient.Ping().Err(); err != nil {
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		t.SkipNow()
 		return
 	}
 
-	var store, err = FromRedisStore("testing_mb", redisClient)
+	var store, err = FromRedisStore(context.Background(), "testing_mb", redisClient)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
@@ -72,12 +73,12 @@ func TestIntegrationRedisStoreTTL(t *testing.T) {
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
-	if err := redisClient.Ping().Err(); err != nil {
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		t.SkipNow()
 		return
 	}
 
-	var store, err = FromRedisStore("testing_mb", redisClient)
+	var store, err = FromRedisStore(context.Background(), "testing_mb", redisClient)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
@@ -91,12 +92,12 @@ func TestIntegrationRedisStoreExpirableStore(t *testing.T) {
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
-	if err := redisClient.Ping().Err(); err != nil {
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		t.SkipNow()
 		return
 	}
 
-	var store, err = FromRedisStore("testing_mb", redisClient)
+	var store, err = FromRedisStore(context.Background(), "testing_mb", redisClient)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
@@ -110,12 +111,12 @@ func TestIntegrationRedisStoreGetAllKeys(t *testing.T) {
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
-	if err := redisClient.Ping().Err(); err != nil {
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		t.SkipNow()
 		return
 	}
 
-	var store, err = FromRedisStore("testing_mb", redisClient)
+	var store, err = FromRedisStore(context.Background(), "testing_mb", redisClient)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
@@ -129,12 +130,12 @@ func TestIntegrationRedisStoreFindEach(t *testing.T) {
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
-	if err := redisClient.Ping().Err(); err != nil {
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		t.SkipNow()
 		return
 	}
 
-	var store, err = FromRedisStore("testing_mb", redisClient)
+	var store, err = FromRedisStore(context.Background(), "testing_mb", redisClient)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
@@ -148,12 +149,12 @@ func TestIntegrationRedisStoreEachPrefixKey(t *testing.T) {
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
-	if err := redisClient.Ping().Err(); err != nil {
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		t.SkipNow()
 		return
 	}
 
-	var store, err = FromRedisStore("testing_mb", redisClient)
+	var store, err = FromRedisStore(context.Background(), "testing_mb", redisClient)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
@@ -167,12 +168,12 @@ func TestIntegrationRedisStoreFindAll(t *testing.T) {
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
-	if err := redisClient.Ping().Err(); err != nil {
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		t.SkipNow()
 		return
 	}
 
-	var store, err = FromRedisStore("testing_mb", redisClient)
+	var store, err = FromRedisStore(context.Background(), "testing_mb", redisClient)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
@@ -186,12 +187,12 @@ func TestIntegrationRedisStore(t *testing.T) {
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
-	if err := redisClient.Ping().Err(); err != nil {
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		t.SkipNow()
 		return
 	}
 
-	var store, err = FromRedisStore("testing_mb", redisClient)
+	var store, err = FromRedisStore(context.Background(), "testing_mb", redisClient)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
@@ -205,12 +206,12 @@ func TestIntegrationRedisStoreExpirables(t *testing.T) {
 	var redisClient = redis.NewClient(&ops)
 	require.NotNil(t, redisClient)
 
-	if err := redisClient.Ping().Err(); err != nil {
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		t.SkipNow()
 		return
 	}
 
-	var store, err = FromRedisStore("testing_mb", redisClient)
+	var store, err = FromRedisStore(context.Background(), "testing_mb", redisClient)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 

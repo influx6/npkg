@@ -1,10 +1,11 @@
 package nredis
 
 import (
+	"context"
 	"testing"
 
 	"github.com/alicebob/miniredis"
-	"github.com/go-redis/redis"
+	redis "github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/require"
 
 	"github.com/influx6/npkg/nstorage/internal/tharness"
@@ -29,7 +30,7 @@ func TestRedisStore(t *testing.T) {
 	require.NotNil(t, redisClient)
 
 	var store *RedisStore
-	store, err = FromRedisStore("testing_mb", redisClient)
+	store, err = FromRedisStore(context.Background(), "testing_mb", redisClient)
 	require.NoError(t, err)
 	require.NotNil(t, store)
 
