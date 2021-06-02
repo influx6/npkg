@@ -3,6 +3,7 @@ package nstr
 import (
 	"crypto/rand"
 	"fmt"
+	mrand "math/rand"
 )
 
 func RandomBytes(size int) ([]byte, error) {
@@ -41,6 +42,6 @@ func RandomText() string {
 var alphabets = "abcdefghijklmnoprz"
 
 func RandomAlphabets() string {
-	var in = rand.Intn(len(alphabets))
+	var in = mrand.Intn(len(alphabets))
 	return string(alphabets[in])
 }
