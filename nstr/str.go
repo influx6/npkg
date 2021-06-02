@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	mrand "math/rand"
+	"strings"
 )
 
 func RandomBytes(size int) ([]byte, error) {
@@ -41,7 +42,15 @@ func RandomText() string {
 
 var alphabets = "abcdefghijklmnoprz"
 
-func RandomAlphabets() string {
+func RandomAlphabet() string {
 	var in = mrand.Intn(len(alphabets))
 	return string(alphabets[in])
+}
+
+func RandomAlphabets(count int) string {
+	var br = make([]string, count)
+	for i := 0; i < count; i++ {
+		br[i] = RandomAlphabet()
+	}
+	return strings.Join(br, "")
 }
