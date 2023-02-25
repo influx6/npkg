@@ -10,7 +10,6 @@ require (
 	github.com/codahale/hdrhistogram v0.9.0 // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.2
 	github.com/dimfeld/httptreemux v5.0.1+incompatible
-	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-redis/redis/v8 v8.4.8
 	github.com/gomodule/redigo v1.8.2 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00
@@ -24,7 +23,7 @@ require (
 	github.com/uber/jaeger-lib v2.3.0+incompatible // indirect
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
 	go.uber.org/atomic v1.7.0 // indirect
-	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
-	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
+	golang.org/x/crypto v0.1.0
+	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
 	xojoc.pw/useragent v0.0.0-20200116211053-1ec61d55e8fe
 )
